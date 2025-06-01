@@ -12,10 +12,6 @@ local npc_headlights_Category = {
   npcHeadlightsAttenuation = "InverseSquare"
 }
 
-local lights_Category = {
-  autoResetLightColorEnabled = true,
-}
-
 local headlights_Category = {
   headlightsSynchronizedWithTimeEnabled = false,
   defaultHeadlightsMode = "LowBeam",
@@ -26,6 +22,7 @@ local headlights_Category = {
   headlightsTurnOffHour = 5,
   headlightsTurnOffMinute = 0,
 
+  headlights_AutoResetLightColorEnabled = true,
   headlights_CrystalCoatInclude = true,
   headlights_CrystalCoatColorType = "Lights",
   headlights_ColorSequence = "Solid",
@@ -33,14 +30,15 @@ local headlights_Category = {
   headlights_ImpactedVehicles = "AllVehicles",
   headlights_LightColorEnabled = false,
   headlights_LightColorHue = 0,
-  headlights_LightColorSaturation = 100,
+  headlights_LightColorSaturation = 20,
   headlights_LightColorBrightness = 50,
   headlights_CycleColorHue = 0,
-  headlights_CycleColorSaturation = 100,
-  headlights_CycleColorBrightness = 50
+  headlights_CycleColorSaturation = 20,
+  headlights_CycleColorBrightness = 50,
 }
 
 local taillights_Category = {
+  taillights_AutoResetLightColorEnabled = true,
   taillights_CrystalCoatInclude = false,
   taillights_CrystalCoatColorType = "Primary",
   taillights_ColorSequence = "Solid",
@@ -59,6 +57,7 @@ local utilitylights_Category = {
   utilityLightsSynchronizedWithHeadlightsShutoff = true,
   defaultUtilityLightsMode = "MotorcyclesActive",
 
+  utilitylights_AutoResetLightColorEnabled = true,
   utilitylights_CrystalCoatInclude = true,
   utilitylights_CrystalCoatColorType = "Primary",
   utilitylights_ColorSequence = "Solid",
@@ -74,6 +73,7 @@ local utilitylights_Category = {
 }
 
 local blinkerlights_Category = {
+  blinkerlights_AutoResetLightColorEnabled = true,
   blinkerlights_CrystalCoatInclude = false,
   blinkerlights_CrystalCoatColorType = "Primary",
   blinkerlights_ColorSequence = "Solid",
@@ -89,6 +89,7 @@ local blinkerlights_Category = {
 }
 
 local reverselights_Category = {
+  reverselights_AutoResetLightColorEnabled = true,
   reverselights_CrystalCoatInclude = false,
   reverselights_CrystalCoatColorType = "Primary",
   reverselights_ColorSequence = "Solid",
@@ -113,6 +114,7 @@ local interiorlights_Category = {
   interiorlightsAutomaticTurnOn = "OnPowerOn",
   interiorlightsAutomaticTurnOff = "OnPowerOff",
 
+  interiorlights_AutoResetLightColorEnabled = true,
   interiorlights_CrystalCoatInclude = true,
   interiorlights_CrystalCoatColorType = "Lights",
   interiorlights_ColorSequence = "Solid",
@@ -178,7 +180,6 @@ local other_Category = {
 local settings = {
   power_state = power_state_Category,
   npc_headlights = npc_headlights_Category,
-  lights = lights_Category,
   headlights = headlights_Category,
   taillights = taillights_Category,
   utilitylights = utilitylights_Category,

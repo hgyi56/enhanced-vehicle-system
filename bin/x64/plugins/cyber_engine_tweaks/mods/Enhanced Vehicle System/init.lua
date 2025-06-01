@@ -34,8 +34,7 @@ local menuIndex = {
     "#utilitylights",
     "#blinkerlights",
     "#reverselights",
-    "#interiorlights",
-    "lights"
+    "#interiorlights"
   },
   headlights = {
     "npc_headlights",
@@ -453,7 +452,6 @@ registerForEvent("onInit", function()
 
   subcategories = {
     power_state = {name = "power_state", path = modPath.."/power_state", label = "hgyi56-EVS-settings-power_state-cat"},
-    lights = {name = "lights", path = modPath.."/lights", label = "hgyi56-EVS-settings-lights-cat"},
     npc_headlights = {name = "npc_headlights", path = modPath.."/npc_headlights", label = "hgyi56-EVS-settings-npc_headlights-cat"},
     headlights = {name = "headlights", path = modPath.."/headlights", label = "hgyi56-EVS-settings-headlights-cat"},
     taillights = {name = "taillights", path = modPath.."/taillights", label = "hgyi56-EVS-settings-taillights-cat"},
@@ -735,17 +733,6 @@ function setup_power_state_CategorySetters(categoryData)
   end)
 end
 
-function setup_lights_CategorySetters(categoryData)
-  SetupCategory(categoryData)
-
-  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-lights-auto_reset_light_color"), GetLocalizedTextByKey("hgyi56-EVS-settings-lights-auto_reset_light_color-desc"), settings[categoryData.name].autoResetLightColorEnabled, defaults[categoryData.name].autoResetLightColorEnabled, function(state)
-    settings[categoryData.name].autoResetLightColorEnabled = state
-
-    settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%s.autoResetLightColorEnabled"):format(categoryData.name), state)
-  end)
-end
-
 function setup_npc_headlights_CategorySetters(categoryData)
   SetupCategory(categoryData)
 
@@ -926,6 +913,7 @@ end
 function setup_light_CategorySetters(categoryData, additional)
   additional = additional or ""
 
+  local settings_AutoResetLightColorEnabled = ("%s_AutoResetLightColorEnabled"):format(categoryData.name)
   local settings_CrystalCoatInclude = ("%s_CrystalCoatInclude"):format(categoryData.name)
   local settings_CrystalCoatColorType = ("%s_CrystalCoatColorType"):format(categoryData.name)
   local settings_ColorSequence = ("%s_ColorSequence"):format(categoryData.name)
@@ -949,6 +937,13 @@ function setup_light_CategorySetters(categoryData, additional)
     settings[categoryData.name][settings_LightColorEnabled] = false
     Populate_Variant_IntoSettingsMap(settings_LightColorEnabled, settings[categoryData.name][settings_LightColorEnabled])
   end
+
+  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-lights-auto_reset_light_color"), GetLocalizedTextByKey("hgyi56-EVS-settings-lights-auto_reset_light_color-desc"), settings[categoryData.name][settings_AutoResetLightColorEnabled], defaults[categoryData.name][settings_AutoResetLightColorEnabled], function(state)
+    settings[categoryData.name][settings_AutoResetLightColorEnabled] = state
+
+    settingsModified = true
+    Populate_Variant_IntoSettingsMap(settings_AutoResetLightColorEnabled, state)
+  end)
   
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-use_cc_color"), GetLocalizedTextByKey("hgyi56-EVS-settings-use_cc_color-desc"), settings[categoryData.name][settings_CrystalCoatInclude], defaults[categoryData.name][settings_CrystalCoatInclude], function(state)
     settings[categoryData.name][settings_CrystalCoatInclude] = state
@@ -1377,8 +1372,6 @@ function PopulateSettings(categoryData)
     if not categoryData:find("^#") then
       if categoryData == "power_state" then
         setup_power_state_CategorySetters(subcategories[categoryData])
-      elseif categoryData == "lights" then
-        setup_lights_CategorySetters(subcategories[categoryData])
       elseif categoryData == "npc_headlights" then
         setup_npc_headlights_CategorySetters(subcategories[categoryData])
       elseif categoryData == "headlights" then

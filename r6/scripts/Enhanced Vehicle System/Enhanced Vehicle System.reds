@@ -600,7 +600,6 @@ public class EntityWatcher extends ScriptableSystem {
       return;
     }
 
-    let gi: GameInstance = GetGameInstance();
     let components: array<ref<IComponent>> = vehicle.GetComponents();
 
     vehicle.m_hgyi56_EVS_lightComponentsParameters = new inkHashMap();
@@ -613,32 +612,47 @@ public class EntityWatcher extends ScriptableSystem {
           switch lightComp.lightType {
             case vehicleELightType.Head:
               vehicle.m_hgyi56_EVS_headlights_baseColor = lightComp.color;
-              vehicle.m_hgyi56_EVS_headlights_baseStrength = lightComp.onStrength;
+              if !ArrayContains(vehicle.m_hgyi56_EVS_headComps, lightComp) {
+                ArrayPush(vehicle.m_hgyi56_EVS_headComps, lightComp);
+              }
               break;
 
             case vehicleELightType.Brake:
               vehicle.m_hgyi56_EVS_taillights_baseColor = lightComp.color;
-              vehicle.m_hgyi56_EVS_taillights_baseStrength = lightComp.onStrength;
+              if !ArrayContains(vehicle.m_hgyi56_EVS_tailComps, lightComp) {
+                ArrayPush(vehicle.m_hgyi56_EVS_tailComps, lightComp);
+              }
               break;
 
             case vehicleELightType.Utility:
               vehicle.m_hgyi56_EVS_utilitylights_baseColor = lightComp.color;
-              vehicle.m_hgyi56_EVS_utilitylights_baseStrength = lightComp.onStrength;
+              if !ArrayContains(vehicle.m_hgyi56_EVS_utilityComps, lightComp) {
+                ArrayPush(vehicle.m_hgyi56_EVS_utilityComps, lightComp);
+              }
               break;
 
             case vehicleELightType.LeftBlinker:
+            case vehicleELightType.RightBlinker:
               vehicle.m_hgyi56_EVS_blinkerlights_baseColor = lightComp.color;
-              vehicle.m_hgyi56_EVS_blinkerlights_baseStrength = lightComp.onStrength;
+              if !ArrayContains(vehicle.m_hgyi56_EVS_blinkerComps, lightComp) {
+                ArrayPush(vehicle.m_hgyi56_EVS_blinkerComps, lightComp);
+              }
               break;
 
             case vehicleELightType.Reverse:
               vehicle.m_hgyi56_EVS_reverselights_baseColor = lightComp.color;
-              vehicle.m_hgyi56_EVS_reverselights_baseStrength = lightComp.onStrength;
+              if !ArrayContains(vehicle.m_hgyi56_EVS_reverseComps, lightComp) {
+                ArrayPush(vehicle.m_hgyi56_EVS_reverseComps, lightComp);
+              }
               break;
 
             case vehicleELightType.Interior:
-              vehicle.m_hgyi56_EVS_interiorlights_baseColor = lightComp.color;
-              vehicle.m_hgyi56_EVS_interiorlights_baseStrength = lightComp.onStrength;
+              if NotEquals(lightComp.turnOnCurve, n"interior_light_on") { // Do not include roof light
+                vehicle.m_hgyi56_EVS_interiorlights_baseColor = lightComp.color;
+                if !ArrayContains(vehicle.m_hgyi56_EVS_interiorComps, lightComp) {
+                  ArrayPush(vehicle.m_hgyi56_EVS_interiorComps, lightComp);
+                }
+              }
               break;
           }
 
@@ -1220,9 +1234,6 @@ public let m_hgyi56_EVS_headlightsTimerIdentifier: Int32 = 0;
 public let m_hgyi56_EVS_minimalIntensity: Float = 0.05;
 
 @addField(VehicleComponent)
-public let m_hgyi56_EVS_colorFadeLatencyMultiplier: Float = 1.3;
-
-@addField(VehicleComponent)
 public let m_hgyi56_EVS_activeUtilityLightsEffectIdentifier: Int32 = 0;
 
 @addField(VehicleComponent)
@@ -1265,10 +1276,10 @@ public let m_hgyi56_EVS_mountedSeats: array<MountingSlotId>;
 public persistent let m_hgyi56_EVS_threeStatesSiren: Int32 = 0;
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_roofLightComponents: array<wref<vehicleLightComponent>>;
+public let m_hgyi56_EVS_roofLightComponents: [wref<vehicleLightComponent>];
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_headlightsComponents: array<wref<vehicleLightComponent>>;
+public let m_hgyi56_EVS_headlightsComponents: [wref<vehicleLightComponent>];
 
 @addField(VehicleObject)
 public let m_hgyi56_EVS_lightComponentsParameters: ref<inkHashMap>;
@@ -1277,40 +1288,40 @@ public let m_hgyi56_EVS_lightComponentsParameters: ref<inkHashMap>;
 public let m_hgyi56_EVS_roofLight_TurnOnTime: Float;
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_headlights_baseColor: Color;
+public let m_hgyi56_EVS_headComps: [wref<vehicleLightComponent>];
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_headlights_baseStrength: Float;
+public let m_hgyi56_EVS_tailComps: [wref<vehicleLightComponent>];
+
+@addField(VehicleObject)
+public let m_hgyi56_EVS_utilityComps: [wref<vehicleLightComponent>];
+
+@addField(VehicleObject)
+public let m_hgyi56_EVS_blinkerComps: [wref<vehicleLightComponent>];
+
+@addField(VehicleObject)
+public let m_hgyi56_EVS_reverseComps: [wref<vehicleLightComponent>];
+
+@addField(VehicleObject)
+public let m_hgyi56_EVS_interiorComps: [wref<vehicleLightComponent>];
+
+@addField(VehicleObject)
+public let m_hgyi56_EVS_headlights_baseColor: Color;
 
 @addField(VehicleObject)
 public let m_hgyi56_EVS_taillights_baseColor: Color;
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_taillights_baseStrength: Float;
-
-@addField(VehicleObject)
 public let m_hgyi56_EVS_utilitylights_baseColor: Color;
-
-@addField(VehicleObject)
-public let m_hgyi56_EVS_utilitylights_baseStrength: Float;
 
 @addField(VehicleObject)
 public let m_hgyi56_EVS_blinkerlights_baseColor: Color;
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_blinkerlights_baseStrength: Float;
-
-@addField(VehicleObject)
 public let m_hgyi56_EVS_reverselights_baseColor: Color;
 
 @addField(VehicleObject)
-public let m_hgyi56_EVS_reverselights_baseStrength: Float;
-
-@addField(VehicleObject)
 public let m_hgyi56_EVS_interiorlights_baseColor: Color;
-
-@addField(VehicleObject)
-public let m_hgyi56_EVS_interiorlights_baseStrength: Float;
 
 @addField(VehicleDoorClose)
 public let m_hgyi56_EVS_shouldOpenWindow: Bool = false;
@@ -2143,7 +2154,7 @@ protected cb func hgyi56_EVS_OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) 
       
     case 1:
       // Black color
-      this.hgyi56_EVS_ApplyLightsParameters(true, false, true, evt.lightType, this.hgyi56_EVS_GetBlackColor());
+      this.hgyi56_EVS_ApplyLightsParameters(true, false, true, evt.lightType);
 
       let event: ref<BlinkerEffectEvent> = new BlinkerEffectEvent();
       event.identifier = evt.identifier;
@@ -2188,7 +2199,7 @@ protected cb func hgyi56_EVS_OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) ->
       
     case 1:
       // Black color
-      this.hgyi56_EVS_ApplyLightsParameters(true, false, true, evt.lightType, this.hgyi56_EVS_GetBlackColor());
+      this.hgyi56_EVS_ApplyLightsParameters(true, false, true, evt.lightType);
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
       event.identifier = evt.identifier;
@@ -2210,7 +2221,7 @@ protected cb func hgyi56_EVS_OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) ->
       
     case 3:
       // Black color
-      this.hgyi56_EVS_ApplyLightsParameters(true, false, true, evt.lightType, this.hgyi56_EVS_GetBlackColor());
+      this.hgyi56_EVS_ApplyLightsParameters(true, false, true, evt.lightType);
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
       event.identifier = evt.identifier;
@@ -2293,7 +2304,7 @@ protected cb func hgyi56_EVS_OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycle
       event.identifier = evt.identifier;
       event.step = 1;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed * this.m_hgyi56_EVS_colorFadeLatencyMultiplier, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
       
     case 1:
@@ -2304,7 +2315,7 @@ protected cb func hgyi56_EVS_OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycle
       event.identifier = evt.identifier;
       event.step = 0;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed * this.m_hgyi56_EVS_colorFadeLatencyMultiplier, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -2328,18 +2339,18 @@ protected cb func hgyi56_EVS_OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) 
   }
 
   // FTLog(s"[RainbowEffect \(evt.lightType)Light \(evt.identifier)] \(this.GetPS().m_hgyi56_EVS_vehicleModel)");
-  let hue: Float = Cast(vehData.rainbowColorHues[evt.colorIndex]);
-  let saturation: Float = this.hgyi56_EVS_GetLightsCustomColorSaturation(evt.lightType);
+  let hsb: HSBColor;
+  hsb.Hue = Cast(vehData.rainbowColorHues[evt.colorIndex]);
+  hsb.Saturation = this.hgyi56_EVS_GetLightsCustomColorSaturation(evt.lightType) / 100.0;
+  hsb.Brightness = this.hgyi56_EVS_GetLightsCustomColorBrightness(evt.lightType) / 100.0;
 
-  let rainbowColor: Color = Color.HSBToColor(hue, false, saturation / 100.0, 1.0);
-
-  this.hgyi56_EVS_ApplyLightsParameters(false, false, false, evt.lightType, rainbowColor);
+  this.hgyi56_EVS_ApplyLightsParameters(false, false, false, evt.lightType, hsb);
 
   let event: ref<RainbowEffectEvent> = new RainbowEffectEvent();
   event.identifier = evt.identifier;
   event.colorIndex = evt.colorIndex == ArraySize(vehData.rainbowColorHues) ? 0 : evt.colorIndex + 1;
   event.lightType = evt.lightType;
-  GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed * this.m_hgyi56_EVS_colorFadeLatencyMultiplier, true);
+  GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
 
   return true;
 }
@@ -4077,7 +4088,7 @@ public func hgyi56_EVS_GameTimeEquals(time1: GameTime, time2: GameTime) -> Bool 
 }
 
 @addMethod(VehicleComponent)
-public func hgyi56_EVS_ResetLightsDefaultColor(instant: Bool, strength: Float, lightType: vehicleELightType) -> Void {
+public func hgyi56_EVS_ResetLightsDefaultColor(instant: Bool, lightType: vehicleELightType, opt isBrightnessForced: Bool, opt forcedBrightness: Float) -> Void {
   let gi: GameInstance = GetGameInstance();
   let player: ref<PlayerPuppet> = GetPlayer(gi);
   let vehCtrl: ref<vehicleController> = this.GetVehicleController();
@@ -4087,20 +4098,30 @@ public func hgyi56_EVS_ResetLightsDefaultColor(instant: Bool, strength: Float, l
     return;
   }
 
-  if !MyModSettings.GetBool("lights.autoResetLightColorEnabled")
-  && !player.m_hgyi56_EVS_customLightsAreBeingToggled {
+  if !this.hgyi56_EVS_GetLightsAutoResetColorEnabled(lightType)
+  && !player.m_hgyi56_EVS_customLightsAreBeingToggled
+  && Equals(this.hgyi56_EVS_GetLightsColorSequence(lightType), ELightsColorCycleType.Solid)
+  && !this.hgyi56_EVS_GetLightsCustomColorEnabled(lightType) {
     return;
   }
 
-  let defaultColor: Color = this.hgyi56_EVS_TryGetDefaultLightsColor(lightType);
+  let defaultColor: HSBColor = this.hgyi56_EVS_TryGetDefaultLightsColor(lightType);
+  let defaultColorRgb: Color = Color.HSBToColor(defaultColor.Hue, false, defaultColor.Saturation, isBrightnessForced ? forcedBrightness : defaultColor.Brightness);
+
   let delay: Float = instant ? 0.00 : this.hgyi56_EVS_GetLightsSequenceSpeed(lightType);
 
-  if this.hgyi56_EVS_IsColorDefined(defaultColor) {
-    vehCtrl.SetLightParameters(lightType, strength, defaultColor, delay);
+  if this.hgyi56_EVS_IsColorDefined(defaultColorRgb) {
+    FTLog(s"reset to default color -> \(lightType) | rgb \(defaultColorRgb) | hsb \(defaultColor) | isBrightnessForced = \(isBrightnessForced) | forcedBrightness = \(forcedBrightness)");
+    this.hgyi56_EVS_SetColorForLightComps(lightType, defaultColorRgb, delay);
   }
   else {
-    defaultColor = this.hgyi56_EVS_GetLightBaseColor(lightType);
-    vehCtrl.SetLightParameters(lightType, strength, defaultColor, delay);
+    defaultColorRgb = this.hgyi56_EVS_GetLightBaseColor(lightType);
+    if isBrightnessForced {
+      defaultColor = Color.ColorToHSB(defaultColorRgb);
+      defaultColorRgb = Color.HSBToColor(defaultColor.Hue, false, defaultColor.Saturation, forcedBrightness);
+    }
+
+    this.hgyi56_EVS_SetColorForLightComps(lightType, defaultColorRgb, delay);
   }
 }
 
@@ -4119,47 +4140,47 @@ public func hgyi56_EVS_ShouldApplyCrystalCoatLightColor(lightType: vehicleELight
 }
 
 @addMethod(VehicleComponent)
-public func hgyi56_EVS_ApplyLightsParameters(instant: Bool, minimalIntensity: Bool, nullIntensity: Bool, lightType: vehicleELightType, opt inputColor: Color) -> Void {
+public func hgyi56_EVS_ApplyLightsParameters(instant: Bool, minimalIntensity: Bool, nullIntensity: Bool, lightType: vehicleELightType, opt inputColor: HSBColor) -> Void {
   let vehCtrl: ref<vehicleController> = this.GetVehicleController();
   let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   if !IsDefined(vehCtrl) || !IsDefined(vehicle) {
     return;
   }
+  
+  let forcedBrightness: Float = 0;  
+  let isBrightnessForced: Bool = false;
+  
+  if nullIntensity {
+    forcedBrightness = 0;
+    isBrightnessForced = true;
+  }
+  else if minimalIntensity {
+    forcedBrightness = this.m_hgyi56_EVS_minimalIntensity;
+    isBrightnessForced = true;
+  }
 
   let delay: Float = instant ? 0.00 : this.hgyi56_EVS_GetLightsSequenceSpeed(lightType);
 
-  let inputColorDefined: Bool = this.hgyi56_EVS_IsColorDefined(inputColor);
-  let color: Color = inputColorDefined ? inputColor : this.hgyi56_EVS_GetLightsCustomColor(lightType);  
-  let strength: Float;
-  
-  if nullIntensity {
-    strength = 0.0;
-  }
-  else if minimalIntensity {
-    strength = this.m_hgyi56_EVS_minimalIntensity;
-  }
-  else if this.hgyi56_EVS_GetLightsCustomColorEnabled(lightType)
-  || Equals(this.hgyi56_EVS_GetLightsColorSequence(lightType), ELightsColorCycleType.Rainbow) {
-    strength = this.hgyi56_EVS_GetLightsCustomColorBrightness(lightType) / 100.0;
-  }
-  else {
-    strength = this.hgyi56_EVS_GetLightBaseStrength(lightType);
-  }
+  let inputColorRgb: Color = Color.HSBToColor(inputColor.Hue, false, inputColor.Saturation, isBrightnessForced ? forcedBrightness : inputColor.Brightness);
+  let inputColorDefined: Bool = this.hgyi56_EVS_IsColorDefined(inputColorRgb);
 
+  let customColor: HSBColor = this.hgyi56_EVS_GetLightsCustomColor(lightType);
+  let customColorRgb: Color = inputColorDefined ? inputColorRgb : Color.HSBToColor(customColor.Hue, false, customColor.Saturation, isBrightnessForced ? forcedBrightness : customColor.Brightness);
+  
   if inputColorDefined {
-    vehCtrl.SetLightParameters(lightType, strength, inputColor, delay);
+    this.hgyi56_EVS_SetColorForLightComps(lightType, inputColorRgb, delay);
   }
   else if this.hgyi56_EVS_GetLightsCustomColorEnabled(lightType) || this.hgyi56_EVS_ShouldApplyCrystalCoatLightColor(lightType) {
-    vehCtrl.SetLightParameters(lightType, strength, color, delay);
+    this.hgyi56_EVS_SetColorForLightComps(lightType, customColorRgb, delay);
   }
   else {
-    this.hgyi56_EVS_ResetLightsDefaultColor(instant, strength, lightType);
+    this.hgyi56_EVS_ResetLightsDefaultColor(instant, lightType, isBrightnessForced, forcedBrightness);
   }
 }
 
 @addMethod(VehicleComponent)
-public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> Color {
+public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> HSBColor {
   let gi: GameInstance = GetGameInstance();
   let player: ref<PlayerPuppet> = GetPlayer(gi);
   let vehicle: ref<VehicleObject> = this.GetVehicle();
@@ -4186,21 +4207,21 @@ public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> Col
 
     switch colorType {
       case ECrystalCoatColorType.Primary:
-        return new Color(colorTemplate.genericData.primaryColorR, colorTemplate.genericData.primaryColorG, colorTemplate.genericData.primaryColorB, Cast<Uint8>(255));
+        return Color.ColorToHSB(new Color(colorTemplate.genericData.primaryColorR, colorTemplate.genericData.primaryColorG, colorTemplate.genericData.primaryColorB, Cast<Uint8>(255)));
         break;
         
       case ECrystalCoatColorType.Secondary:
-        return new Color(colorTemplate.genericData.secondaryColorR, colorTemplate.genericData.secondaryColorG, colorTemplate.genericData.secondaryColorB, Cast<Uint8>(255));
+        return Color.ColorToHSB(new Color(colorTemplate.genericData.secondaryColorR, colorTemplate.genericData.secondaryColorG, colorTemplate.genericData.secondaryColorB, Cast<Uint8>(255)));
         break;
 
       case ECrystalCoatColorType.Lights:
         let isBike: Bool = IsDefined(this.GetVehicle() as BikeObject);
         // When a motorbike does not support CrystalCoat and uses the Cosmetic_Troll it should always use the CC lights color adapted with saturation for its utility lights
         if isBike && !this.GetIsVehicleVisualCustomizationEnabled() && Equals(lightType, vehicleELightType.Utility) {
-          return Color.HSBToColor(colorTemplate.genericData.lightsColorHue, false, 1.00, 1.00);
+          return new HSBColor(colorTemplate.genericData.lightsColorHue, 1.00, 1.00);
         }
 
-        return Color.HSBToColor(colorTemplate.genericData.lightsColorHue, false, 0.50, 1.00);
+        return new HSBColor(colorTemplate.genericData.lightsColorHue, 0.50, 1.00);
         break;
     }
   }
@@ -4243,7 +4264,12 @@ public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> Col
       break;
   }
   
-  return Color.HSBToColor(customHue, false, customSaturation / 100.0, 1.0);
+  let hsb: HSBColor;
+  hsb.Hue = customHue;
+  hsb.Saturation = customSaturation / 100.0;
+  hsb.Brightness = customBrightness / 100.0;
+  
+  return hsb;
 }
 
 @addMethod(VehicleComponent)
@@ -4313,7 +4339,7 @@ public func hgyi56_EVS_GetLightsCustomColorBrightness(lightType: vehicleELightTy
 }
 
 @addMethod(VehicleComponent)
-public func hgyi56_EVS_GetLightsCycleColor(lightType: vehicleELightType) -> Color {
+public func hgyi56_EVS_GetLightsCycleColor(lightType: vehicleELightType) -> HSBColor {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   if !IsDefined(vehicle) {
     return this.hgyi56_EVS_GetBlackColor();
@@ -4360,12 +4386,93 @@ public func hgyi56_EVS_GetLightsCycleColor(lightType: vehicleELightType) -> Colo
       cycleBrightness = Cast(MyModSettings.GetInt("interiorlights_CycleColorBrightness"));
       break;
   }
+
+  let hsb: HSBColor;
+  hsb.Hue = cycleHue;
+  hsb.Saturation = cycleSaturation / 100.0;
+  hsb.Brightness = cycleBrightness / 100.0;
   
-  return Color.HSBToColor(cycleHue, false, cycleSaturation / 100.0, 1.0);
+  return hsb;
 }
 
 @addMethod(VehicleComponent)
-public func hgyi56_EVS_TryGetDefaultLightsColor(lightType: vehicleELightType) -> Color {
+public func hgyi56_EVS_GetLightsAutoResetColorEnabled(lightType: vehicleELightType) -> Bool {
+  let value: Bool;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      value = MyModSettings.GetBool("utilitylights_AutoResetLightColorEnabled");
+      break;
+      
+    case vehicleELightType.Head:
+      value = MyModSettings.GetBool("headlights_AutoResetLightColorEnabled");
+      break;
+      
+    case vehicleELightType.Brake:
+      value = MyModSettings.GetBool("taillights_AutoResetLightColorEnabled");
+      break;
+      
+    case vehicleELightType.Blinkers:
+      value = MyModSettings.GetBool("blinkerlights_AutoResetLightColorEnabled");
+      break;
+      
+    case vehicleELightType.Reverse:
+      value = MyModSettings.GetBool("reverselights_AutoResetLightColorEnabled");
+      break;
+      
+    case vehicleELightType.Interior:
+      value = MyModSettings.GetBool("interiorlights_AutoResetLightColorEnabled");
+      break;
+  }
+  
+  return value;
+}
+
+@addMethod(VehicleComponent)
+public func hgyi56_EVS_SetColorForLightComps(lightType: vehicleELightType, color: Color, opt inTime: Float) {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+  if !IsDefined(vehicle) {
+    return;
+  }
+
+  let components: [wref<vehicleLightComponent>];
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      components = vehicle.m_hgyi56_EVS_utilityComps;
+      break;
+      
+    case vehicleELightType.Head:
+      components = vehicle.m_hgyi56_EVS_headComps;
+      break;
+      
+    case vehicleELightType.Brake:
+      components = vehicle.m_hgyi56_EVS_tailComps;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      components = vehicle.m_hgyi56_EVS_blinkerComps;
+      break;
+      
+    case vehicleELightType.Reverse:
+      components = vehicle.m_hgyi56_EVS_reverseComps;
+      break;
+      
+    case vehicleELightType.Interior:
+      components = vehicle.m_hgyi56_EVS_interiorComps;
+      break;
+  }
+
+  for comp in components {
+    if IsDefined(comp)
+    && NotEquals(comp.color, color) {
+      comp.SetColor(color, inTime);
+    }
+  }
+}
+
+@addMethod(VehicleComponent)
+public func hgyi56_EVS_TryGetDefaultLightsColor(lightType: vehicleELightType) -> HSBColor {
   let defaultColor: Color;
 
   switch lightType {
@@ -4394,15 +4501,13 @@ public func hgyi56_EVS_TryGetDefaultLightsColor(lightType: vehicleELightType) ->
       break;
   }
 
-  return defaultColor;
+  return Color.ColorToHSB(defaultColor);
 }
 
 @addMethod(VehicleComponent)
-public func hgyi56_EVS_GetBlackColor() -> Color {
-
-  let zero: Uint8 = Cast<Uint8>(0);
+public func hgyi56_EVS_GetBlackColor() -> HSBColor {
   
-  return new Color(zero, zero, zero, zero);
+  return new HSBColor(0, 0, 0);
 }
 
 @addMethod(VehicleComponent)
@@ -4445,7 +4550,8 @@ public func hgyi56_EVS_GetLightBaseColor(lightType: vehicleELightType) -> Color 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   if !IsDefined(vehicle) {
     FTLog(s"ERROR: hgyi56_EVS_GetLightBaseColor -> vehicle is null");
-    return this.hgyi56_EVS_GetBlackColor();
+    let hsbColor: HSBColor = this.hgyi56_EVS_GetBlackColor();
+    return Color.HSBToColor(hsbColor.Hue, false, hsbColor.Saturation, hsbColor.Brightness);
   }
 
   switch lightType {      
@@ -4475,45 +4581,6 @@ public func hgyi56_EVS_GetLightBaseColor(lightType: vehicleELightType) -> Color 
   }
 
   return color;
-}
-
-@addMethod(VehicleComponent)
-public func hgyi56_EVS_GetLightBaseStrength(lightType: vehicleELightType) -> Float {
-  let strength: Float;
-
-  let vehicle: ref<VehicleObject> = this.GetVehicle();
-  if !IsDefined(vehicle) {
-    FTLog(s"ERROR: hgyi56_EVS_GetLightBaseStrength -> vehicle is null");
-    return 0.75;
-  }
-
-  switch lightType {      
-    case vehicleELightType.Head:
-      strength = vehicle.m_hgyi56_EVS_headlights_baseStrength;
-      break;
-      
-    case vehicleELightType.Brake:
-      strength = vehicle.m_hgyi56_EVS_taillights_baseStrength;
-      break;
-      
-    case vehicleELightType.Utility:
-      strength = vehicle.m_hgyi56_EVS_utilitylights_baseStrength;
-      break;
-      
-    case vehicleELightType.Blinkers:
-      strength = vehicle.m_hgyi56_EVS_blinkerlights_baseStrength;
-      break;
-      
-    case vehicleELightType.Reverse:
-      strength = vehicle.m_hgyi56_EVS_reverselights_baseStrength;
-      break;
-      
-    case vehicleELightType.Interior:
-      strength = vehicle.m_hgyi56_EVS_interiorlights_baseStrength;
-      break;
-  }
-
-  return strength;
 }
 
 @addMethod(VehicleComponent)
@@ -5075,8 +5142,6 @@ public func hgyi56_EVS_ApplyLightsColorSettingsChange(lightType: vehicleELightTy
   let gi: GameInstance = GetGameInstance();
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  let defaultStrength: Float = this.hgyi56_EVS_GetLightBaseStrength(lightType);
-
   if !IsDefined(vehicle) {
     return;
   }
@@ -5096,12 +5161,12 @@ public func hgyi56_EVS_ApplyLightsColorSettingsChange(lightType: vehicleELightTy
 
   // If custom lights settings are disabled for this light type then restore default lights
   if !player.hgyi56_EVS_GetLightsCustomSettingsEnabled(lightType) {
-    this.hgyi56_EVS_ResetLightsDefaultColor(true, defaultStrength, lightType);
+    this.hgyi56_EVS_ResetLightsDefaultColor(true, lightType);
     return;
   }
 
   if Equals(this.hgyi56_EVS_GetLightsColorVehicleType(lightType), ELightsColorVehicleType.Motorcycles) && vehicle != (vehicle as BikeObject) {
-    this.hgyi56_EVS_ResetLightsDefaultColor(true, defaultStrength, lightType);
+    this.hgyi56_EVS_ResetLightsDefaultColor(true, lightType);
     return;
   }
   
@@ -7467,8 +7532,7 @@ private final func SetInteriorUIEnabled(enabled: Bool) -> Void {
 
 @replaceMethod(VehicleComponent)
 protected cb func OnVehicleLightQuestChangeColorEvent(evt: ref<VehicleLightQuestChangeColorEvent>) -> Bool {
-  let vehController: ref<vehicleController> = this.GetVehicleController();
-  vehController.SetLightColor(evt.lightType, evt.color, 0.50, evt.forceOverrideEmissiveColor);
+  this.hgyi56_EVS_SetColorForLightComps(evt.lightType, evt.color, 0.50);
 }
 
 @replaceMethod(VehicleComponent)
