@@ -37,6 +37,12 @@ enum ELightsColorCycleType {
   Rainbow = 5
 }
 
+enum ECrystalCoatColorType {
+  Primary = 0,
+  Secondary = 1,
+  Lights = 2
+}
+
 enum EEnterBehavior {
   KeepCurrentState = 0,
   PowerOn = 1,
@@ -180,6 +186,20 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Headlights")
   @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Use crystal coat color")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall change headlights color.")
+  public let crystalCoatIncludeHeadlights: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Crystal coat color type")
+  @runtimeProperty("ModSettings.description", "Choose which crystal coat color to apply on headlights.")
+  public let headlightsCrystalCoatColorType: ECrystalCoatColorType = ECrystalCoatColorType.Lights;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
   @runtimeProperty("ModSettings.displayName", "Color sequence")
   @runtimeProperty("ModSettings.description", "Define a custom color sequence for headlights.")
   @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
@@ -298,6 +318,20 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Tail lights")
   @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Use crystal coat color")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall change tail lights color.")
+  public let crystalCoatIncludeTailLights: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Crystal coat color type")
+  @runtimeProperty("ModSettings.description", "Choose which crystal coat color to apply on tail lights.")
+  public let tailLightsCrystalCoatColorType: ECrystalCoatColorType = ECrystalCoatColorType.Primary;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
   @runtimeProperty("ModSettings.displayName", "Color sequence")
   @runtimeProperty("ModSettings.description", "Define a custom color sequence for tail lights.")
   @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
@@ -412,6 +446,20 @@ public class ModSettings_EVS extends ScriptableSystem {
   /////////////////////////
   // UTILITY LIGHTS
   /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Utility lights")
+  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.displayName", "Use crystal coat color")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall change utility lights color.")
+  public let crystalCoatIncludeUtilityLights: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Utility lights")
+  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.displayName", "Crystal coat color type")
+  @runtimeProperty("ModSettings.description", "Choose which crystal coat color to apply on utility lights.")
+  public let utilityLightsCrystalCoatColorType: ECrystalCoatColorType = ECrystalCoatColorType.Primary;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
@@ -551,6 +599,20 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Blinker lights")
   @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Use crystal coat color")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall change blinker lights color.")
+  public let crystalCoatIncludeBlinkerLights: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Crystal coat color type")
+  @runtimeProperty("ModSettings.description", "Choose which crystal coat color to apply on blinker lights.")
+  public let blinkerLightsCrystalCoatColorType: ECrystalCoatColorType = ECrystalCoatColorType.Primary;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
   @runtimeProperty("ModSettings.displayName", "Color sequence")
   @runtimeProperty("ModSettings.description", "Define a custom color sequence for blinker lights.")
   @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
@@ -669,6 +731,20 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Reverse lights")
   @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Use crystal coat color")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall change reverse lights color.")
+  public let crystalCoatIncludeReverseLights: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Crystal coat color type")
+  @runtimeProperty("ModSettings.description", "Choose which crystal coat color to apply on reverse lights.")
+  public let reverseLightsCrystalCoatColorType: ECrystalCoatColorType = ECrystalCoatColorType.Primary;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
   @runtimeProperty("ModSettings.displayName", "Color sequence")
   @runtimeProperty("ModSettings.description", "Define a custom color sequence for reverse lights.")
   @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
@@ -783,6 +859,20 @@ public class ModSettings_EVS extends ScriptableSystem {
   /////////////////////////
   // INTERIOR LIGHTS
   /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Interior lights")
+  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.displayName", "Use crystal coat color")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall change interior lights color.")
+  public let crystalCoatIncludeInteriorLights: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Interior lights")
+  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.displayName", "Crystal coat color type")
+  @runtimeProperty("ModSettings.description", "Choose which crystal coat color to apply on interior lights.")
+  public let interiorLightsCrystalCoatColorType: ECrystalCoatColorType = ECrystalCoatColorType.Lights;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Interior lights")
@@ -906,50 +996,8 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category", "Crystal coat")
   @runtimeProperty("ModSettings.category.order", "8")
   @runtimeProperty("ModSettings.displayName", "Keep enabled on exit")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall stay enabled when the player gets out of the vehicle. Due to a limitation of the game it will always disable if the player gets into another vehicle.")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall stay enabled when the player gets out of the vehicle.")
   public let keepCrystalCoatEnabledOnExit: Bool = false;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Include headlights")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include headlights color change.")
-  public let crystalCoatIncludeHeadlights: Bool = true;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Include interior lights")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include interior lights color change.")
-  public let crystalCoatIncludeInteriorLights: Bool = true;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Include tail lights")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include tail lights color change.")
-  public let crystalCoatIncludeTailLights: Bool = false;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Include utility lights")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include utility lights color change.")
-  public let crystalCoatIncludeUtilityLights: Bool = false;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Include blinker lights")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include blinker lights color change.")
-  public let crystalCoatIncludeBlinkerLights: Bool = false;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Include reverse lights")
-  @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include reverse lights color change.")
-  public let crystalCoatIncludeReverseLights: Bool = false;
 
   /////////////////////////
   // CRYSTAL DOME
@@ -1078,12 +1126,52 @@ public class ModSettings_EVS extends ScriptableSystem {
   public let policeBikeSirenEnabled: Bool = false;
 
   /////////////////////////
+  // INPUT HINTS
+  /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Input hints")
+  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.displayName", "Display power/engine input hint")
+  public let displayPowerEngineInputHint: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Input hints")
+  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.displayName", "Display doors input hint")
+  public let displayDoorsInputHint: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Input hints")
+  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.displayName", "Display hood/trunk/spoiler input hint")
+  public let displaySpoilerInputHint: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Input hints")
+  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.displayName", "Display windows input hint")
+  public let displayWindowsInputHint: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Input hints")
+  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.displayName", "Display interior lights/crystal dome input hint")
+  public let displayCrystalDomeInputHint: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Input hints")
+  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.displayName", "Display toggle light settings input hint")
+  public let displayToggleLightSettingsInputHint: Bool = true;
+
+  /////////////////////////
   // OTHER SETTINGS
   /////////////////////////
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Other settings")
-  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.category.order", "14")
   @runtimeProperty("ModSettings.displayName", "Multi-tap time window")
   @runtimeProperty("ModSettings.description", "Defines the maximum timelapse allowed between multiple tap actions (default: 0.25).")
   @runtimeProperty("ModSettings.step", "0.01")
@@ -1093,20 +1181,13 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Other settings")
-  @runtimeProperty("ModSettings.category.order", "13")
+  @runtimeProperty("ModSettings.category.order", "14")
   @runtimeProperty("ModSettings.displayName", "Cycle utility lights hold time")
   @runtimeProperty("ModSettings.description", "Defines the required hold timelapse to trigger the utility lights (default: 0.05).")
   @runtimeProperty("ModSettings.step", "0.01")
   @runtimeProperty("ModSettings.min", "0.00")
   @runtimeProperty("ModSettings.max", "0.20")
   public let cycleUtilityLightsHoldTime: Float = 0.05;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Other settings")
-  @runtimeProperty("ModSettings.category.order", "13")
-  @runtimeProperty("ModSettings.displayName", "Display input hints")
-  @runtimeProperty("ModSettings.description", "Defines if this mod's input hints shall be displayed with the default ones.")
-  public let displayInputHints: Bool = true;
 
   public static func Get(gi: GameInstance) -> ref<ModSettings_EVS> {
     return GameInstance.GetScriptableSystemsContainer(gi).Get(n"ModSettings_EVS") as ModSettings_EVS;
@@ -1312,6 +1393,9 @@ public class ModSettings_EVS extends ScriptableSystem {
     // Apply logic to  defaultlights color widgets
     let configVars : array<ref<ConfigVar>> = ModSettings.GetVars(n"Enhanced Vehicle System", categoryName);
 
+    let crystalCoatIncluded_Widget : ref<ModConfigVarBool>;
+    let crystalCoatColor_Widget : ref<ModConfigVarEnum>;
+
     let colorSequence_Widget : ref<ModConfigVarEnum>;
     let colorSequenceMemory_Widget : ref<ModConfigVarInt32>;
     let sequenceSpeed_Widget : ref<ModConfigVarFloat>;
@@ -1335,7 +1419,13 @@ public class ModSettings_EVS extends ScriptableSystem {
     while i < ArraySize(configVars) {
       let displayName: CName = configVars[i].GetDisplayName();
 
-      if Equals(displayName, n"Color sequence") {
+      if Equals(displayName, n"Use crystal coat color") {
+        crystalCoatIncluded_Widget = configVars[i] as ModConfigVarBool;
+      }
+      else if Equals(displayName, n"Crystal coat color type") {
+        crystalCoatColor_Widget = configVars[i] as ModConfigVarEnum;
+      }
+      else if Equals(displayName, n"Color sequence") {
         colorSequence_Widget = configVars[i] as ModConfigVarEnum;
       }
       else if Equals(displayName, n"Color sequence memory") {
@@ -1380,6 +1470,9 @@ public class ModSettings_EVS extends ScriptableSystem {
 
     ///////////////////////
     // Reset all controls
+    crystalCoatColor_Widget.SetEnabled(false);
+    crystalCoatColor_Widget.SetVisible(false);
+
     colorSequence_Widget.SetEnabled(true);
     colorSequence_Widget.SetVisible(true);
 
@@ -1420,6 +1513,16 @@ public class ModSettings_EVS extends ScriptableSystem {
     // Must not be shown nor used
     colorSequenceMemory_Widget.SetEnabled(false);
     colorSequenceMemory_Widget.SetVisible(false);
+    
+    // Crystal coat included
+    if crystalCoatIncluded_Widget.GetValue() {
+      crystalCoatColor_Widget.SetEnabled(true);
+      crystalCoatColor_Widget.SetVisible(true);
+    }
+    else {
+      crystalCoatColor_Widget.SetEnabled(false);
+      crystalCoatColor_Widget.SetVisible(false);
+    }
 
     // Define default sequence speed for each sequence type
     if colorSequence_Widget.GetValue() != colorSequenceMemory_Widget.GetValue() {
@@ -2012,6 +2115,9 @@ public let m_cycleCrystalCoatPressTime: Float = 0.00;
 
 @addField(VehicleComponent)
 public let m_hasWindows: Bool = false;
+
+@addField(VehicleComponent)
+public let m_hasCrystalDome: Bool = false;
 
 @addField(VehicleComponent)
 public let m_isSlidingDoors: Bool = false;
@@ -3098,7 +3204,6 @@ private final func RegisterInputListener() -> Void {
   player.RegisterInputListener(this, n"CycleSpoiler");
 
   player.RegisterInputListener(this, n"ModdedCycleLights");
-  player.RegisterInputListener(this, n"ToggleCustomLights");
 
   player.RegisterInputListener(this, n"Accelerate");
   player.RegisterInputListener(this, n"Decelerate");
@@ -4496,12 +4601,10 @@ public func ResetLightsDefaultIntensity(instant: Bool, lightType: vehicleELightT
 
 @addMethod(VehicleComponent)
 public func ShouldApplyCrystalCoatLightColor(lightType: vehicleELightType) -> Bool {
-  let ColorSet: vehicleVisualModdingDefinition = this.GetPS().GetVehicleVisualCustomizationDefinition();
-
-  return this.GetIsVehicleVisualCustomizationEnabled()
-      && this.GetPS().GetIsVehicleVisualCustomizationActive()
-      && this.GetCrystalCoatLightsIncluded(lightType)
-      && ColorSet.lightsColorDefined;
+  let colorType: ECrystalCoatColorType = this.GetCrystalCoatColorType(lightType);
+  
+  return this.GetCrystalCoatLightsIncluded(lightType)
+      && this.GetCrystalCoatLightsColorTypeDefined(colorType);
 }
 
 @addMethod(VehicleComponent)
@@ -4556,7 +4659,21 @@ public func GetLightsCustomColor(lightType: vehicleELightType) -> Color {
   if this.ShouldApplyCrystalCoatLightColor(lightType) {
     
     let ColorSet: vehicleVisualModdingDefinition = this.GetPS().GetVehicleVisualCustomizationDefinition();
-    return GetPlayer(this.GetVehicle().GetGame()).GetVehicleVisualCustomizationComponent().VehicleVisualCustomizationColorParamsToColor(ColorSet.lightsColorH, false, 0.50, 1.00);
+    let colorType: ECrystalCoatColorType = this.GetCrystalCoatColorType(lightType);
+
+    switch colorType {
+      case ECrystalCoatColorType.Primary:
+        return GetPlayer(this.GetVehicle().GetGame()).GetVehicleVisualCustomizationComponent().VehicleVisualCustomizationColorParamsToColor(ColorSet.primaryColorH, true);
+        break;
+        
+      case ECrystalCoatColorType.Secondary:
+        return GetPlayer(this.GetVehicle().GetGame()).GetVehicleVisualCustomizationComponent().VehicleVisualCustomizationColorParamsToColor(ColorSet.secondaryColorH, true);
+        break;
+
+      case ECrystalCoatColorType.Lights:
+        return GetPlayer(this.GetVehicle().GetGame()).GetVehicleVisualCustomizationComponent().VehicleVisualCustomizationColorParamsToColor(ColorSet.lightsColorH, false, 0.50, 1.00);
+        break;
+    }
   }
 
   switch lightType {
@@ -4813,6 +4930,61 @@ public func GetCrystalCoatLightsIncluded(lightType: vehicleELightType) -> Bool {
   }
 
   return false;
+}
+
+@addMethod(VehicleComponent)
+public func GetCrystalCoatLightsColorTypeDefined(colorType: ECrystalCoatColorType) -> Bool {
+
+  let ColorSet: vehicleVisualModdingDefinition = this.GetPS().GetVehicleVisualCustomizationDefinition();
+
+  switch colorType {
+    case ECrystalCoatColorType.Primary:
+      // Primary color shall be considered as defined only if the crystal coat is activated
+      return ColorSet.primaryColorDefined && this.GetPS().GetIsVehicleVisualCustomizationActive();
+      break;
+      
+    case ECrystalCoatColorType.Secondary:
+      // Secondary color shall be considered as defined only if the crystal coat is activated
+      return ColorSet.secondaryColorDefined && this.GetPS().GetIsVehicleVisualCustomizationActive();
+      break;
+      
+    case ECrystalCoatColorType.Lights:
+      // "Lights color" can always be defined with the Cosmetic_Troll feature so it does not imply to activate crystal coat
+      return ColorSet.lightsColorDefined;
+      break;
+  }
+
+  return false;
+}
+
+@addMethod(VehicleComponent)
+public func GetCrystalCoatColorType(lightType: vehicleELightType) -> ECrystalCoatColorType {
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      return this.m_modSettings.utilityLightsCrystalCoatColorType;
+      break;
+      
+    case vehicleELightType.Head:
+      return this.m_modSettings.headlightsCrystalCoatColorType;
+      break;
+      
+    case vehicleELightType.Brake:
+      return this.m_modSettings.tailLightsCrystalCoatColorType;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      return this.m_modSettings.blinkerLightsCrystalCoatColorType;
+      break;
+      
+    case vehicleELightType.Reverse:
+      return this.m_modSettings.reverseLightsCrystalCoatColorType;
+      break;
+      
+    case vehicleELightType.Interior:
+      return this.m_modSettings.interiorLightsCrystalCoatColorType;
+      break;
+  }
 }
 
 @addMethod(VehicleComponent)
@@ -5176,43 +5348,60 @@ public func SetLightsCustomSettingsEnabled(value: Bool, lightType: vehicleELight
 
     if IsDefined(vehicleComp) {
 
-      // Custom light settings cannot be considered enabled if it has the following caracteristics:
-      // - Solid sequence
-      // - Custom color disabled
-      // - Custom intensity disabled
-      let forceDisabled = !vehicleComp.GetLightsCustomColorEnabled(lightType)
-      && !vehicleComp.GetLightsCustomIntensityEnabled(lightType)
-      && Equals(vehicleComp.GetLightsColorSequence(lightType), ELightsColorCycleType.Solid);
-
       switch lightType {
         case vehicleELightType.Utility:
-          player.m_customUtilityLightsEnabled = forceDisabled ? false : value;
+          player.m_customUtilityLightsEnabled = value;
           break;
           
         case vehicleELightType.Head:
-          player.m_customHeadlightsEnabled = forceDisabled ? false : value;
+          player.m_customHeadlightsEnabled = value;
           break;
           
         case vehicleELightType.Brake:
-          player.m_customTailLightsEnabled = forceDisabled ? false : value;
+          player.m_customTailLightsEnabled = value;
           break;
           
         case vehicleELightType.Blinkers:
-          player.m_customBlinkerLightsEnabled = forceDisabled ? false : value;
+          player.m_customBlinkerLightsEnabled = value;
           break;
           
         case vehicleELightType.Reverse:
-          player.m_customReverseLightsEnabled = forceDisabled ? false : value;
+          player.m_customReverseLightsEnabled = value;
           break;
           
         case vehicleELightType.Interior:
-          player.m_customInteriorLightsEnabled = forceDisabled ? false : value;
+          player.m_customInteriorLightsEnabled = value;
           break;
       }
     }
     
     i += 1;
   }
+}
+
+@addMethod(PlayerPuppet)
+public func ShouldDisplayToggleLightSettingsInputHint() -> Bool {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  if ArraySize(player.m_drivenVehicles) == 0 {
+    return false;
+  }
+
+  // Check if at least one vehicle has lights enabled
+  let i = 0;
+  while i < ArraySize(player.m_drivenVehicles) {
+    let vehicleComp: ref<VehicleComponent> = player.m_drivenVehicles[i];
+
+    if IsDefined(vehicleComp) {
+      if NotEquals(vehicleComp.GetVehicleControllerPS().GetHeadLightMode(), vehicleELightMode.Off) {
+        return true;
+      }
+    }
+
+    i += 1;
+  }
+  
+  return false;
 }
 
 @addMethod(PlayerPuppet)
@@ -5654,13 +5843,15 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       if Equals(this.m_vehicleRecord.Affiliation().Type(), gamedataAffiliation.NCPD) {
         this.m_isPoliceVehicle = true;
       }
+
+      this.m_hasCrystalDome = this.m_vehicleRecord.IsArmoredVehicle();
       
       this.m_vehicleLongModel = VehicleData.Get(gi).RemoveBlankSpecialCharacters(s"\(this.m_vehicleRecord.Manufacturer().EnumName()) \(GetLocalizedTextByKey(this.m_vehicleRecord.DisplayName()))");
       this.m_vehicleModel = VehicleData.Get(gi).ShortModelName(this.m_vehicleLongModel);
-      //LogChannel(n"DEBUG", s"Short model -> \(this.m_vehicleModel)");
-      //LogChannel(n"DEBUG", s"Long model -> \(this.m_vehicleLongModel)");
-      //LogChannel(n"DEBUG", s"Record -> \(TDBID.ToStringDEBUG(this.m_vehicleRecord.GetID()))");
-      //LogChannel(n"DEBUG", s"Appearance -> \(this.m_vehicleRecord.AppearanceName())");
+      // LogChannel(n"DEBUG", s"Short model -> \(this.m_vehicleModel)");
+      // LogChannel(n"DEBUG", s"Long model -> \(this.m_vehicleLongModel)");
+      // LogChannel(n"DEBUG", s"Record -> \(TDBID.ToStringDEBUG(this.m_vehicleRecord.GetID()))");
+      // LogChannel(n"DEBUG", s"Appearance -> \(this.m_vehicleRecord.AppearanceName())");
       
       /////////////////////////////
       // Adapt vehicles
@@ -6769,7 +6960,7 @@ private final func IsUIactive() -> Bool {
     || (vehicleComp.IsDelamainTaxi() && !this.m_vehicle.IsPlayerDriver()) {
       this.TurnOn();
 
-      return this.m_vehicle.GetVehicleComponent().m_powerState;
+      return vehicleComp.m_powerState;
     }
   }
   
@@ -7040,6 +7231,8 @@ protected cb func OnGameAttached() -> Bool {
 
   this.m_modSettings = ModSettings_EVS.Get(gi);  
   ModSettings.RegisterListenerToModifications(this);
+  
+  this.RegisterInputListener(this, n"ToggleCustomLights");
 
   return returnValue;
 }
@@ -7133,33 +7326,55 @@ protected func SetMeasurementUnits(value: Int32) -> Void {
 
 @addMethod(InputContextTransitionEvents)
 protected final const func ShowVehiclePowerEngineInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
-  let vehicle: wref<GameObject>;
+  let vehicle: wref<VehicleObject>;
   VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
 
-  this.ShowInputHint(scriptInterface, n"CycleEngineStep1", source, "Power/Engine", inkInputHintHoldIndicationType.Press, false, 127);
+  if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) {
+      if vehicleComp.m_modSettings.displayPowerEngineInputHint {
+        this.ShowInputHint(scriptInterface, n"CycleEngineStep1", source, "Power/Engine", inkInputHintHoldIndicationType.Press, false, 127);
+      }
+    }
+  }
 }
 
 @addMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleDoorsInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
-  let vehicle: wref<GameObject>;
+  let vehicle: wref<VehicleObject>;
   VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
 
-  if vehicle == (vehicle as BikeObject) {
+  if IsDefined(vehicle) && vehicle == (vehicle as BikeObject) {
     this.RemoveInputHint(scriptInterface, n"CycleDoor", source);
-  } else {
-    this.ShowInputHint(scriptInterface, n"CycleDoor", source, "Doors", inkInputHintHoldIndicationType.Press, false, 127);
+  }
+  else if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) {
+      if vehicleComp.m_modSettings.displayDoorsInputHint {
+        this.ShowInputHint(scriptInterface, n"CycleDoor", source, "Doors", inkInputHintHoldIndicationType.Press, false, 127);
+      }
+    }
   }
 }
 
 @addMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleSpoilerInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
-  let vehicle: wref<GameObject>;
+  let vehicle: wref<VehicleObject>;
   VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
 
-  if vehicle == (vehicle as BikeObject) {
+  if IsDefined(vehicle) && vehicle == (vehicle as BikeObject) {
     this.RemoveInputHint(scriptInterface, n"CycleSpoiler", source);
-  } else {
-    this.ShowInputHint(scriptInterface, n"CycleSpoiler", source, "Hood/Trunk/Spoiler", inkInputHintHoldIndicationType.Press, false, 127);
+  }
+  else if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) {
+      if vehicleComp.m_modSettings.displaySpoilerInputHint {
+        this.ShowInputHint(scriptInterface, n"CycleSpoiler", source, s"Hood/Trunk\(vehicleComp.m_hasSpoiler ? "/Spoiler" : "")", inkInputHintHoldIndicationType.Press, false, 127);
+      }
+    }
   }
 }
 
@@ -7168,13 +7383,14 @@ protected final const func ShowVehicleWindowsInputHint(stateContext: ref<StateCo
   let vehicle: wref<VehicleObject>;
   VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
 
-  if vehicle == (vehicle as BikeObject) {
+  if IsDefined(vehicle) && vehicle == (vehicle as BikeObject) {
     this.RemoveInputHint(scriptInterface, n"CycleWindow", source);
-  } else if IsDefined(vehicle) {
+  }
+  else if IsDefined(vehicle) {
     let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
     if IsDefined(vehicleComp) {
-      if vehicleComp.m_hasWindows {
+      if vehicleComp.m_hasWindows && vehicleComp.m_modSettings.displayWindowsInputHint {
         this.ShowInputHint(scriptInterface, n"CycleWindow", source, "Windows", inkInputHintHoldIndicationType.Press, false, 127);
       }
     }
@@ -7183,22 +7399,49 @@ protected final const func ShowVehicleWindowsInputHint(stateContext: ref<StateCo
 
 @addMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleCrystalDomeInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
-  let vehicle: wref<GameObject>;
+  let vehicle: wref<VehicleObject>;
   VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
 
-  if vehicle == (vehicle as BikeObject) {
+  if IsDefined(vehicle) && vehicle == (vehicle as BikeObject) {
     this.RemoveInputHint(scriptInterface, n"CycleDome", source);
-  } else {
-    this.ShowInputHint(scriptInterface, n"CycleDome", source, "Interior lights/Crystal dome", inkInputHintHoldIndicationType.Press, false, 127);
+  }
+  else if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) {
+      if vehicleComp.m_modSettings.displayCrystalDomeInputHint {
+        this.ShowInputHint(scriptInterface, n"CycleDome", source, s"Interior lights\(vehicleComp.m_hasCrystalDome ? "/Crystal dome" : "")", inkInputHintHoldIndicationType.Press, false, 127);
+      }
+    }
   }
 }
 
 @addMethod(InputContextTransitionEvents)
 protected final const func ShowVehicleToggleLightsSettingsInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
-  let vehicle: wref<GameObject>;
-  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+  
+  if Equals(source, n"VehicleDriver") {
+    let vehicle: wref<VehicleObject>;
+    VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
 
-  this.ShowInputHint(scriptInterface, n"ToggleCustomLights", source, "Toggle light settings", inkInputHintHoldIndicationType.Press, false, 127);
+    if IsDefined(vehicle) {
+      let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+      if IsDefined(vehicleComp) {
+        if vehicleComp.m_modSettings.displayToggleLightSettingsInputHint {
+          this.ShowInputHint(scriptInterface, n"ToggleCustomLights", source, "Toggle light settings", inkInputHintHoldIndicationType.Press, false, 127);
+        }
+      }
+    }
+  }
+  else {
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(scriptInterface.owner.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+    if player.m_modSettings.displayToggleLightSettingsInputHint
+    && player.ShouldDisplayToggleLightSettingsInputHint() {
+      
+      this.ShowInputHint(scriptInterface, n"ToggleCustomLights", source, "Toggle light settings", inkInputHintHoldIndicationType.Press, false, 127);
+    }
+  }
 }
 
 @wrapMethod(InputContextTransitionEvents)
@@ -7210,15 +7453,12 @@ protected final const func ShowVehicleDriverInputHints(stateContext: ref<StateCo
     let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
     if IsDefined(vehicleComp) && IsDefined(vehicleComp.m_modSettings) {
-      if vehicleComp.m_modSettings.displayInputHints {
-
-        this.ShowVehiclePowerEngineInputHint(stateContext, scriptInterface, n"VehicleDriver");
-        this.ShowVehicleDoorsInputHint(stateContext, scriptInterface, n"VehicleDriver");
-        this.ShowVehicleSpoilerInputHint(stateContext, scriptInterface, n"VehicleDriver");
-        this.ShowVehicleWindowsInputHint(stateContext, scriptInterface, n"VehicleDriver");
-        this.ShowVehicleCrystalDomeInputHint(stateContext, scriptInterface, n"VehicleDriver");
-        this.ShowVehicleToggleLightsSettingsInputHint(stateContext, scriptInterface, n"VehicleDriver");
-      }
+      this.ShowVehiclePowerEngineInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      this.ShowVehicleDoorsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      this.ShowVehicleSpoilerInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      this.ShowVehicleWindowsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      this.ShowVehicleCrystalDomeInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      this.ShowVehicleToggleLightsSettingsInputHint(stateContext, scriptInterface, n"VehicleDriver");
     }
   }
 
@@ -7234,14 +7474,11 @@ protected final const func ShowVehiclePassengerInputHints(stateContext: ref<Stat
     let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
     if IsDefined(vehicleComp) && IsDefined(vehicleComp.m_modSettings) {
-      if vehicleComp.m_modSettings.displayInputHints {
-
-        if vehicleComp.m_isSlidingDoors {
-          this.ShowVehicleDoorsInputHint(stateContext, scriptInterface, n"VehicleDriver");
-        }
-
-        this.ShowVehicleWindowsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      if vehicleComp.m_isSlidingDoors {
+        this.ShowVehicleDoorsInputHint(stateContext, scriptInterface, n"VehicleDriver");
       }
+
+      this.ShowVehicleWindowsInputHint(stateContext, scriptInterface, n"VehicleDriver");
     }
   }
   
@@ -7253,8 +7490,7 @@ protected final const func ShowGenericExplorationInputHints(stateContext: ref<St
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(scriptInterface.owner.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if IsDefined(player)
-  && ArraySize(player.m_drivenVehicles) > 0
-  && player.m_modSettings.displayInputHints {
+  && ArraySize(player.m_drivenVehicles) > 0 {
 
     this.ShowVehicleToggleLightsSettingsInputHint(stateContext, scriptInterface, n"Locomotion");
   }
@@ -7262,17 +7498,12 @@ protected final const func ShowGenericExplorationInputHints(stateContext: ref<St
   wrappedMethod(stateContext, scriptInterface);
 }
 
-
-
-
-
 @replaceMethod(VehicleObject)
 protected cb func OnProcessVehicleVisualCustomizationLights(evt: ref<VehicleCustomizationLightsEvent>) -> Bool {
   let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
-  let ColorSet: vehicleVisualModdingDefinition = this.GetVehiclePS().GetVehicleVisualCustomizationDefinition();
 
-  if IsDefined(vehicleComp) && ColorSet.lightsColorDefined {
+  if IsDefined(vehicleComp) {
     player.m_customLightsAreBeingToggled = true;
     vehicleComp.OnModSettingsChange();
     player.m_customLightsAreBeingToggled = false;
@@ -7283,7 +7514,8 @@ protected cb func OnProcessVehicleVisualCustomizationLights(evt: ref<VehicleCust
 protected cb func OnSwitchVehicleVisualCustomizationStateEvent(evt: ref<SwitchVehicleVisualCustomizationStateEvent>) -> Bool {
   let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
 
-  if !IsDefined(vehicleComp) || !vehicleComp.m_modSettings.keepCrystalCoatEnabledOnExit {
+  if !IsDefined(vehicleComp)
+  || (!vehicleComp.m_modSettings.keepCrystalCoatEnabledOnExit && this.GetVehiclePS().GetIsVehicleVisualCustomizationActive()) {
     return wrappedMethod(evt);
   }
 }
