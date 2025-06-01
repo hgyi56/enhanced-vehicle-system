@@ -61,11 +61,6 @@ enum EMomentumType {
   Accelerate = 2
 }
 
-enum ECrystalCoatLightColor {
-  Primary = 0,
-  Secondary = 1
-}
-
 public class ModSettings_EVS extends ScriptableSystem {
 
   /////////////////////////
@@ -912,7 +907,7 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category.order", "8")
   @runtimeProperty("ModSettings.displayName", "Keep enabled on exit")
   @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall stay enabled when the player gets out of the vehicle. Due to a limitation of the game it will always disable if the player gets into another vehicle.")
-  public let keepCrystalCoatEnabledOnExit: Bool = true;
+  public let keepCrystalCoatEnabledOnExit: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Crystal coat")
@@ -955,13 +950,6 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.displayName", "Include reverse lights")
   @runtimeProperty("ModSettings.description", "Choose if the crystal coat shall include reverse lights color change.")
   public let crystalCoatIncludeReverseLights: Bool = false;
-
-  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Crystal coat")
-  @runtimeProperty("ModSettings.category.order", "8")
-  @runtimeProperty("ModSettings.displayName", "Color to use for lights")
-  @runtimeProperty("ModSettings.description", "Apply primary or secondary color for lights.")
-  public let crystalCoatColorForLights: ECrystalCoatLightColor = ECrystalCoatLightColor.Secondary;
 
   /////////////////////////
   // CRYSTAL DOME
@@ -1007,7 +995,7 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.displayValues.No", "No")
   @runtimeProperty("ModSettings.displayValues.OnStartMoving", "On start moving")
   @runtimeProperty("ModSettings.displayValues.CustomSpeed", "Custom speed")
-  public let doorsDriveClosing: EDoorsDriveClosing = EDoorsDriveClosing.No;
+  public let doorsDriveClosing: EDoorsDriveClosing = EDoorsDriveClosing.CustomSpeed;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Doors")
@@ -1028,14 +1016,14 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category.order", "11")
   @runtimeProperty("ModSettings.displayName", "Synchronized with power state")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall deploy and retract according to power state.")
-  public let spoilerSynchronizedWithPowerState: Bool = true;
+  public let spoilerSynchronizedWithPowerState: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
   @runtimeProperty("ModSettings.category.order", "11")
   @runtimeProperty("ModSettings.displayName", "Deploy with speed")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall deploy according to speed.")
-  public let spoilerDeploySpeedEnabled: Bool = false;
+  public let spoilerDeploySpeedEnabled: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
@@ -1052,7 +1040,7 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category.order", "11")
   @runtimeProperty("ModSettings.displayName", "Retract with speed")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall retract according to speed.")
-  public let spoilerRetractSpeedEnabled: Bool = false;
+  public let spoilerRetractSpeedEnabled: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
@@ -1080,7 +1068,7 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category.order", "12")
   @runtimeProperty("ModSettings.displayName", "Keep NPC siren enabled on exit")
   @runtimeProperty("ModSettings.description", "Keeps the siren on if police driver NPCs get out of the vehicle.")
-  public let keepSirenOnWhileOutsideNPCsEnabled: Bool = false;
+  public let keepSirenOnWhileOutsideNPCsEnabled: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Police lights")
@@ -2266,16 +2254,12 @@ protected cb func OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystalCoatEvent>)
       vvcComponent.GetMyPS().GetDataForVehicleWithID(vehicle.GetRecordID(), definition);
 
       if this.GetPS().GetIsVehicleVisualCustomizationActive() {
-        this.PrepVisualCustomizationAppearance(false);
-
         let evt: ref<NewVehicleVisualCustomizationEvent> = new NewVehicleVisualCustomizationEvent();
         evt.modSet = definition;
         evt.reset = true;
         vehicle.QueueEvent(evt);
       }
       else if this.GetPS().GetIsVehicleVisualCustomizationDefinitionDefined() {
-        this.PrepVisualCustomizationAppearance(true);
-
         let evt: ref<NewVehicleVisualCustomizationEvent> = new NewVehicleVisualCustomizationEvent();
         evt.modSet = definition;
         evt.reset = false;
@@ -3125,7 +3109,6 @@ private final func RegisterInputListener() -> Void {
 
 @replaceMethod(VehicleComponent)
 protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsumer) -> Bool {
-
   let cycleEvent: ref<UIVehicleRadioCycleEvent>;
   let radioEvent: ref<VehicleRadioEvent>;
   let releaseTime: Float;
@@ -4518,7 +4501,7 @@ public func ShouldApplyCrystalCoatLightColor(lightType: vehicleELightType) -> Bo
   return this.GetIsVehicleVisualCustomizationEnabled()
       && this.GetPS().GetIsVehicleVisualCustomizationActive()
       && this.GetCrystalCoatLightsIncluded(lightType)
-      && (Equals(this.m_modSettings.crystalCoatColorForLights, ECrystalCoatLightColor.Primary) ? ColorSet.primaryColorDefined : ColorSet.secondaryColorDefined);
+      && ColorSet.lightsColorDefined;
 }
 
 @addMethod(VehicleComponent)
@@ -4573,7 +4556,7 @@ public func GetLightsCustomColor(lightType: vehicleELightType) -> Color {
   if this.ShouldApplyCrystalCoatLightColor(lightType) {
     
     let ColorSet: vehicleVisualModdingDefinition = this.GetPS().GetVehicleVisualCustomizationDefinition();
-    return this.VehicleCustomizationAngleToColor(Equals(this.m_modSettings.crystalCoatColorForLights, ECrystalCoatLightColor.Primary) ? ColorSet.primaryColorH : ColorSet.secondaryColorH, true);
+    return GetPlayer(this.GetVehicle().GetGame()).GetVehicleVisualCustomizationComponent().VehicleVisualCustomizationColorParamsToColor(ColorSet.lightsColorH, false, 0.50, 1.00);
   }
 
   switch lightType {
@@ -5497,6 +5480,18 @@ public func OnModSettingsChange() -> Void {
   this.ApplyInteriorLightsSettingsChange();
 }
 
+@wrapMethod(VehicleComponent)
+private final func OnGameDetach() -> Void {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  // Unregister this vehicle until it is unloaded
+  if ArrayContains(player.m_drivenVehicles, this) {
+    ArrayRemove(player.m_drivenVehicles, this);
+  }
+
+  wrappedMethod();
+}
+
 @replaceMethod(VehicleComponent)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   let PSvehicleDooropenRequest: ref<VehicleDoorOpen>;
@@ -5504,19 +5499,19 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   let vehicleDataPackage: wref<VehicleDataPackage_Record>;
   let vehicleRecord: ref<Vehicle_Record>;
   let shouldAutoClose: Bool = true;
-  let gi: GameInstance = this.GetVehicle().GetGame();
-  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gi, evt.request.lowLevelMountingInfo.childId) as GameObject;
-  VehicleComponent.GetVehicleDataPackage(gi, this.GetVehicle(), vehicleDataPackage);
+  let gameInstance: GameInstance = this.GetVehicle().GetGame();
+  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
+  VehicleComponent.GetVehicleDataPackage(gameInstance, this.GetVehicle(), vehicleDataPackage);
   if mountChild.IsPlayer() {
     this.m_mountedPlayer = mountChild as PlayerPuppet;
     isDriverSlot = VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id);
     if isDriverSlot {
-      PreventionSystem.SetPlayerMounted(gi, true);
-      PreventionSystemHackerLoop.UpdatePlayerVehicle(gi, this.GetVehicle());
-      PoliceRadioScriptSystem.UpdatePoliceRadioOnVehicleEntrance(gi);
+      PreventionSystem.SetPlayerMounted(gameInstance, true);
+      PreventionSystemHackerLoop.UpdatePlayerVehicle(gameInstance, this.GetVehicle());
+      PoliceRadioScriptSystem.UpdatePoliceRadioOnVehicleEntrance(gameInstance);
     };
     this.m_mountedPlayer.GetPlayerStateMachineBlackboard().SetBool(GetAllBlackboardDefs().PlayerStateMachine.MountedToVehicleInDriverSeat, isDriverSlot);
-    VehicleComponent.GetVehicleRecord(gi, this.m_mountedPlayer, vehicleRecord);
+    VehicleComponent.GetVehicleRecord(gameInstance, this.m_mountedPlayer, vehicleRecord);
     VehicleComponent.QueueEventToAllPassengers(this.m_mountedPlayer.GetGame(), this.GetVehicle().GetEntityID(), PlayerMuntedToMyVehicle.Create(this.m_mountedPlayer));
     PlayerPuppet.ReevaluateAllBreathingEffects(mountChild as PlayerPuppet);
     if !this.GetVehicle().IsCrowdVehicle() {
@@ -5530,7 +5525,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       this.CreateMappin();
     };
     this.RegisterInputListener();
-    FastTravelSystem.AddFastTravelLock(n"InVehicle", gi);
+    FastTravelSystem.AddFastTravelLock(n"InVehicle", gameInstance);
     this.m_mounted = true;
     this.m_ignoreAutoDoorClose = true;
     this.SetupListeners();
@@ -5563,7 +5558,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     if evt.request.mountData.isInstant {
       mountChild.QueueEvent(CreateDisableRagdollEvent(n"VehicleComponentOnMountingEvent"));
     };
-    VehicleComponent.PushVehicleNPCData(gi, mountChild);
+    VehicleComponent.PushVehicleNPCData(gameInstance, mountChild);
     if mountChild.IsPuppet() && !this.GetVehicle().IsPlayerVehicle() && (IsHostileTowardsPlayer(mountChild) || (mountChild as ScriptedPuppet).IsAggressive()) {
       this.EnableTargetingComponents();
     };
@@ -5610,13 +5605,13 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     if !this.GetPS().GetIsDestroyed() && shouldAutoClose {
       PSvehicleDooropenRequest.shouldAutoClose = true;
     };
-    GameInstance.GetPersistencySystem(gi).QueuePSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSvehicleDooropenRequest);
+    GameInstance.GetPersistencySystem(gameInstance).QueuePSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSvehicleDooropenRequest);
   };
   this.ManageAdditionalAnimFeatures(mountChild, true);
   if mountChild.IsPrevention() {
     this.m_preventionPassengers += 1;
     this.RegisterWantedLevelListener();
-    GameInstance.GetPreventionSpawnSystem(gi).RegisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
+    GameInstance.GetPreventionSpawnSystem(gameInstance).RegisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
     this.CreateMappin();
     this.GetVehicle().GetPreventionSystem().UpdateVehiclePassengerCount(this.GetVehicle().GetEntityID(), this.m_preventionPassengers);
   };
@@ -5868,6 +5863,7 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
 
 @replaceMethod(VehicleComponent)
 protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
+  
   // Get siren state
   let sirenState: Bool = this.GetPS().GetSirenState();
   let vehicle: ref<VehicleObject> = this.GetVehicle();
@@ -5927,7 +5923,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
       }
     }
   }
-  
+
   if IsDefined(mountChild) && mountChild.IsPlayer() {
     PreventionSystem.SetPlayerMounted(gi, false);
     PlayerPuppet.ReevaluateAllBreathingEffects(mountChild as PlayerPuppet);
@@ -5949,15 +5945,15 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
       if !this.m_vehicleDrivenByV || this.IsUnsupportedVehicleType() {
         this.ToggleCrystalDome(false, true, false, 0.00, 0.00, true);
       }
-
+      
       this.SetSteeringLimitAnimFeature(0);
       this.m_ignoreAutoDoorClose = false;
     };
     this.DoPanzerCleanup();
     this.m_mountedPlayer = null;
     this.CleanUpRace();
-    GameInstance.GetStatPoolsSystem(this.GetVehicle().GetGame()).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, 0.00, this.GetVehicle());
-    GameInstance.GetAudioSystem(this.GetVehicle().GetGame()).RemoveTriggerEffect(n"te_vehicle_car_disabled");
+    GameInstance.GetStatPoolsSystem(gi).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, 0.00, this.GetVehicle());
+    GameInstance.GetAudioSystem(gi).RemoveTriggerEffect(n"te_vehicle_car_disabled");
   };
   if IsDefined(mountChild) {
     if mountChildIsPrevention {
@@ -6653,6 +6649,7 @@ protected cb func OnChangeState(evt: ref<vehicleChangeStateEvent>) -> Bool {
 
 @replaceMethod(VehicleObject)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
+  
   let mountChild: ref<GameObject> = GameInstance.FindEntityByID(this.GetGame(), evt.request.lowLevelMountingInfo.childId) as GameObject;
   if mountChild == null {
     return false;
@@ -6666,13 +6663,10 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
         this.SetInteriorUIEnabled(true);
       }
 
+      this.SyncVehicleVisualCustomizationDefinition();
+
       ///////////////////////////
-      if !vehicleComp.m_modSettings.keepCrystalCoatEnabledOnExit {
-        this.SyncVehicleVisualCustomizationDefinition();
-        if this.GetVehiclePS().GetIsVehicleVisualCustomizationDefinitionDefined() {
-          this.GetVehicleComponent().PrepVisualCustomizationAppearance(true);
-        };
-      }
+      //this.GetVehicleComponent().EnableCustomizableAppearance(true);
       ///////////////////////////
     }
 
@@ -7272,24 +7266,16 @@ protected final const func ShowGenericExplorationInputHints(stateContext: ref<St
 
 
 
-@wrapMethod(VehicleObject)
+@replaceMethod(VehicleObject)
 protected cb func OnProcessVehicleVisualCustomizationLights(evt: ref<VehicleCustomizationLightsEvent>) -> Bool {
   let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
   let ColorSet: vehicleVisualModdingDefinition = this.GetVehiclePS().GetVehicleVisualCustomizationDefinition();
 
-  if IsDefined(vehicleComp) {
-    let colorDefined: Bool = ColorSet.secondaryColorDefined;
-
-    if Equals(vehicleComp.m_modSettings.crystalCoatColorForLights, ECrystalCoatLightColor.Primary) {
-      colorDefined = ColorSet.primaryColorDefined;
-    }
-
-    if colorDefined {
-      player.m_customLightsAreBeingToggled = true;
-      vehicleComp.OnModSettingsChange();
-      player.m_customLightsAreBeingToggled = false;
-    };
+  if IsDefined(vehicleComp) && ColorSet.lightsColorDefined {
+    player.m_customLightsAreBeingToggled = true;
+    vehicleComp.OnModSettingsChange();
+    player.m_customLightsAreBeingToggled = false;
   }
 }
 
@@ -7368,6 +7354,7 @@ protected cb func OnExecuteVehicleVisualCustomizationEvent(evt: ref<ExecuteVehic
   }
 
   this.ExecuteVehicleVisualCustomization(evt.set, evt.reset, evt.instant);
+  this.EnableCustomizableAppearance(!evt.reset);
 
   // Refresh head/tail/blinker lights
   this.ApplyHeadlightsModeWithShutOff();
@@ -7386,6 +7373,7 @@ protected cb func OnInitialize() -> Bool {
   this.m_player.RegisterInputListener(this, n"__DEVICE_CHANGED__");
   this.m_gameInstance = this.m_player.GetGame();
   this.m_vehicle = this.m_player.GetMountedVehicle();
+  this.m_vvcComponent = this.m_player.GetVehicleVisualCustomizationComponent();
   this.m_currentSBSliderPositionA = 0.00;
   this.m_currentSBSliderPositionB = 0.00;
   uiSystemBB = this.GetBlackboardSystem().Get(GetAllBlackboardDefs().UI_System);
@@ -7396,11 +7384,14 @@ protected cb func OnInitialize() -> Bool {
   this.RegisterToGlobalInputCallback(n"OnPostOnPress", this, n"OnGlobalPressInput");
   this.RegisterToGlobalInputCallback(n"OnPostOnRelative", this, n"OnMouseInput");
   this.RegisterToGlobalInputCallback(n"OnPostOnAxis", this, n"OnGlobalAxisInput");
-  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOver", this, n"OnHoverOverColor1");
-  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOver", this, n"OnHoverOverColor2");
-  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOut", this, n"OnHoverOutColor1");
-  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOut", this, n"OnHoverOutColor2");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOver", this, n"OnHoverOverColorWheel1");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOver", this, n"OnHoverOverColorWheel2");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOver", this, n"OnHoverOverColorWheelLights");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOut", this, n"OnHoverOutColorWheel1");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOut", this, n"OnHoverOutColorWheel2");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOut", this, n"OnHoverOutColorWheelLights");
   this.SetTimeDilatation(true);
+  this.UpdateVehicleManufacturer();
   this.PlayAnimation(this.m_introAnimation);
   this.m_animProxy.RegisterToCallback(inkanimEventType.OnFinish, this, n"OnIntroFinished");
   GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_open");
@@ -7410,4 +7401,9 @@ protected cb func OnInitialize() -> Bool {
   this.m_vehicle.QueueEvent(lightsEvent);*/
   this.ProcessFakeUpdate(true);
   this.QueueEvent(initEvent);
+}
+
+@replaceMethod(vehicleVisualCustomizationComponent)
+public final func GetAreColorsUnchanged(newSet: vehicleVisualModdingDefinition, previousSet: vehicleVisualModdingDefinition) -> Bool {
+  return false;
 }
