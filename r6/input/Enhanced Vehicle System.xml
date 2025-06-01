@@ -18,6 +18,7 @@
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
+        <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
         <action name="Accelerate"           map="Acceleration_Axis" />
         <action name="UseConsumable"        map="UseConsumable_Button" />
         <action name="TagButton"            map="Tag_Button" />
@@ -27,6 +28,52 @@
         <action name="ZoomIn"               map="ZoomIn_Button"/>
         <action name="ZoomOut"              map="ZoomOut_Button"/>
         <action name="VehicleHorn"          map="Vehicle_Horn" />
+    </context>
+
+    <context name="VehiclePassenger" >
+        <include name="CameraMovement" />
+        <include name="VisionActions" />
+        <include name="UIExploration" />
+        <include name="PhotoMode" />
+        <include name="QuickLoadAndSave" />
+        <include name="Items" />
+        <include name="QuestPauseActions" />
+
+        <action name="UseConsumable"        map="UseConsumable_Button" />
+        <action name="Exit"                 map="ExitVehicle_Button" />
+        <action name="TagButton"            map="Tag_Button" /> <!-- HACK FOR VS -->
+        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
+        <action name="ZoomIn"               map="ZoomIn_Button"/>
+        <action name="ZoomOut"              map="ZoomOut_Button"/>
+        <action name="CameraAim"            map="Hit2_Button" />
+        <action name="Zoom"                 map="MouseWheel" />
+        <action name="UETExit"              map="UETExit_Button" />     
+        <action name="UETChangePose"        map="UETChangePose_Button" />       
+        <action name="UETWindow"            map="UETWindow_Button" />
+        <action name="CycleDoor"            map="Vehicle_CycleDoor" />
+        <action name="CycleWindow"          map="Vehicle_CycleWindow" />
+    </context>
+
+    <!-- VEHICLE COMBAT - used when player is mounted as passenger and has weapon equipped -->
+    <context name="VehicleCombat" >
+        <include name="Camera" />
+        <include name="Items" />
+        <include name="UIExploration" />
+        <include name="Abilities" />
+        <include name="VisionActions" />
+        <include name="Combat" />
+        <include name="PhotoMode" />
+        <include name="QuickLoadAndSave" />
+
+        <action name="UseConsumable"        map="UseConsumable_Button" />
+        <action name="Exit"                 map="ExitVehicle_Button" />
+        <action name="StrafeX"              map="LeftX_Axis_Vehicle" />
+        <action name="StrafeY"              map="LeftY_Axis_Vehicle" />
+        <action name="ZoomIn"               map="ZoomIn_Button"/>
+        <action name="ZoomOut"              map="ZoomOut_Button"/>
+        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
+        <action name="CycleDoor"            map="Vehicle_CycleDoor" />
+        <action name="CycleWindow"          map="Vehicle_CycleWindow" />
     </context>
 
     <context name="VehicleDriveBase" >
@@ -55,6 +102,7 @@
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
+        <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="ZoomIn"               map="ZoomIn_Button"/>
         <action name="ZoomOut"              map="ZoomOut_Button"/>
@@ -85,6 +133,7 @@
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
+        <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
@@ -110,6 +159,7 @@
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
+        <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
@@ -142,6 +192,7 @@
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
+        <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
         <action name="VehicleSiren"         map="Vehicle_Siren" />
         <action name="MeleeAttack"          map="VehicleDriverCombatRangedAttack_Button" />
@@ -175,6 +226,7 @@
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
+        <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="ZoomIn"               map="ZoomIn_Button"/>
         <action name="ZoomOut"              map="ZoomOut_Button"/>
@@ -184,21 +236,36 @@
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
+    <!-- DOORS -->
     <buttonGroup id="IK_Pad_DigitLeftXSquare" timeWindow="0.08f" >
         <button id="IK_Pad_DigitLeft" />
         <button id="IK_Pad_X_SQUARE" />
     </buttonGroup>
 
+    <!-- WINDOWS -->
     <buttonGroup id="IK_Pad_DigitLeftYTriangle" timeWindow="0.08f" >
         <button id="IK_Pad_DigitLeft" />
         <button id="IK_Pad_Y_TRIANGLE" />
     </buttonGroup>
 
+    <!-- SPOILER / HOOD / TRUNK -->
+    <buttonGroup id="IK_Pad_DigitRightXSquare" timeWindow="0.08f" >
+        <button id="IK_Pad_DigitRight" />
+        <button id="IK_Pad_X_SQUARE" />
+    </buttonGroup>
+
+    <buttonGroup id="IK_Pad_2_F2" timeWindow="0.08f" >
+        <button id="IK_F2" />
+        <button id="IK_2" />
+    </buttonGroup>
+
+    <!-- POWER STATE / ENGINE -->
     <buttonGroup id="IK_Pad_DigitLeftACross" timeWindow="0.08f" >
         <button id="IK_Pad_DigitLeft" />
         <button id="IK_Pad_A_CROSS" />
     </buttonGroup>
 
+    <!-- INTERIOR LIGHT / CRYSTAL DOME -->
     <buttonGroup id="IK_Pad_DigitLeftBCircle" timeWindow="0.08f" >
         <button id="IK_Pad_DigitLeft" />
         <button id="IK_Pad_B_CIRCLE" />
@@ -224,12 +291,19 @@
         <button id="IK_Pad_DigitLeftBCircle" />
     </mapping>
 
+    <mapping name="Vehicle_CycleSpoiler" type="Button">
+        <button id="IK_Pad_2_F2" />
+        <button id="IK_Pad_DigitRightXSquare" />
+    </mapping>
+
     <hold action="CycleLights"          timeout="99.0" />
+	<hold action="VehicleInsideWheel"	timeout="99.0" />
     <hold action="ModdedCycleLights"    timeout="0.25" />
     <hold action="CycleEngineStep1"     timeout="0.25" />
     <hold action="CycleEngineStep2"     timeout="1.0" />
     <hold action="CycleDome"            timeout="0.25" />
     <hold action="CycleDoor"            timeout="0.25" />
+    <hold action="CycleSpoiler"         timeout="0.25" />
     <hold action="CycleWindow"          timeout="0.25" />
 
 </bindings>
