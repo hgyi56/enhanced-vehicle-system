@@ -321,8 +321,29 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category", "Crystal dome")
   @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Synchronized with power state")
-  @runtimeProperty("ModSettings.description", "Choose if crystal dome shall toggle automatically with power state.")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal dome shall toggle automatically with power state.")
   public let crystalDomeSynchronizedWithPowerState: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Crystal dome")
+  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.displayName", "Keep on until exit")
+  @runtimeProperty("ModSettings.description", "Choose if the crystal dome shall stay on even with the power off until V gets out of the vehicle. Will only trigger if the power has been on at least once since the last entry.")
+  public let crystalDomeKeepOnUntilExit: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Crystal dome")
+  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.displayName", "Prevent shutdown during combat")
+  @runtimeProperty("ModSettings.description", "Prevents the player from accidentally toggling the crystal dome off during combat.")
+  public let preventCrystalDomeOffDuringCombat: Bool = true;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Crystal dome")
+  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.displayName", "Auto-enable during combat")
+  @runtimeProperty("ModSettings.description", "Allows the player to automatically enable the crystal dome during combat.")
+  public let autoEnableCrystalDomeDuringCombat: Bool = true;
 
   /////////////////////////
   // DOORS
@@ -394,12 +415,30 @@ public class ModSettings_EVS extends ScriptableSystem {
   public let spoilerRetractSpeed: Float = 40.0;
 
   /////////////////////////
+  // POLICE LIGHTS
+  /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Police lights")
+  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.displayName", "Keep player siren enabled on exit")
+  @runtimeProperty("ModSettings.description", "Keeps the siren on if V gets out of the vehicle.")
+  public let keepSirenOnWhileOutsidePlayerEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Police lights")
+  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.displayName", "Keep NPC siren enabled on exit")
+  @runtimeProperty("ModSettings.description", "Keeps the siren on if police driver NPCs get out of the vehicle.")
+  public let keepSirenOnWhileOutsideNPCsEnabled: Bool = false;
+
+  /////////////////////////
   // OTHER SETTINGS
   /////////////////////////
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Other settings")
-  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Multi-tap time window")
   @runtimeProperty("ModSettings.description", "Defines the maximum timelapse allowed between multiple tap actions (default: 0.25).")
   @runtimeProperty("ModSettings.step", "0.01")
@@ -418,6 +457,7 @@ public class ModSettings_EVS extends ScriptableSystem {
     this.RefreshUtilityColor_UIWidgets();
     this.RefreshRearSpoiler_UIWidgets();
     this.RefreshDoorsClosing_UIWidgets();
+    this.RefreshCrystalDome_UIWidgets();
   }
 
   private func OnAttach() -> Void {
@@ -429,10 +469,48 @@ public class ModSettings_EVS extends ScriptableSystem {
     this.RefreshUtilityColor_UIWidgets();
     this.RefreshRearSpoiler_UIWidgets();
     this.RefreshDoorsClosing_UIWidgets();
+    this.RefreshCrystalDome_UIWidgets();
   }
   private func OnDetach() -> Void {
     ModSettings.UnregisterListenerToClass(this);
     ModSettings.UnregisterListenerToModifications(this);
+  }
+
+  public func RefreshCrystalDome_UIWidgets() {
+    // Apply logic to spoiler widgets
+    let configVars : array<ref<ConfigVar>> = ModSettings.GetVars(n"Enhanced Vehicle System", n"Crystal dome");
+
+    let crystalDomeSynchronized_Widget : ref<ModConfigVarBool>;
+    let crystalDomeKeepOn_Widget : ref<ModConfigVarBool>;
+
+    // Retrieve widgets
+    let i: Int32 = 0;
+    while i < ArraySize(configVars) {
+      let displayName: CName = configVars[i].GetDisplayName();
+
+      if Equals(displayName, n"Synchronized with power state") {
+        crystalDomeSynchronized_Widget = configVars[i] as ModConfigVarBool;
+      }
+      else if Equals(displayName, n"Keep on until exit") {
+        crystalDomeKeepOn_Widget = configVars[i] as ModConfigVarBool;
+      }
+
+      i += 1;
+    }
+
+    // Toggle widget depending on synchronized bool widget
+    if crystalDomeSynchronized_Widget.GetValue() {
+      crystalDomeKeepOn_Widget.SetEnabled(true);
+      crystalDomeKeepOn_Widget.SetVisible(true);
+    }
+    else {
+      crystalDomeKeepOn_Widget.SetEnabled(false);
+      crystalDomeKeepOn_Widget.SetVisible(false);
+
+      if crystalDomeKeepOn_Widget.GetValue() {
+        crystalDomeKeepOn_Widget.SetValue(false);
+      }
+    }
   }
 
   public func RefreshHeadlightsTime_UIWidgets() {
@@ -886,7 +964,7 @@ public class ModSettings_EVS extends ScriptableSystem {
     while i < ArraySize(configVars) {
       let displayName: CName = configVars[i].GetDisplayName();
 
-      if Equals(displayName, n"Drive closing") {
+      if Equals(displayName, n"Close doors while moving") {
         doorsDriveClosing_Widget = configVars[i] as ModConfigVarEnum;
       }
       else if Equals(displayName, n"Doors closing speed") {
@@ -926,6 +1004,7 @@ public class FloatArrayWrapper {
 }
 
 public class VehicleData extends ScriptableSystem {
+
   public let hasIncompatibleSlidingDoorsWindow_VehicleMap: ref<inkStringMap>;
   public let incorrectDoorNumber_VehicleMap: ref<inkStringMap>;
   public let incorrectHasWindow_VehicleMap: ref<inkStringMap>;
@@ -1045,10 +1124,19 @@ public let m_cycleDomeLongInputTriggered: Bool = false;
 public let m_cycleLightsLongInputTriggered: Bool = false;
 
 @addField(VehicleComponent)
+public let m_cycleLightsPressTime: Float = 0.00;
+
+@addField(VehicleComponent)
+public let m_cycleUtilityLightsHoldTime: Float = 0.05;
+
+@addField(VehicleComponent)
 public let m_interiorLightsState: Bool = false;
 
 @addField(VehicleComponent)
 public let m_powerState: Bool = false;
+
+@addField(VehicleComponent)
+public let m_poweredOnAtLeastOnceSinceLastEnter: Bool = false;
 
 @addField(VehicleComponent)
 public let m_auxiliaryState: Bool = false;
@@ -1137,6 +1225,9 @@ public let m_vehicleMomentumType: EMomentumType = EMomentumType.Stable ; // By d
 public let m_lastSpeed: Float = 0.00; // By default the vehicle is stationary
 
 @addField(VehicleComponent)
+public let m_brutalDeceleration: Bool = false;
+
+@addField(VehicleComponent)
 public let m_activeEffectIdentifier: Int32 = 0;
 
 @addField(VehicleComponent)
@@ -1144,6 +1235,9 @@ public let m_headlightsTimerIdentifier: Int32 = 0;
 
 @addField(VehicleComponent)
 public let m_minimalIntensity: Float = 0.05;
+
+@addField(VehicleComponent)
+public let m_colorFadeLatencyMultiplier: Float = 1.3;
 
 @addField(VehicleComponent)
 public let m_utilityLightsLastColor: Color;
@@ -1185,9 +1279,9 @@ public class CrystalDomeMeshEvent extends Event {
   let tppEnabled: Bool = false;
 }
 
-public class RainbowEffectEvent extends Event {
+public class SolidColorEffectEvent extends Event {
   let identifier: Int32 = 0;
-  let colorIndex: Int32;
+  let step: Int32 = 0;
 }
 
 public class BlinkerEffectEvent extends Event {
@@ -1208,6 +1302,11 @@ public class PulseEffectEvent extends Event {
 public class TwoColorsCycleEffectEvent extends Event {
   let identifier: Int32 = 0;
   let step: Int32 = 0;
+}
+
+public class RainbowEffectEvent extends Event {
+  let identifier: Int32 = 0;
+  let colorIndex: Int32;
 }
 
 public class GameTimeElapsedEvent extends Event {
@@ -1512,23 +1611,25 @@ protected cb func OnCrystalDomeMeshEvent(evt: ref<CrystalDomeMeshEvent>) -> Bool
 }
 
 @addMethod(VehicleComponent)
-protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
+protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   if this.m_activeEffectIdentifier != evt.identifier {
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[RainbowEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  if evt.step > 10 {
+    return false;
+  }
 
-  let rainbowColor: Color = this.ToColor(VehicleData.Get(vehicle.GetGame()).rainbowColors[evt.colorIndex]);
+  // LogChannel(n"DEBUG", s"[SolidEffect \(evt.identifier)] \(this.m_vehicleModel)");
 
-  this.ApplyUtilityLightsParameters(false, false, false, rainbowColor);
+  this.ApplyUtilityLightsParameters(false, false, false);
 
-  let event: ref<RainbowEffectEvent> = new RainbowEffectEvent();
+  let event: ref<SolidColorEffectEvent> = new SolidColorEffectEvent();
   event.identifier = evt.identifier;
-  event.colorIndex = evt.colorIndex == 6 ? 0 : evt.colorIndex + 1;
-  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+  event.step = evt.step + 1;
+  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, 0.10, true);
 
   return true;
 }
@@ -1677,7 +1778,7 @@ protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent
       let event: ref<TwoColorsCycleEffectEvent> = new TwoColorsCycleEffectEvent();
       event.identifier = evt.identifier;
       event.step = 1;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
       break;
       
     case 1:
@@ -1687,9 +1788,31 @@ protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent
       let event: ref<TwoColorsCycleEffectEvent> = new TwoColorsCycleEffectEvent();
       event.identifier = evt.identifier;
       event.step = 0;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
       break;
   }
+
+  return true;
+}
+
+@addMethod(VehicleComponent)
+protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+
+  if this.m_activeEffectIdentifier != evt.identifier {
+    return false;
+  }
+
+  // LogChannel(n"DEBUG", s"[RainbowEffect \(evt.identifier)] \(this.m_vehicleModel)");
+
+  let rainbowColor: Color = this.ToColor(VehicleData.Get(vehicle.GetGame()).rainbowColors[evt.colorIndex]);
+
+  this.ApplyUtilityLightsParameters(false, false, false, rainbowColor);
+
+  let event: ref<RainbowEffectEvent> = new RainbowEffectEvent();
+  event.identifier = evt.identifier;
+  event.colorIndex = evt.colorIndex == 6 ? 0 : evt.colorIndex + 1;
+  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
 
   return true;
 }
@@ -1800,31 +1923,31 @@ protected cb func OnPlayerIsAwayFromVehicleEvent(evt: ref<PlayerIsAwayFromVehicl
 
 @wrapMethod(VehicleComponent)
 private final func RegisterInputListener() -> Void {
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   wrappedMethod();
 
   // // // // // // //
   // Register additional events we need
   //
-  playerPuppet.RegisterInputListener(this, n"CameraX");
-  playerPuppet.RegisterInputListener(this, n"CameraY");
-  playerPuppet.RegisterInputListener(this, n"CameraMouseX");
-  playerPuppet.RegisterInputListener(this, n"CameraMouseY");
+  player.RegisterInputListener(this, n"CameraX");
+  player.RegisterInputListener(this, n"CameraY");
+  player.RegisterInputListener(this, n"CameraMouseX");
+  player.RegisterInputListener(this, n"CameraMouseY");
 
-  playerPuppet.RegisterInputListener(this, n"CycleDoor");
-  playerPuppet.RegisterInputListener(this, n"CycleWindow");
+  player.RegisterInputListener(this, n"CycleDoor");
+  player.RegisterInputListener(this, n"CycleWindow");
 
-  playerPuppet.RegisterInputListener(this, n"CycleEngineStep1");
-  playerPuppet.RegisterInputListener(this, n"CycleEngineStep2");
+  player.RegisterInputListener(this, n"CycleEngineStep1");
+  player.RegisterInputListener(this, n"CycleEngineStep2");
 
-  playerPuppet.RegisterInputListener(this, n"Exit");
-  playerPuppet.RegisterInputListener(this, n"CycleDome");
-  playerPuppet.RegisterInputListener(this, n"CycleSpoiler");
-  playerPuppet.RegisterInputListener(this, n"ModdedCycleLights");
+  player.RegisterInputListener(this, n"Exit");
+  player.RegisterInputListener(this, n"CycleDome");
+  player.RegisterInputListener(this, n"CycleSpoiler");
+  player.RegisterInputListener(this, n"ModdedCycleLights");
 
-  playerPuppet.RegisterInputListener(this, n"Accelerate");
-  playerPuppet.RegisterInputListener(this, n"Decelerate");
+  player.RegisterInputListener(this, n"Accelerate");
+  player.RegisterInputListener(this, n"Decelerate");
   // // // // // // //
 }
 
@@ -1910,22 +2033,26 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if !IsDefined(vehicle) {
     return false;
   };
 
-  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) {
+  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
 
     // // // // // // //
     // Event that toggles utility/auxiliary lights (short press)
     //
     // Short press: toggle utility lights
     //
+    if Equals(ListenerAction.GetName(action), n"ModdedCycleLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED) {
+      this.m_cycleLightsPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+    }
     if Equals(ListenerAction.GetName(action), n"ModdedCycleLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_RELEASED) {
-      
-      if !this.m_cycleLightsLongInputTriggered && this.m_useAuxiliary {
+      let holdTime: Float = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleLightsPressTime;
+
+      if !this.m_cycleLightsLongInputTriggered && holdTime >= this.m_cycleUtilityLightsHoldTime && this.m_useAuxiliary && !this.m_isPoliceVehicle {
 
         // If the headlights shutoff is active and the player toggles headlights then simply disable the headlights shutoff
         if this.m_temporaryHeadlightsShutOff && this.m_modSettings.utilityLightsSynchronizedWithHeadlightsShutoff {
@@ -1935,7 +2062,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
           this.ToggleUtilityLights(!this.m_auxiliaryState);
         }
 
-        this.ApplyHeadlightsMode();
+        this.ApplyHeadlightsModeWithShutOff();
         this.EnsureIsActive_UtilityLights();
         this.EnsureIsDisabled_UtilityLights();
       }
@@ -2314,10 +2441,10 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     }
     // // // // // // //
 
-    let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-    let preventEngineShutdown: Bool = vehicle.IsEngineTurnedOn() && playerPuppet.IsInCombat() && this.m_modSettings.preventPowerOffDuringCombat;
-    let preventPowerShutdown: Bool = this.m_powerState && playerPuppet.IsInCombat() && this.m_modSettings.preventPowerOffDuringCombat;
+    let preventEngineShutdown: Bool = vehicle.IsEngineTurnedOn() && player.IsInCombat() && this.m_modSettings.preventPowerOffDuringCombat;
+    let preventPowerShutdown: Bool = this.m_powerState && player.IsInCombat() && this.m_modSettings.preventPowerOffDuringCombat;
 
     // // // // // // //
     // Event that toggles power state and engine
@@ -2385,9 +2512,9 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 protected final func GetPlayerSlotID() -> MountingSlotId {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gameInstance).GetMountingInfoSingleWithIds(playerPuppet.GetEntityID());
+  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gameInstance).GetMountingInfoSingleWithIds(player.GetEntityID());
   
   return mountInfos.slotId;
 }
@@ -2396,9 +2523,9 @@ protected final func GetPlayerSlotID() -> MountingSlotId {
 protected final func GetPlayerSlotName() -> CName {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gameInstance).GetMountingInfoSingleWithIds(playerPuppet.GetEntityID());
+  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gameInstance).GetMountingInfoSingleWithIds(player.GetEntityID());
   
   return mountInfos.slotId.id;
 }
@@ -2518,6 +2645,12 @@ protected final func EnsureIsActive_InteriorLights() {
 
 @addMethod(VehicleComponent)
 protected final func MyToggleCrystalDome(toggle: Bool) {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  if player.IsInCombat() && !toggle && this.m_modSettings.preventCrystalDomeOffDuringCombat {
+    return;
+  }
+
   if NotEquals(this.GetPS().GetCrystalDomeState(), toggle) {
     this.ToggleCrystalDome(toggle);
     // LogChannel(n"DEBUG", s"Set crystal dome -> \(this.GetPS().GetCrystalDomeState())");
@@ -2568,11 +2701,18 @@ protected final func TogglePowerState(toggle: Bool) {
     this.ApplyUtilityLightsWithShutOff();
 
     if this.m_modSettings.crystalDomeSynchronizedWithPowerState {
-      this.MyToggleCrystalDome(toggle);
+      if toggle || !this.m_modSettings.crystalDomeKeepOnUntilExit {
+        this.MyToggleCrystalDome(toggle);
+      }
     }
 
     if this.m_modSettings.spoilerSynchronizedWithPowerState {
       this.ToggleSpoiler(toggle);
+    }
+
+    if toggle {
+      this.m_poweredOnAtLeastOnceSinceLastEnter = true;      
+      // LogChannel(n"DEBUG", s"Powered on at least once -> \(this.m_poweredOnAtLeastOnceSinceLastEnter)");
     }
   }
 }
@@ -2611,14 +2751,9 @@ protected final func ToggleUtilityLights(toggle: Bool) {
   if NotEquals(this.m_auxiliaryState, toggle) {
     this.m_auxiliaryState = toggle;
 
-    if this.m_auxiliaryState {
-      this.ApplyUtilityLightsSettingsChange();
-    }
-    else {
-      this.m_activeEffectIdentifier += 1;
-    }
-    
-    this.GetVehicleController().ToggleLights(this.m_auxiliaryState, vehicleELightType.Utility);
+    this.EnsureIsActive_UtilityLights();
+    this.EnsureIsDisabled_UtilityLights();
+
     // LogChannel(n"DEBUG", s"Set utility lights -> \(this.m_auxiliaryState)");
   }
 }
@@ -2648,7 +2783,7 @@ protected final func ApplyUtilityLightsWithShutOff() {
 
 @addMethod(VehicleComponent)
 protected final func EnsureIsActive_UtilityLights() {
-  if this.m_auxiliaryState {
+  if this.m_auxiliaryState && !this.m_isPoliceVehicle {
     this.ApplyUtilityLightsSettingsChange();
     this.GetVehicleController().ToggleLights(this.m_auxiliaryState, vehicleELightType.Utility);
     // LogChannel(n"DEBUG", s"Ensure utility lights active -> \(this.m_auxiliaryState)");
@@ -2657,7 +2792,7 @@ protected final func EnsureIsActive_UtilityLights() {
 
 @addMethod(VehicleComponent)
 protected final func EnsureIsDisabled_UtilityLights() {
-  if !this.m_auxiliaryState {
+  if !this.m_auxiliaryState && !this.m_isPoliceVehicle {
     this.m_activeEffectIdentifier += 1;
     this.GetVehicleController().ToggleLights(this.m_auxiliaryState, vehicleELightType.Utility);
     // LogChannel(n"DEBUG", s"Ensure utility lights disabled -> \(this.m_auxiliaryState)");
@@ -2699,9 +2834,9 @@ protected final func OnEnter_CrystalDomeMesh() {
   // LogChannel(n"DEBUG", s"OnEnter_CrystalDomeMesh");
   if IsDefined(this.m_crystalDomeMeshTimings) {
     let vehicle: ref<VehicleObject> = this.GetVehicle();
-    let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-    let fastEntryMultiplier: Float = playerPuppet.IsInCombat() ? 0.60 : 1.00;
+    let fastEntryMultiplier: Float = player.IsInCombat() ? 0.60 : 1.00;
 
     let event: ref<CrystalDomeMeshEvent> = new CrystalDomeMeshEvent();
     event.tppEnabled = this.GetPS().GetCrystalDomeState();
@@ -2724,9 +2859,9 @@ protected final func OnExit_CrystalDomeMesh() {
   // LogChannel(n"DEBUG", s"OnExit_CrystalDomeMesh");
   if IsDefined(this.m_crystalDomeMeshTimings) {
     let vehicle: ref<VehicleObject> = this.GetVehicle();
-    let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-    let fastExitTiming: Float = playerPuppet.IsInCombat() ? this.m_vehicleDataPackage.CombatEntering() / this.m_vehicleDataPackage.Entering() : 1.00;
+    let fastExitTiming: Float = player.IsInCombat() ? this.m_vehicleDataPackage.CombatEntering() / this.m_vehicleDataPackage.Entering() : 1.00;
 
     let event: ref<CrystalDomeMeshEvent> = new CrystalDomeMeshEvent();
     event.tppEnabled = false;
@@ -2737,6 +2872,7 @@ protected final func OnExit_CrystalDomeMesh() {
 // This method will cycle doors only if their previous state before entering/exiting is the opposite
 @addMethod(VehicleComponent)
 private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
+  // LogChannel(n"DEBUG", s"RecallVehicleDoorsState");
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let PSVehicleDoorCloseRequest: ref<VehicleDoorClose>;
 
@@ -2746,11 +2882,13 @@ private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
     }
     else {
       if autoCloseDelay > 0.00 {
+        // LogChannel(n"DEBUG", s"RecallVehicleDoorsState DelayPSEvent");
         PSVehicleDoorCloseRequest = new VehicleDoorClose();
         PSVehicleDoorCloseRequest.slotID = VehicleComponent.GetDriverSlotName();
         GameInstance.GetDelaySystem(vehicle.GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
       }
       else {
+        // LogChannel(n"DEBUG", s"RecallVehicleDoorsState CloseDoor");
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetDriverSlotID());
       }
     }
@@ -3069,6 +3207,60 @@ public func IsColorDefined(color: Color) -> Bool {
 }
 
 @addMethod(VehicleComponent)
+public func GameSpeedMultiplier(speed: Float) -> Float {
+  return GameInstance.GetStatsDataSystem(this.GetVehicle().GetGame()).GetValueFromCurve(n"vehicle_ui", AbsF(speed), n"speed_to_multiplier");
+}
+
+@addMethod(VehicleComponent)
+public func RealSpeedMultiplier(speed: Float) -> Float {
+  return GameInstance.GetStatsDataSystem(this.GetVehicle().GetGame()).GetValueFromCurve(n"vehicle_ui", AbsF(speed), this.m_isKmH ? n"kmh_to_multiplier" : n"mph_to_multiplier");
+}
+
+@addMethod(VehicleComponent)
+public func ToGameSpeed(mph_kmh_speed: Float) -> Float {
+  let kmh_multiplier: Float = this.m_isKmH ? 1.609344 : 1.000000;
+
+  return mph_kmh_speed / kmh_multiplier / this.RealSpeedMultiplier(mph_kmh_speed);
+}
+
+@addMethod(VehicleComponent)
+public func ToRealWorldSpeed(gameSpeed: Float) -> Float {
+  let kmh_multiplier: Float = this.m_isKmH ? 1.609344 : 1.000000;
+
+  return gameSpeed * kmh_multiplier * this.GameSpeedMultiplier(gameSpeed);
+}
+
+@addMethod(VehicleComponent)
+public func UpdateMomentumType(gameSpeed: Float) -> Void {
+  gameSpeed = AbsF(gameSpeed);
+
+  let speedDelta: Float = AbsF(gameSpeed - this.m_lastSpeed);
+  let brutalDecelerationSpeedDelta: Float = this.ToGameSpeed(20.0); // Kmh or Mph -> Game speed unit
+  this.m_brutalDeceleration = false;
+
+  // Update vehicle momentum type
+  if speedDelta > 0.005 {
+    // In case the current speed and the last speed are too close together, then consider that the vehicle momentum type is stable
+    if gameSpeed > this.m_lastSpeed {
+      this.m_vehicleMomentumType = EMomentumType.Accelerate;
+    }
+    else if gameSpeed < this.m_lastSpeed {
+      this.m_vehicleMomentumType = EMomentumType.Decelerate;
+      
+      if speedDelta > brutalDecelerationSpeedDelta {
+        this.m_brutalDeceleration = true;
+        // LogChannel(n"DEBUG", s"Brutal deceleration -> \(this.ToRealWorldSpeed(speedDelta))");
+      }
+    }
+  }
+  else {
+    this.m_vehicleMomentumType = EMomentumType.Stable;
+  }
+  
+  this.m_lastSpeed = gameSpeed;
+}
+
+@addMethod(VehicleComponent)
 public func ApplyUtilityLightsSettingsChange() -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
 
@@ -3087,7 +3279,11 @@ public func ApplyUtilityLightsSettingsChange() -> Void {
   switch this.m_modSettings.utilityLightsColorSequence {
 
     case EUtilityLightsColorCycleType.Solid:
-      this.ApplyUtilityLightsParameters(false, false, false);
+
+      let event: ref<SolidColorEffectEvent> = new SolidColorEffectEvent();
+      event.identifier = this.m_activeEffectIdentifier;
+      event.step = 0;
+      vehicle.QueueEvent(event);
       break;
 
     case EUtilityLightsColorCycleType.Blinker:
@@ -3129,7 +3325,6 @@ public func ApplyUtilityLightsSettingsChange() -> Void {
       event.colorIndex = 0;
       vehicle.QueueEvent(event);
       break;
-
   }
 }
 
@@ -3155,8 +3350,8 @@ public func ApplyHeadlightsSettingsChange() -> Void {
 public func OnModSettingsChange() -> Void {
   // LogChannel(n"DEBUG", s"OnModSettingsChange");
   
-  this.ApplyUtilityLightsSettingsChange();
   this.ApplyHeadlightsSettingsChange();
+  this.ApplyUtilityLightsSettingsChange();
 }
 
 @wrapMethod(VehicleComponent)
@@ -3227,6 +3422,8 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
 
   if mountChild.IsPlayer() && vehicle.IsPlayerDriver() {
     // LogChannel(n"DEBUG", s"player is driver -> true");
+    this.m_poweredOnAtLeastOnceSinceLastEnter = this.m_powerState;
+    // LogChannel(n"DEBUG", s"Powered on at least once -> \(this.m_poweredOnAtLeastOnceSinceLastEnter)");
 
     if !this.m_vehicleDrivenByV {
       // LogChannel(n"DEBUG", s"m_vehicleDrivenByV -> true");
@@ -3270,9 +3467,9 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) {
+  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
     if !evt.isMounting && vehicle.IsPlayerDriver() {
       this.TogglePlayerMounted(false);
     
@@ -3302,6 +3499,14 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
           break;
       }
 
+      if this.GetPS().GetCrystalDomeState()
+      && this.m_modSettings.crystalDomeSynchronizedWithPowerState
+      && this.m_modSettings.crystalDomeKeepOnUntilExit
+      && !this.m_powerState
+      && this.m_poweredOnAtLeastOnceSinceLastEnter {
+        this.MyToggleCrystalDome(false);
+      }
+
       // Restore external mesh for crystal dome vehicles
       this.OnExit_CrystalDomeMesh();
     }
@@ -3326,6 +3531,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
   // Get siren state
   let sirenState: Bool = this.GetPS().GetSirenState();
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   let activePassengers: Int32;
   let gameInstance: GameInstance = this.GetVehicle().GetGame();
@@ -3335,11 +3541,18 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
   // // // // // // //
   // When any of V or a police driver (not passenger) NPC get out of the car
-  if this.m_isPoliceVehicle && IsDefined(mountChild) && VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id) {
+  if (this.m_isPoliceVehicle || vehicle.IsPrevention()) && IsDefined(mountChild) && VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id) {
     
-    // Always turn the siren OFF
-    this.GetVehicle().ToggleSiren(false);
-    this.GetPS().SetSirenSoundsState(false);
+    // Turn the siren OFF if necessary
+    if (mountChild.IsPlayer() && !ModSettings_EVS.Get(vehicle.GetGame()).keepSirenOnWhileOutsidePlayerEnabled)
+    || (!mountChild.IsPlayer() && !ModSettings_EVS.Get(vehicle.GetGame()).keepSirenOnWhileOutsideNPCsEnabled) {
+      this.GetVehicle().ToggleSiren(false);
+      this.GetPS().SetSirenSoundsState(false);
+      // LogChannel(n"DEBUG", s"\(vehicle.GetEntityID()) -> siren OFF");
+    }
+    else {
+      // LogChannel(n"DEBUG", s"\(vehicle.GetEntityID()) -> keep siren ON");
+    }
 
     // If the siren state is activated, keep the lights ON
     if sirenState {
@@ -3349,7 +3562,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
       // For some reason, when a police driver NPC get out of the car with the roof lights ON, the side banner lights may stay blue instead of going red
       // Fix this by forcing to red when roof lights are ON
-      if IsDefined(mountChild) && !mountChild.IsPlayer() {
+      if !mountChild.IsPlayer() {
         this.StartEffectEvent(this.GetVehicle(), n"police_sign_combat", true);
 
         // Police NPCs in chase always drive with lights ON + siren ON so this is state 2
@@ -3432,15 +3645,22 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
   wrappedMethod(evt);
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if vehicle.IsPlayerDriver() {
     if evt.isMounting {
 
-      if playerPuppet.IsInCombat() && this.m_modSettings.autoStartEngineDuringCombat {
-        this.TogglePowerState(true);
-        vehicle.TurnEngineOn(true);
-        // LogChannel(n"DEBUG", s"Turn engine -> true");
+      if player.IsInCombat() {
+
+        if this.m_modSettings.autoStartEngineDuringCombat {
+          this.TogglePowerState(true);
+          vehicle.TurnEngineOn(true);
+          // LogChannel(n"DEBUG", s"Turn engine -> true");
+        }
+
+        if this.m_modSettings.autoEnableCrystalDomeDuringCombat {
+          this.MyToggleCrystalDome(true);
+        }
       }
       
       switch this.m_modSettings.enterBehavior {
@@ -3477,7 +3697,7 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
   }
   else if this.m_vehicleDrivenByV && evt.character.IsPlayer() { // Unmounted player
 
-    // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent Exit");
+    // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent RecallVehicleDoorsState");
     this.RecallVehicleDoorsState();
 
     this.m_playerIsDismounting = false;
@@ -3494,7 +3714,7 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
 
   // When any of V or police officer NPCs get in the car and the siren state is ON
   if evt.isMounting && sirenState && this.m_threeStatesSiren == 2 {
-
+    // LogChannel(n"DEBUG", s"\(vehicle.GetEntityID()) -> siren ON");
     // Then turn the siren back ON
     this.GetVehicle().ToggleSiren(true);
     this.GetPS().SetSirenSoundsState(true);
@@ -3503,33 +3723,14 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
 
 @addMethod(VehicleComponent)
 protected final func AllowCloseDoorsWithSpeed(speed: Float) -> Bool {
-  let absSpeed: Float = speed;
-
-  if absSpeed < 0.00 {
-    absSpeed = AbsF(absSpeed);
-  }
-  
-  // Update vehicle momentum type
-  if AbsF(absSpeed - this.m_lastSpeed) > 0.01 {
-    // In case the current speed and the last speed are too close together, then consider that the vehicle momentum type is stable
-    if absSpeed > this.m_lastSpeed {
-      this.m_vehicleMomentumType = EMomentumType.Accelerate;
-    }
-    else if absSpeed < this.m_lastSpeed {
-      this.m_vehicleMomentumType = EMomentumType.Decelerate;
-    }
-  }
-  else {
-    this.m_vehicleMomentumType = EMomentumType.Stable;
-  }
-  
-  this.m_lastSpeed = absSpeed;
+  let absSpeed: Float = AbsF(speed); // Game speed unit  
+  let speedWindow: Float = this.ToGameSpeed(5.0); // Kmh or Mph -> Game speed unit
 
   // Concerning "OnStartMoving" mode
-  // Check "SpeedToClose() + 1.00" so we give a speed window for the game to close doors
+  // Check "SpeedToClose() + speedWindow" so we give a speed window for the game to close doors
   // Only close the doors if the vehicle is accelerating (from parking to driving)
   // Otherwise when the vehicle would decelerate and park then the doors would close too (from driving to parking)
-  if absSpeed < this.m_vehicleDataPackage.SpeedToClose() + 1.00
+  if absSpeed < this.m_vehicleDataPackage.SpeedToClose() + speedWindow
   && Equals(this.m_vehicleMomentumType, EMomentumType.Accelerate) {
     this.m_AutoCloseDoors_OnStartMoving_State = true;
   }
@@ -3539,8 +3740,36 @@ protected final func AllowCloseDoorsWithSpeed(speed: Float) -> Bool {
   
   // Close doors when moving if necessary
   if Equals(this.m_modSettings.doorsDriveClosing, EDoorsDriveClosing.CustomSpeed)
-  || (Equals(this.m_modSettings.doorsDriveClosing, EDoorsDriveClosing.OnStartMoving)&& this.m_AutoCloseDoors_OnStartMoving_State) {
+  || (Equals(this.m_modSettings.doorsDriveClosing, EDoorsDriveClosing.OnStartMoving) && this.m_AutoCloseDoors_OnStartMoving_State) {
     return true;
+  }
+
+  return false;
+}
+
+// Only deploy/retract the spoiler when the vehicle speed is getting just higher/lower than deploy/retract speed
+// Outside of a short speed window the spoiler state shall not change
+@addMethod(VehicleComponent)
+protected final func AllowSpoilerToggleWithSpeed(speed: Float, deploy: Bool) -> Bool {
+  let absSpeed: Float = AbsF(speed); // Game speed unit
+  let speedWindow: Float = this.ToGameSpeed(5.0); // Kmh or Mph -> Game speed unit
+
+  let targetSpeed: Float = this.ToGameSpeed(deploy ? this.m_modSettings.spoilerDeploySpeed : this.m_modSettings.spoilerRetractSpeed); // Kmh or Mph -> Game speed unit
+  
+  if deploy {
+    // LogChannel(n"DEBUG", s"speed \(absSpeed) | deploy \(targetSpeed) | window \(speedWindow) | \(this.m_vehicleMomentumType)");
+    if absSpeed >= targetSpeed && absSpeed < targetSpeed + speedWindow && Equals(this.m_vehicleMomentumType, EMomentumType.Accelerate) {
+      return true;
+    }
+  }
+  else { // Retract
+    // LogChannel(n"DEBUG", s"speed \(absSpeed) | retract \(targetSpeed) | window \(speedWindow) | \(this.m_vehicleMomentumType)");
+
+    // In the case of a brutal deceleration (crash again an object or a wall) the speed gets down too fast for this spoiler retract window
+    // If we record a brutal deceleration below the spoiler retract speed then retract the spoiler
+    if (this.m_brutalDeceleration || absSpeed > targetSpeed - speedWindow) && absSpeed <= targetSpeed && Equals(this.m_vehicleMomentumType, EMomentumType.Decelerate) {
+      return true;
+    }
   }
 
   return false;
@@ -3555,10 +3784,10 @@ protected final func IsPanzer() -> Bool {
 protected final func OnVehicleCameraChange(state: Bool) -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   let animFeature: ref<AnimFeature_VehicleState>;
-  if this.GetPS().GetCrystalDomeState() && (!this.m_playerIsDismounting || !playerPuppet.IsInCombat()) {
+  if this.GetPS().GetCrystalDomeState() && (!this.m_playerIsDismounting || !player.IsInCombat()) {
     animFeature = new AnimFeature_VehicleState();
     animFeature.tppEnabled = !state;
     AnimationControllerComponent.ApplyFeatureToReplicate(this.GetVehicle(), n"VehicleState", animFeature);
@@ -3568,15 +3797,14 @@ protected final func OnVehicleCameraChange(state: Bool) -> Void {
 
 @wrapMethod(VehicleComponent)
 protected final func OnVehicleSpeedChange(speed: Float) -> Void {
-  let animFeature: ref<AnimFeature_PartData>;
   let doors: array<CName>;
   let vehDataPackage: wref<VehicleDataPackage_Record>;
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
-  let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   // Keep default behavior for NPCs
-  if !VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) {
+  if !VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
     wrappedMethod(speed);
     return;
   }
@@ -3591,9 +3819,8 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
     vehicle.SetInteriorUIEnabled(true);
   }
 
-  // Useful variables
-  let multiplier: Float = GameInstance.GetStatsDataSystem(gameInstance).GetValueFromCurve(n"vehicle_ui", speed, n"speed_to_multiplier");
-  let kmh_multiplier: Float = this.m_isKmH ? 1.61 : 1.00;
+  // Update vehicle momentum type
+  this.UpdateMomentumType(speed);
 
   //////////////////
   // Do not check door speed closing for motorbikes
@@ -3606,30 +3833,14 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
 
   if this.m_hasSpoiler {
     // Only deploy spoiler with speed if user settings allow it
-    if !this.m_spoilerDeployed && this.m_modSettings.spoilerDeploySpeedEnabled {
-      // Define spoiler speeds
-      this.m_spoilerUp = this.m_modSettings.spoilerDeploySpeed / kmh_multiplier / multiplier;
+    if !this.m_spoilerDeployed && this.m_modSettings.spoilerDeploySpeedEnabled && this.AllowSpoilerToggleWithSpeed(speed, true) {
 
-      if speed >= this.m_spoilerUp {
-        animFeature = new AnimFeature_PartData();
-        animFeature.state = 1;
-        animFeature.duration = 0.75;
-        AnimationControllerComponent.ApplyFeatureToReplicate(this.GetVehicle(), n"spoiler", animFeature);
-        this.m_spoilerDeployed = true;
-      };
+      this.ToggleSpoiler(!this.m_spoilerDeployed);
     }
     // Only retract spoiler with speed if user settings allow it
-    else if this.m_modSettings.spoilerRetractSpeedEnabled {
-      // Define spoiler speeds
-      this.m_spoilerDown = this.m_modSettings.spoilerRetractSpeed / kmh_multiplier / multiplier;
+    else if this.m_spoilerDeployed && this.m_modSettings.spoilerRetractSpeedEnabled && this.AllowSpoilerToggleWithSpeed(speed, false) {
 
-      if speed <= this.m_spoilerDown {
-        animFeature = new AnimFeature_PartData();
-        animFeature.state = 3;
-        animFeature.duration = 0.75;
-        AnimationControllerComponent.ApplyFeatureToReplicate(this.GetVehicle(), n"spoiler", animFeature);
-        this.m_spoilerDeployed = false;
-      };
+      this.ToggleSpoiler(!this.m_spoilerDeployed);
     };
   };
   if this.GetPS().GetHasAnyDoorOpen() {
@@ -3643,7 +3854,7 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
     let doorsDriveClosingSpeed: Float = vehDataPackage.SpeedToClose();
 
     if Equals(this.m_modSettings.doorsDriveClosing, EDoorsDriveClosing.CustomSpeed) {
-      doorsDriveClosingSpeed = this.m_modSettings.doorsDriveClosingSpeed / kmh_multiplier / multiplier;
+      doorsDriveClosingSpeed = this.ToGameSpeed(this.m_modSettings.doorsDriveClosingSpeed);
     }
     ////////////////////
 
@@ -3698,6 +3909,7 @@ protected final func ToggleVehicleSystems(toggle: Bool, vehicle: Bool, engine: B
 
 @replaceMethod(VehicleComponent)
 protected cb func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> Bool {
+  // LogChannel(n"DEBUG", s"OnVehicleDoorOpen");
   let PSVehicleDoorCloseRequest: ref<VehicleDoorClose>;
   let autoCloseDelay: Float;
   this.EvaluateDoorReaction(evt.slotID, evt.forceScene, VehicleDoorState.Open);
@@ -3712,16 +3924,15 @@ protected cb func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> Bool {
 
     let vehicle: ref<VehicleObject> = this.GetVehicle();
     let gameInstance: GameInstance = vehicle.GetGame();
-    let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
-
-    // Define doors state when V gets in
-    if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) {
-      if this.m_playerIsMounted {
-        // LogChannel(n"DEBUG", s"OnVehicleDoorOpen Enter-> KeepCurrentState");
-        this.RecallVehicleDoorsState(autoCloseDelay);
-      }
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    
+    // Define doors state when V gets in or out
+    if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+      // LogChannel(n"DEBUG", s"OnVehicleDoorOpen IsMountedToProvidedVehicle -> RecallVehicleDoorsState");
+      this.RecallVehicleDoorsState(autoCloseDelay);
     }
     else { // NPCs behavior
+      // LogChannel(n"DEBUG", s"OnVehicleDoorOpen DelayPSEvent");
       GameInstance.GetDelaySystem(this.GetVehicle().GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
     }
   };
@@ -3848,7 +4059,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
   if IsDefined(mountChild) {
 
-    if mountChild.IsPlayer() && !vehicleComp.m_vehicleDrivenByV {
+    if IsDefined(vehicleComp) && mountChild.IsPlayer() && !vehicleComp.m_vehicleDrivenByV {
       if !isSilentUnmount {
         //this.SetInteriorUIEnabled(false);
       }
@@ -3887,7 +4098,7 @@ protected cb func OnInitialize() -> Bool {
 private final func DeactivateUI() -> Void {
   let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
-  if vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState {
+  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState {
     // LogChannel(n"DEBUG", s"vehicleUIGameController.DeactivateUI -> PREVENT");
     return;
   }
@@ -3902,7 +4113,7 @@ private final func DeactivateUI() -> Void {
 private final func TurnOff() -> Void {
   let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
-  if vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState {
+  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState {
     // LogChannel(n"DEBUG", s"vehicleUIGameController.TurnOff -> PREVENT");
     return;
   }
@@ -3918,7 +4129,7 @@ private final func IsUIactive() -> Bool {
   let vehicle: ref<VehicleObject> = this.m_vehicle;
   let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
-  if vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicle.IsPlayerDriver() {
+  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicle.IsPlayerDriver() {
     // LogChannel(n"DEBUG", s"vehicleUIGameController.IsUIactive -> turn on for player");
     this.TurnOn();
 
@@ -3956,7 +4167,7 @@ public final const func ToDrive(const stateContext: ref<StateContext>, const scr
       scriptInterface.GetMountingFacility().Mount(mountingRequest);
 
       // Only close the door while changing seat if the player is out
-      if !vehicleComp.m_playerIsMounted {
+      if IsDefined(vehicleComp) && !vehicleComp.m_playerIsMounted {
         VehicleComponent.CloseDoor(vehicle, lowLevelMountingInfo.slotId);
       }
       return true;
@@ -3981,12 +4192,12 @@ protected func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<Sta
   // Bug fix: when entering driver combat the window rolldown sound effect shall not play if the vehicle does not have windows
   // +
   // New feature: Also don't open front windows if the vehicle has windowed sliding doors open like the Quadra V-Tech
-  let playerPuppet: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
-  let vehicle: ref<VehicleObject> = playerPuppet.m_mountedVehicle;
+  let player: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
+  let vehicle: ref<VehicleObject> = player.m_mountedVehicle;
   let gameInstance: GameInstance = vehicle.GetGame();
-  let vehicleComp: ref<VehicleComponent> = playerPuppet.m_mountedVehicle.GetVehicleComponent();
+  let vehicleComp: ref<VehicleComponent> = player.m_mountedVehicle.GetVehicleComponent();
   
-  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted {
+  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted {
     let FL_doorState: VehicleDoorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
     let FR_doorState: VehicleDoorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
 
@@ -4025,13 +4236,13 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
   scriptInterface.SetAnimationParameterFeature(n"ProceduralDriverCombatData", this.m_posAnimFeature, scriptInterface.executionOwner);
   stateContext.SetTemporaryBoolParameter(n"ForceWeaponSafeState", false);
 
-  let playerPuppet: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
-  let vehicle: ref<VehicleObject> = playerPuppet.m_mountedVehicle;
+  let player: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
+  let vehicle: ref<VehicleObject> = player.m_mountedVehicle;
   let gameInstance: GameInstance = vehicle.GetGame();
-  let vehicleComp: ref<VehicleComponent> = playerPuppet.m_mountedVehicle.GetVehicleComponent();
+  let vehicleComp: ref<VehicleComponent> = player.m_mountedVehicle.GetVehicleComponent();
 
   // Close front windows only if their previous state was closed
-  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted {
+  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted {
     if vehicleComp.m_hasWindows {
       vehicleComp.Recall_FL_WindowsState();
       vehicleComp.Recall_FR_WindowsState();
@@ -4057,7 +4268,7 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
   }
   
   // Player is entering DriverCombat mode
-  if Equals(IntEnum<gamePSMVehicle>(newState), gamePSMVehicle.DriverCombat) {
+  if IsDefined(vehicleComp) && Equals(IntEnum<gamePSMVehicle>(newState), gamePSMVehicle.DriverCombat) {
     vehicleComp.m_isDriverCombat = true;
 
     // Remember current front doors state so when the player has finished combat we can restore the doors state
@@ -4070,7 +4281,7 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
       vehicleComp.m_FR_windowState = vehicleComp.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
     }
   }
-  else {    
+  else if IsDefined(vehicleComp) {    
     vehicleComp.m_isDriverCombat = false;
   }
 
@@ -4088,10 +4299,12 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
         if Equals(vehicleRecord.VehDataPackage().DriverCombat().Type(), gamedataDriverCombatType.Doors) {
           
           // If the player is exiting combat, then check previous door state and apply them back
-          if isExitingCombat {
+          if IsDefined(vehicleComp) && isExitingCombat {
+            // LogChannel(n"DEBUG", s"OnVehicleStateChange RecallVehicleDoorsState");
             vehicleComp.RecallVehicleDoorsState();
           }
           else { // Otherwise do as usual
+            // LogChannel(n"DEBUG", s"OnVehicleStateChange HandleDoorsForCombat");
             this.HandleDoorsForCombat(vehicle);
           }
         } else {
@@ -4104,13 +4317,14 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
   };
 
   // If the vehicle uses mounted weapons, then do not consider the vehicle as DriverCombat concerning doors and windows handling
-  if vehicleComp.m_isDriverCombat && this.m_inMountedWeaponVehicle {
+  if IsDefined(vehicleComp) && vehicleComp.m_isDriverCombat && this.m_inMountedWeaponVehicle {
     vehicleComp.m_isDriverCombat = false;
   }
 }
 
 @replaceMethod(PlayerPuppet)
 private final func HandleDoorsForCombat(vehicle: wref<VehicleObject>) -> Void {
+  // LogChannel(n"DEBUG", s"HandleDoorsForCombat");
   let ignoreAutoDoorCloseEvt: ref<SetIgnoreAutoDoorCloseEvent> = new SetIgnoreAutoDoorCloseEvent();
   if Equals(this.m_vehicleState, gamePSMVehicle.DriverCombat) {
     ignoreAutoDoorCloseEvt.set = true;
@@ -4123,17 +4337,18 @@ private final func HandleDoorsForCombat(vehicle: wref<VehicleObject>) -> Void {
       vehicle.QueueEvent(ignoreAutoDoorCloseEvt);
 
       let gameInstance: GameInstance = vehicle.GetGame();
-      let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+      let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
       let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
       // Define doors state when V gets out
-      if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), vehicle) {
-        if !vehicleComp.m_playerIsMounted {
-          // LogChannel(n"DEBUG", s"HandleDoorsForCombat Exit-> KeepCurrentState");
+      if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+        if IsDefined(vehicleComp) && !vehicleComp.m_playerIsMounted {
+          // LogChannel(n"DEBUG", s"HandleDoorsForCombat RecallVehicleDoorsState");
           vehicleComp.RecallVehicleDoorsState();
         }
       }
       else { // Default game behavior for NPCs
+        // LogChannel(n"DEBUG", s"HandleDoorsForCombat CloseDoor");
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetDriverSlotID());
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
       }
@@ -4149,10 +4364,17 @@ protected cb func OnCombatStateChanged(newState: Int32) -> Bool {
   if IsDefined(this.m_mountedVehicle) && this.m_mountedVehicle.IsPlayerDriver() {
     let vehicleComp: ref<VehicleComponent> = this.m_mountedVehicle.GetVehicleComponent();
 
-    if inCombat && vehicleComp.m_modSettings.autoStartEngineDuringCombat && !this.m_mountedVehicle.IsEngineTurnedOn() {
-      vehicleComp.TogglePowerState(true);
-      this.m_mountedVehicle.TurnEngineOn(true);
-      // LogChannel(n"DEBUG", s"Turn engine -> true");
+    if inCombat && IsDefined(vehicleComp) {
+
+      if vehicleComp.m_modSettings.autoStartEngineDuringCombat && !this.m_mountedVehicle.IsEngineTurnedOn() {
+        vehicleComp.TogglePowerState(true);
+        this.m_mountedVehicle.TurnEngineOn(true);
+        // LogChannel(n"DEBUG", s"Turn engine -> true");
+      }
+
+      if vehicleComp.m_modSettings.autoEnableCrystalDomeDuringCombat && !vehicleComp.GetPS().GetCrystalDomeState() {
+        vehicleComp.MyToggleCrystalDome(true);
+      }
     }
   }
 
@@ -4166,10 +4388,10 @@ protected func SetMeasurementUnits(value: Int32) -> Void {
   // Get the current user setting for KMH or MPH unit
   if IsDefined(this.m_activeVehicle) {
     let gameInstance: GameInstance = this.m_activeVehicle.GetGame();
-    let playerPuppet: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
     let vehicleComp: ref<VehicleComponent> = this.m_activeVehicle.GetVehicleComponent();
 
-    if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, playerPuppet.GetEntityID(), this.m_activeVehicle) && vehicleComp.m_playerIsMounted {
+    if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), this.m_activeVehicle) && vehicleComp.m_playerIsMounted {
       vehicleComp.m_isKmH = this.m_kmOn;
     }
   }
