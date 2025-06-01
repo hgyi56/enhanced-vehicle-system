@@ -254,7 +254,7 @@
         <button id="IK_Pad_X_SQUARE" />
     </buttonGroup>
 
-    <buttonGroup id="IK_Pad_2_F2" timeWindow="0.08f" >
+    <buttonGroup id="IK_F2_2" timeWindow="0.08f" >
         <button id="IK_F2" />
         <button id="IK_2" />
     </buttonGroup>
@@ -292,7 +292,7 @@
     </mapping>
 
     <mapping name="Vehicle_CycleSpoiler" type="Button">
-        <button id="IK_Pad_2_F2" />
+        <button id="IK_F2_2" />
         <button id="IK_Pad_DigitRightXSquare" />
     </mapping>
 

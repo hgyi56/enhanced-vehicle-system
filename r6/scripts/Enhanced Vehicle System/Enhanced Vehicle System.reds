@@ -23,12 +23,12 @@ enum EUtilityLightsMode {
   AllVehiclesActive = 2
 }
 
-enum EUtilityLightsColorVehicleType {
+enum ELightsColorVehicleType {
   Motorcycles = 0,
   AllVehicles = 1
 }
 
-enum EUtilityLightsColorCycleType {
+enum ELightsColorCycleType {
   Solid = 0,
   Blinker = 1,
   Beacon = 2,
@@ -177,20 +177,252 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.max", "59")
   public let headlightsTurnOffMinute: Int32 = 0;
 
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Color sequence")
+  @runtimeProperty("ModSettings.description", "Define a custom color sequence for headlights.")
+  @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
+  @runtimeProperty("ModSettings.displayValues.Blinker", "Blinker")
+  @runtimeProperty("ModSettings.displayValues.Beacon", "Beacon")
+  @runtimeProperty("ModSettings.displayValues.Pulse", "Pulse")
+  @runtimeProperty("ModSettings.displayValues.TwoColorsCycle", "Two colors cycle")
+  @runtimeProperty("ModSettings.displayValues.Rainbow", "Rainbow")
+  public let headlightsColorSequence: ELightsColorCycleType = ELightsColorCycleType.Solid;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Color sequence memory")
+  public let last_headlightsColorSequence: Int32 = 99; // For internal purpose only
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Sequence latency")
+  @runtimeProperty("ModSettings.step", "0.1")
+  @runtimeProperty("ModSettings.min", "0.2")
+  @runtimeProperty("ModSettings.max", "5.0")
+  public let headlightsColorSequenceSpeed: Float = 0.8;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Impacted vehicles")
+  @runtimeProperty("ModSettings.description", "Define which vehicle types will be affected by the custom settings.")
+  @runtimeProperty("ModSettings.displayValues.Motorcycles", "Motorcycles")
+  @runtimeProperty("ModSettings.displayValues.AllVehicles", "All vehicles")
+  public let customHeadlightsColorVehicleType: ELightsColorVehicleType = ELightsColorVehicleType.AllVehicles;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Custom intensity")
+  @runtimeProperty("ModSettings.description", "Define a custom light intensity for headlights.")
+  public let customHeadlightsIntensityEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Intensity")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let headlightsColorIntensity: Int32 = 25;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Custom color")
+  @runtimeProperty("ModSettings.description", "Define a custom RGB color for headlights.")
+  public let customHeadlightsColorEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Custom color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_headlightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Custom color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_headlightsColor: Int32 = 127;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Custom color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_headlightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_cycle_headlightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_cycle_headlightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Headlights")
+  @runtimeProperty("ModSettings.category.order", "2")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_cycle_headlightsColor: Int32 = 255;
+
+  /////////////////////////
+  // TAIL LIGHTS
+  /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Color sequence")
+  @runtimeProperty("ModSettings.description", "Define a custom color sequence for tail lights.")
+  @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
+  @runtimeProperty("ModSettings.displayValues.Blinker", "Blinker")
+  @runtimeProperty("ModSettings.displayValues.Beacon", "Beacon")
+  @runtimeProperty("ModSettings.displayValues.Pulse", "Pulse")
+  @runtimeProperty("ModSettings.displayValues.TwoColorsCycle", "Two colors cycle")
+  @runtimeProperty("ModSettings.displayValues.Rainbow", "Rainbow")
+  public let tailLightsColorSequence: ELightsColorCycleType = ELightsColorCycleType.Solid;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Color sequence memory")
+  public let last_tailLightsColorSequence: Int32 = 99; // For internal purpose only
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Sequence latency")
+  @runtimeProperty("ModSettings.step", "0.1")
+  @runtimeProperty("ModSettings.min", "0.2")
+  @runtimeProperty("ModSettings.max", "5.0")
+  public let tailLightsColorSequenceSpeed: Float = 0.8;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Impacted vehicles")
+  @runtimeProperty("ModSettings.description", "Define which vehicle types will be affected by the custom settings.")
+  @runtimeProperty("ModSettings.displayValues.Motorcycles", "Motorcycles")
+  @runtimeProperty("ModSettings.displayValues.AllVehicles", "All vehicles")
+  public let customTailLightsColorVehicleType: ELightsColorVehicleType = ELightsColorVehicleType.AllVehicles;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Custom intensity")
+  @runtimeProperty("ModSettings.description", "Define a custom light intensity for tail lights. The tail lights intensity will always be forced after braking. This setting is only for use in a static context.")
+  public let customTailLightsIntensityEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Intensity")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let tailLightsColorIntensity: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Custom color")
+  @runtimeProperty("ModSettings.description", "Define a custom RGB color for tail lights.")
+  public let customTailLightsColorEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Custom color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_tailLightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Custom color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_tailLightsColor: Int32 = 127;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Custom color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_tailLightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_cycle_tailLightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_cycle_tailLightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Tail lights")
+  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_cycle_tailLightsColor: Int32 = 255;
+
   /////////////////////////
   // UTILITY LIGHTS
   /////////////////////////
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Synchronized with headlights shutoff")
   @runtimeProperty("ModSettings.description", "Choose if utility lights (neon rims, spotlights...) shall be connected to the headlights shutoff.")
   public let utilityLightsSynchronizedWithHeadlightsShutoff: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Default mode")
   @runtimeProperty("ModSettings.description", "Default mode will be applied the first time V enters into a vehicle. Then the vehicle will always remember the current state of its utility lights.")
   @runtimeProperty("ModSettings.displayValues.Off", "Off")
@@ -200,7 +432,7 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Color sequence")
   @runtimeProperty("ModSettings.description", "Define a custom color sequence for utility lights.")
   @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
@@ -209,18 +441,17 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.displayValues.Pulse", "Pulse")
   @runtimeProperty("ModSettings.displayValues.TwoColorsCycle", "Two colors cycle")
   @runtimeProperty("ModSettings.displayValues.Rainbow", "Rainbow")
-  public let utilityLightsColorSequence: EUtilityLightsColorCycleType = EUtilityLightsColorCycleType.Solid;
+  public let utilityLightsColorSequence: ELightsColorCycleType = ELightsColorCycleType.Solid;
 
-  // Only for internal purpose
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Color sequence memory")
-  public let last_utilityLightsColorSequence: Int32 = 99;
+  public let last_utilityLightsColorSequence: Int32 = 99; // For internal purpose only
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Sequence latency")
   @runtimeProperty("ModSettings.step", "0.1")
   @runtimeProperty("ModSettings.min", "0.2")
@@ -229,89 +460,325 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Impacted vehicles")
   @runtimeProperty("ModSettings.description", "Define which vehicle types will be affected by the custom settings.")
   @runtimeProperty("ModSettings.displayValues.Motorcycles", "Motorcycles")
   @runtimeProperty("ModSettings.displayValues.AllVehicles", "All vehicles")
-  public let customUtilityLightsColorVehicleType: EUtilityLightsColorVehicleType = EUtilityLightsColorVehicleType.Motorcycles;
+  public let customUtilityLightsColorVehicleType: ELightsColorVehicleType = ELightsColorVehicleType.Motorcycles;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Custom intensity")
   @runtimeProperty("ModSettings.description", "Define a custom light intensity for utility lights.")
   public let customUtilityLightsIntensityEnabled: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Intensity")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "100")
-  public let utilityLightsColorIntensity: Int32 = 50;
+  public let utilityLightsColorIntensity: Int32 = 25;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Custom color")
   @runtimeProperty("ModSettings.description", "Define a custom RGB color for utility lights.")
   public let customUtilityLightsColorEnabled: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Custom color - red")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "255")
-  public let R_utilityLightsColor: Int32 = 255;
+  public let R_utilityLightsColor: Int32 = 0;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Custom color - green")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "255")
-  public let G_utilityLightsColor: Int32 = 110;
+  public let G_utilityLightsColor: Int32 = 127;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Custom color - blue")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "255")
-  public let B_utilityLightsColor: Int32 = 0;
+  public let B_utilityLightsColor: Int32 = 255;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Cycle color - red")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "255")
-  public let R_cycle_utilityLightsColor: Int32 = 255;
+  public let R_cycle_utilityLightsColor: Int32 = 0;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Cycle color - green")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "255")
-  public let G_cycle_utilityLightsColor: Int32 = 110;
+  public let G_cycle_utilityLightsColor: Int32 = 255;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Utility lights")
-  @runtimeProperty("ModSettings.category.order", "3")
+  @runtimeProperty("ModSettings.category.order", "4")
   @runtimeProperty("ModSettings.displayName", "Cycle color - blue")
   @runtimeProperty("ModSettings.step", "1")
   @runtimeProperty("ModSettings.min", "0")
   @runtimeProperty("ModSettings.max", "255")
-  public let B_cycle_utilityLightsColor: Int32 = 0;
+  public let B_cycle_utilityLightsColor: Int32 = 255;
+
+  /////////////////////////
+  // BLINKER LIGHTS
+  /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Color sequence")
+  @runtimeProperty("ModSettings.description", "Define a custom color sequence for blinker lights.")
+  @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
+  @runtimeProperty("ModSettings.displayValues.Blinker", "Blinker")
+  @runtimeProperty("ModSettings.displayValues.Beacon", "Beacon")
+  @runtimeProperty("ModSettings.displayValues.Pulse", "Pulse")
+  @runtimeProperty("ModSettings.displayValues.TwoColorsCycle", "Two colors cycle")
+  @runtimeProperty("ModSettings.displayValues.Rainbow", "Rainbow")
+  public let blinkerLightsColorSequence: ELightsColorCycleType = ELightsColorCycleType.Solid;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Color sequence memory")
+  public let last_blinkerLightsColorSequence: Int32 = 99; // For internal purpose only
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Sequence latency")
+  @runtimeProperty("ModSettings.step", "0.1")
+  @runtimeProperty("ModSettings.min", "0.2")
+  @runtimeProperty("ModSettings.max", "5.0")
+  public let blinkerLightsColorSequenceSpeed: Float = 0.8;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Impacted vehicles")
+  @runtimeProperty("ModSettings.description", "Define which vehicle types will be affected by the custom settings.")
+  @runtimeProperty("ModSettings.displayValues.Motorcycles", "Motorcycles")
+  @runtimeProperty("ModSettings.displayValues.AllVehicles", "All vehicles")
+  public let customBlinkerLightsColorVehicleType: ELightsColorVehicleType = ELightsColorVehicleType.AllVehicles;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Custom intensity")
+  @runtimeProperty("ModSettings.description", "Define a custom light intensity for blinker lights.")
+  public let customBlinkerLightsIntensityEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Intensity")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let blinkerLightsColorIntensity: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Custom color")
+  @runtimeProperty("ModSettings.description", "Define a custom RGB color for blinker lights.")
+  public let customBlinkerLightsColorEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Custom color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_blinkerLightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Custom color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_blinkerLightsColor: Int32 = 127;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Custom color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_blinkerLightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_cycle_blinkerLightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_cycle_blinkerLightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Blinker lights")
+  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_cycle_blinkerLightsColor: Int32 = 255;
+
+  /////////////////////////
+  // REVERSE LIGHTS
+  /////////////////////////
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Color sequence")
+  @runtimeProperty("ModSettings.description", "Define a custom color sequence for reverse lights.")
+  @runtimeProperty("ModSettings.displayValues.Solid", "Solid")
+  @runtimeProperty("ModSettings.displayValues.Blinker", "Blinker")
+  @runtimeProperty("ModSettings.displayValues.Beacon", "Beacon")
+  @runtimeProperty("ModSettings.displayValues.Pulse", "Pulse")
+  @runtimeProperty("ModSettings.displayValues.TwoColorsCycle", "Two colors cycle")
+  @runtimeProperty("ModSettings.displayValues.Rainbow", "Rainbow")
+  public let reverseLightsColorSequence: ELightsColorCycleType = ELightsColorCycleType.Solid;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Color sequence memory")
+  public let last_reverseLightsColorSequence: Int32 = 99; // For internal purpose only
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Sequence latency")
+  @runtimeProperty("ModSettings.step", "0.1")
+  @runtimeProperty("ModSettings.min", "0.2")
+  @runtimeProperty("ModSettings.max", "5.0")
+  public let reverseLightsColorSequenceSpeed: Float = 0.8;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Impacted vehicles")
+  @runtimeProperty("ModSettings.description", "Define which vehicle types will be affected by the custom settings.")
+  @runtimeProperty("ModSettings.displayValues.Motorcycles", "Motorcycles")
+  @runtimeProperty("ModSettings.displayValues.AllVehicles", "All vehicles")
+  public let customReverseLightsColorVehicleType: ELightsColorVehicleType = ELightsColorVehicleType.AllVehicles;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Custom intensity")
+  @runtimeProperty("ModSettings.description", "Define a custom light intensity for reverse lights.")
+  public let customReverseLightsIntensityEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Intensity")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let reverseLightsColorIntensity: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Custom color")
+  @runtimeProperty("ModSettings.description", "Define a custom RGB color for reverse lights.")
+  public let customReverseLightsColorEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Custom color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_reverseLightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Custom color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_reverseLightsColor: Int32 = 127;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Custom color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_reverseLightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - red")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let R_cycle_reverseLightsColor: Int32 = 0;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - green")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let G_cycle_reverseLightsColor: Int32 = 255;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Reverse lights")
+  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.displayName", "Cycle color - blue")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "255")
+  public let B_cycle_reverseLightsColor: Int32 = 255;
 
   /////////////////////////
   // CRYSTAL DOME
@@ -319,28 +786,28 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Crystal dome")
-  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.category.order", "7")
   @runtimeProperty("ModSettings.displayName", "Synchronized with power state")
   @runtimeProperty("ModSettings.description", "Choose if the crystal dome shall toggle automatically with power state.")
   public let crystalDomeSynchronizedWithPowerState: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Crystal dome")
-  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.category.order", "7")
   @runtimeProperty("ModSettings.displayName", "Keep on until exit")
   @runtimeProperty("ModSettings.description", "Choose if the crystal dome shall stay on even with the power off until V gets out of the vehicle. Will only trigger if the power has been on at least once since the last entry.")
   public let crystalDomeKeepOnUntilExit: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Crystal dome")
-  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.category.order", "7")
   @runtimeProperty("ModSettings.displayName", "Prevent shutdown during combat")
   @runtimeProperty("ModSettings.description", "Prevents the player from accidentally toggling the crystal dome off during combat.")
   public let preventCrystalDomeOffDuringCombat: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Crystal dome")
-  @runtimeProperty("ModSettings.category.order", "4")
+  @runtimeProperty("ModSettings.category.order", "7")
   @runtimeProperty("ModSettings.displayName", "Auto-enable during combat")
   @runtimeProperty("ModSettings.description", "Allows the player to automatically enable the crystal dome during combat.")
   public let autoEnableCrystalDomeDuringCombat: Bool = true;
@@ -351,7 +818,7 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Doors")
-  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.category.order", "8")
   @runtimeProperty("ModSettings.displayName", "Close doors while moving")
   @runtimeProperty("ModSettings.description", "Choose how the vehicle speed shall close doors automatically.")
   @runtimeProperty("ModSettings.displayValues.No", "No")
@@ -361,9 +828,9 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Doors")
-  @runtimeProperty("ModSettings.category.order", "5")
+  @runtimeProperty("ModSettings.category.order", "8")
   @runtimeProperty("ModSettings.displayName", "Doors closing speed")
-  @runtimeProperty("ModSettings.description", "The speed above which doors shall close (default: 5).")
+  @runtimeProperty("ModSettings.description", "The speed above which doors shall close (default: 5 mph / 8 kmh).")
   @runtimeProperty("ModSettings.step", "1.0")
   @runtimeProperty("ModSettings.min", "2.0")
   @runtimeProperty("ModSettings.max", "250")
@@ -375,23 +842,23 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
-  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Synchronized with power state")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall deploy and retract according to power state.")
   public let spoilerSynchronizedWithPowerState: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
-  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Deploy with speed")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall deploy according to speed.")
   public let spoilerDeploySpeedEnabled: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
-  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Deploy speed")
-  @runtimeProperty("ModSettings.description", "The speed above which the spoiler shall deploy (default: 57).")
+  @runtimeProperty("ModSettings.description", "The speed above which the spoiler shall deploy (default: 57 mph / 92 kmh).")
   @runtimeProperty("ModSettings.step", "1.0")
   @runtimeProperty("ModSettings.min", "0.0")
   @runtimeProperty("ModSettings.max", "250")
@@ -399,20 +866,20 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
-  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Retract with speed")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall retract according to speed.")
   public let spoilerRetractSpeedEnabled: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
-  @runtimeProperty("ModSettings.category.order", "6")
+  @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Retract speed")
-  @runtimeProperty("ModSettings.description", "The speed below which the spoiler shall retract (default: 40).")
+  @runtimeProperty("ModSettings.description", "The speed below which the spoiler shall retract (default: 41 mph / 66 kmh).")
   @runtimeProperty("ModSettings.step", "1.0")
   @runtimeProperty("ModSettings.min", "0.0")
   @runtimeProperty("ModSettings.max", "250")
-  public let spoilerRetractSpeed: Float = 40.0;
+  public let spoilerRetractSpeed: Float = 41.0;
 
   /////////////////////////
   // POLICE LIGHTS
@@ -420,14 +887,14 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Police lights")
-  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.category.order", "10")
   @runtimeProperty("ModSettings.displayName", "Keep player siren enabled on exit")
   @runtimeProperty("ModSettings.description", "Keeps the siren on if V gets out of the vehicle.")
   public let keepSirenOnWhileOutsidePlayerEnabled: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Police lights")
-  @runtimeProperty("ModSettings.category.order", "7")
+  @runtimeProperty("ModSettings.category.order", "10")
   @runtimeProperty("ModSettings.displayName", "Keep NPC siren enabled on exit")
   @runtimeProperty("ModSettings.description", "Keeps the siren on if police driver NPCs get out of the vehicle.")
   public let keepSirenOnWhileOutsideNPCsEnabled: Bool = false;
@@ -438,13 +905,23 @@ public class ModSettings_EVS extends ScriptableSystem {
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Other settings")
-  @runtimeProperty("ModSettings.category.order", "9")
+  @runtimeProperty("ModSettings.category.order", "11")
   @runtimeProperty("ModSettings.displayName", "Multi-tap time window")
   @runtimeProperty("ModSettings.description", "Defines the maximum timelapse allowed between multiple tap actions (default: 0.25).")
   @runtimeProperty("ModSettings.step", "0.01")
   @runtimeProperty("ModSettings.min", "0.10")
   @runtimeProperty("ModSettings.max", "1.00")
   public let multiTapTimeWindow: Float = 0.25;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Other settings")
+  @runtimeProperty("ModSettings.category.order", "11")
+  @runtimeProperty("ModSettings.displayName", "Cycle utility lights hold time")
+  @runtimeProperty("ModSettings.description", "Defines the required hold timelapse to trigger the utility lights (default: 0.05).")
+  @runtimeProperty("ModSettings.step", "0.01")
+  @runtimeProperty("ModSettings.min", "0.00")
+  @runtimeProperty("ModSettings.max", "0.20")
+  public let cycleUtilityLightsHoldTime: Float = 0.05;
 
   public static func Get(gi: GameInstance) -> ref<ModSettings_EVS> {
     return GameInstance.GetScriptableSystemsContainer(gi).Get(n"ModSettings_EVS") as ModSettings_EVS;
@@ -454,7 +931,11 @@ public class ModSettings_EVS extends ScriptableSystem {
     
     // Check widgets coherence when game loads
     this.RefreshHeadlightsTime_UIWidgets();
-    this.RefreshUtilityColor_UIWidgets();
+    this.RefreshUtilityLightsColor_UIWidgets();
+    this.RefreshHeadlightsColor_UIWidgets();
+    this.RefreshTailLightsColor_UIWidgets();
+    this.RefreshBlinkerLightsColor_UIWidgets();
+    this.RefreshReverseLightsColor_UIWidgets();
     this.RefreshRearSpoiler_UIWidgets();
     this.RefreshDoorsClosing_UIWidgets();
     this.RefreshCrystalDome_UIWidgets();
@@ -466,7 +947,11 @@ public class ModSettings_EVS extends ScriptableSystem {
 
     // Check widgets coherence when game loads
     this.RefreshHeadlightsTime_UIWidgets();
-    this.RefreshUtilityColor_UIWidgets();
+    this.RefreshUtilityLightsColor_UIWidgets();
+    this.RefreshHeadlightsColor_UIWidgets();
+    this.RefreshTailLightsColor_UIWidgets();
+    this.RefreshBlinkerLightsColor_UIWidgets();
+    this.RefreshReverseLightsColor_UIWidgets();
     this.RefreshRearSpoiler_UIWidgets();
     this.RefreshDoorsClosing_UIWidgets();
     this.RefreshCrystalDome_UIWidgets();
@@ -608,9 +1093,29 @@ public class ModSettings_EVS extends ScriptableSystem {
     }
   }
 
-  public func RefreshUtilityColor_UIWidgets() {
-    // Apply logic to utility lights color widgets
-    let configVars : array<ref<ConfigVar>> = ModSettings.GetVars(n"Enhanced Vehicle System", n"Utility lights");
+  public func RefreshUtilityLightsColor_UIWidgets() {
+    this.RefreshLightsColor_UIWidgets(n"Utility lights");
+  }
+
+  public func RefreshHeadlightsColor_UIWidgets() {
+    this.RefreshLightsColor_UIWidgets(n"Headlights");
+  }
+
+  public func RefreshTailLightsColor_UIWidgets() {
+    this.RefreshLightsColor_UIWidgets(n"Tail lights");
+  }
+
+  public func RefreshBlinkerLightsColor_UIWidgets() {
+    this.RefreshLightsColor_UIWidgets(n"Blinker lights");
+  }
+
+  public func RefreshReverseLightsColor_UIWidgets() {
+    this.RefreshLightsColor_UIWidgets(n"Reverse lights");
+  }
+
+  public func RefreshLightsColor_UIWidgets(categoryName: CName) {
+    // Apply logic to  defaultlights color widgets
+    let configVars : array<ref<ConfigVar>> = ModSettings.GetVars(n"Enhanced Vehicle System", categoryName);
 
     let colorSequence_Widget : ref<ModConfigVarEnum>;
     let colorSequenceMemory_Widget : ref<ModConfigVarInt32>;
@@ -723,31 +1228,31 @@ public class ModSettings_EVS extends ScriptableSystem {
 
     // Define default sequence speed for each sequence type
     if colorSequence_Widget.GetValue() != colorSequenceMemory_Widget.GetValue() {
-      switch IntEnum<EUtilityLightsColorCycleType>(colorSequence_Widget.GetValue()) {
-        case EUtilityLightsColorCycleType.Solid:
+      switch IntEnum<ELightsColorCycleType>(colorSequence_Widget.GetValue()) {
+        case ELightsColorCycleType.Solid:
           // Do nothing
           break;
-        case EUtilityLightsColorCycleType.Blinker:
+        case ELightsColorCycleType.Blinker:
           if sequenceSpeed_Widget.GetValue() != 0.3 {
             sequenceSpeed_Widget.SetValue(0.3);
           }
           break;
-        case EUtilityLightsColorCycleType.Beacon:
+        case ELightsColorCycleType.Beacon:
           if sequenceSpeed_Widget.GetValue() != 0.8 {
             sequenceSpeed_Widget.SetValue(0.8);
           }
           break;
-        case EUtilityLightsColorCycleType.Pulse:
+        case ELightsColorCycleType.Pulse:
           if sequenceSpeed_Widget.GetValue() != 2.0 {
             sequenceSpeed_Widget.SetValue(2.0);
           }
           break;
-        case EUtilityLightsColorCycleType.TwoColorsCycle:
+        case ELightsColorCycleType.TwoColorsCycle:
           if sequenceSpeed_Widget.GetValue() != 2.0 {
             sequenceSpeed_Widget.SetValue(2.0);
           }
           break;
-        case EUtilityLightsColorCycleType.Rainbow:
+        case ELightsColorCycleType.Rainbow:
           if sequenceSpeed_Widget.GetValue() != 1.5 {
             sequenceSpeed_Widget.SetValue(1.5);
           }
@@ -757,9 +1262,9 @@ public class ModSettings_EVS extends ScriptableSystem {
       colorSequenceMemory_Widget.SetValue(colorSequence_Widget.GetValue());
     }
 
-    switch IntEnum<EUtilityLightsColorCycleType>(colorSequence_Widget.GetValue()) {
+    switch IntEnum<ELightsColorCycleType>(colorSequence_Widget.GetValue()) {
 
-      case EUtilityLightsColorCycleType.Solid:
+      case ELightsColorCycleType.Solid:
         // Sequence speed requires a dynamic sequence type
         sequenceSpeed_Widget.SetEnabled(false);
         sequenceSpeed_Widget.SetVisible(false);
@@ -771,16 +1276,16 @@ public class ModSettings_EVS extends ScriptableSystem {
         }
         break;
 
-      case EUtilityLightsColorCycleType.Blinker:
+      case ELightsColorCycleType.Blinker:
         break;
 
-      case EUtilityLightsColorCycleType.Beacon:
+      case ELightsColorCycleType.Beacon:
         break;
         
-      case EUtilityLightsColorCycleType.Pulse:
+      case ELightsColorCycleType.Pulse:
         break;
 
-      case EUtilityLightsColorCycleType.TwoColorsCycle:
+      case ELightsColorCycleType.TwoColorsCycle:
         if !customColor_Widget.GetValue() {
           customColor_Widget.SetValue(true);
         }
@@ -798,7 +1303,7 @@ public class ModSettings_EVS extends ScriptableSystem {
         blue_cycle_Widget.SetVisible(true);
         break;
 
-      case EUtilityLightsColorCycleType.Rainbow:
+      case ELightsColorCycleType.Rainbow:
         if customColor_Widget.GetValue() {
           customColor_Widget.SetValue(false);
         }
@@ -1005,6 +1510,8 @@ public class FloatArrayWrapper {
 
 public class VehicleData extends ScriptableSystem {
 
+  public let kmh_multiplier: Float = 1.609344;
+
   public let hasIncompatibleSlidingDoorsWindow_VehicleMap: ref<inkStringMap>;
   public let incorrectDoorNumber_VehicleMap: ref<inkStringMap>;
   public let incorrectHasWindow_VehicleMap: ref<inkStringMap>;
@@ -1057,14 +1564,13 @@ public class VehicleData extends ScriptableSystem {
     // Rayfield Aerondight does not use external crystal dome mesh
     
     vehicleData.incorrectDoorNumber_VehicleMap = new inkStringMap();
-    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Thorton Mackinaw", Cast<Uint64>(2)); // Defined with 4 seats but only 3 real windows, and 3 real doors with back left door glitchy
+    //vehicleData.incorrectDoorNumber_VehicleMap.Insert("Thorton Mackinaw", Cast<Uint64>(2)); // Defined with 4 seats but only 3 real windows, and 3 real doors with back left door glitchy
     vehicleData.incorrectDoorNumber_VehicleMap.Insert("Militech Turbo", Cast<Uint64>(4)); // Militech "Hellhound" is defined with 2 seats but it has 4 real doors
     vehicleData.incorrectDoorNumber_VehicleMap.Insert("Mahir Turbo", Cast<Uint64>(4)); // Supron "Trailbruiser" is defined with 2 seats but it has 4 real doors
     vehicleData.incorrectDoorNumber_VehicleMap.Insert("Villefort Alvarado", Cast<Uint64>(4)); // Defined with 2 seats but it has 4 real doors
-    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Militech Basilisk", Cast<Uint64>(1)); // Defined with 2 seats but it has 1 controllable door
+    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Chevillon Bratsk", Cast<Uint64>(4)); // Defined with 2 seats but it has 4 real doors
 
     vehicleData.incorrectHasWindow_VehicleMap = new inkStringMap();
-    vehicleData.incorrectHasWindow_VehicleMap.Insert("Militech Basilisk", Cast<Uint64>(0)); // Defined with windows but has no window
 
     vehicleData.isSlidingDoors_VehicleMap = new inkStringMap();
     vehicleData.isSlidingDoors_VehicleMap.Insert("Rayfield Turbo", Cast<Uint64>(0)); // Caliburn
@@ -1078,6 +1584,20 @@ public class VehicleData extends ScriptableSystem {
     // Otherwise the window will go out of the door mesh because the window animation for these vehicles is not meant to play while doors are opened
     // All vehicles that match this list won't be able to toggle windows while doors are opened
     vehicleData.hasIncompatibleSlidingDoorsWindow_VehicleMap.Insert("Quadra Type66", Cast<Uint64>(0)); // Type-66 640 TS / 680 TS / Avenger / "Cthulhu" / "Jen Rowley" / "Mistral" / "Javelina" / "Reaver" / "Hoon" / "Wingate"
+  }
+}
+
+public class ArrayUtils {
+
+  public static func SecondToLast(arrayObj: array<MountingSlotId>, out slodId: MountingSlotId) -> Bool {
+
+    if ArraySize(arrayObj) < 2 {
+      return false;
+    }
+
+    slodId = arrayObj[ArraySize(arrayObj) - 2];
+    
+    return true;
   }
 }
 
@@ -1125,9 +1645,6 @@ public let m_cycleLightsLongInputTriggered: Bool = false;
 
 @addField(VehicleComponent)
 public let m_cycleLightsPressTime: Float = 0.00;
-
-@addField(VehicleComponent)
-public let m_cycleUtilityLightsHoldTime: Float = 0.05;
 
 @addField(VehicleComponent)
 public let m_interiorLightsState: Bool = false;
@@ -1228,9 +1745,6 @@ public let m_lastSpeed: Float = 0.00; // By default the vehicle is stationary
 public let m_brutalDeceleration: Bool = false;
 
 @addField(VehicleComponent)
-public let m_activeEffectIdentifier: Int32 = 0;
-
-@addField(VehicleComponent)
 public let m_headlightsTimerIdentifier: Int32 = 0;
 
 @addField(VehicleComponent)
@@ -1240,22 +1754,61 @@ public let m_minimalIntensity: Float = 0.05;
 public let m_colorFadeLatencyMultiplier: Float = 1.3;
 
 @addField(VehicleComponent)
-public let m_utilityLightsLastColor: Color;
+public let m_activeUtilityLightsEffectIdentifier: Int32 = 0;
 
 @addField(VehicleComponent)
 public let m_utilityLightsIsDefaultColor: Bool = true;
 
 @addField(VehicleComponent)
-public let m_utilityLightsLastIntensity: Float = 0.00;
+public let m_utilityLightsIsDefaultIntensity: Bool = true;
 
 @addField(VehicleComponent)
-public let m_utilityLightsIsDefaultIntensity: Bool = true;
+public let m_activeHeadlightsEffectIdentifier: Int32 = 0;
+
+@addField(VehicleComponent)
+public let m_headlightsIsDefaultColor: Bool = true;
+
+@addField(VehicleComponent)
+public let m_headlightsIsDefaultIntensity: Bool = true;
+
+@addField(VehicleComponent)
+public let m_activeTailLightsEffectIdentifier: Int32 = 0;
+
+@addField(VehicleComponent)
+public let m_tailLightsIsDefaultColor: Bool = true;
+
+@addField(VehicleComponent)
+public let m_tailLightsIsDefaultIntensity: Bool = true;
+
+@addField(VehicleComponent)
+public let m_activeBlinkerLightsEffectIdentifier: Int32 = 0;
+
+@addField(VehicleComponent)
+public let m_blinkerLightsIsDefaultColor: Bool = true;
+
+@addField(VehicleComponent)
+public let m_blinkerLightsIsDefaultIntensity: Bool = true;
+
+@addField(VehicleComponent)
+public let m_activeReverseLightsEffectIdentifier: Int32 = 0;
+
+@addField(VehicleComponent)
+public let m_reverseLightsIsDefaultColor: Bool = true;
+
+@addField(VehicleComponent)
+public let m_reverseLightsIsDefaultIntensity: Bool = true;
+
+@addField(VehicleComponent)
+public let m_reverseLightsUpdatedSinceLastReverse: Bool = false;
 
 @addField(VehicleComponent)
 public let m_headlightsSynchronizedWithTimeShallEnable: Bool = false;
 
 @addField(VehicleObject)
 public let m_vehicleUIGameController: ref<vehicleUIGameController>;
+
+@addField(VehicleComponent)
+public let m_mountedSeats: array<MountingSlotId>;
 
 @addField(VehicleComponent)
 // 0 = side banner lights BLUE
@@ -1282,31 +1835,37 @@ public class CrystalDomeMeshEvent extends Event {
 public class SolidColorEffectEvent extends Event {
   let identifier: Int32 = 0;
   let step: Int32 = 0;
+  let lightType: vehicleELightType;
 }
 
 public class BlinkerEffectEvent extends Event {
   let identifier: Int32 = 0;
   let step: Int32 = 0;
+  let lightType: vehicleELightType;
 }
 
 public class BeaconEffectEvent extends Event {
   let identifier: Int32 = 0;
   let step: Int32 = 0;
+  let lightType: vehicleELightType;
 }
 
 public class PulseEffectEvent extends Event {
   let identifier: Int32 = 0;
   let step: Int32 = 0;
+  let lightType: vehicleELightType;
 }
 
 public class TwoColorsCycleEffectEvent extends Event {
   let identifier: Int32 = 0;
   let step: Int32 = 0;
+  let lightType: vehicleELightType;
 }
 
 public class RainbowEffectEvent extends Event {
   let identifier: Int32 = 0;
   let colorIndex: Int32;
+  let lightType: vehicleELightType;
 }
 
 public class GameTimeElapsedEvent extends Event {
@@ -1613,8 +2172,9 @@ protected cb func OnCrystalDomeMeshEvent(evt: ref<CrystalDomeMeshEvent>) -> Bool
 @addMethod(VehicleComponent)
 protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
 
-  if this.m_activeEffectIdentifier != evt.identifier {
+  if activeEffectIdentifier != evt.identifier {
     return false;
   }
 
@@ -1622,13 +2182,14 @@ protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bo
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[SolidEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  // LogChannel(n"DEBUG", s"[SolidEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
-  this.ApplyUtilityLightsParameters(false, false, false);
+  this.ApplyLightsParameters(false, false, false, evt.lightType);
 
   let event: ref<SolidColorEffectEvent> = new SolidColorEffectEvent();
   event.identifier = evt.identifier;
   event.step = evt.step + 1;
+  event.lightType = evt.lightType;
   GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, 0.10, true);
 
   return true;
@@ -1637,32 +2198,36 @@ protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bo
 @addMethod(VehicleComponent)
 protected cb func OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
-  if this.m_activeEffectIdentifier != evt.identifier {
+  if activeEffectIdentifier != evt.identifier {
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[BlinkerEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  // LogChannel(n"DEBUG", s"[BlinkerEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
   switch evt.step {
     case 0:
       // Instant color
-      this.ApplyUtilityLightsParameters(true, false, false);
+      this.ApplyLightsParameters(true, false, false, evt.lightType);
 
       let event: ref<BlinkerEffectEvent> = new BlinkerEffectEvent();
       event.identifier = evt.identifier;
       event.step = 1;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
       
     case 1:
       // Black color
-      this.ApplyUtilityLightsParameters(true, false, true, this.GetBlackColor());
+      this.ApplyLightsParameters(true, false, true, evt.lightType, this.GetBlackColor());
 
       let event: ref<BlinkerEffectEvent> = new BlinkerEffectEvent();
       event.identifier = evt.identifier;
       event.step = 0;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -1673,52 +2238,58 @@ protected cb func OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) -> Bool {
 protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let beaconDelay: Float = 0.10;
+  let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
-  if this.m_activeEffectIdentifier != evt.identifier {
+  if activeEffectIdentifier != evt.identifier {
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[BeaconEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  // LogChannel(n"DEBUG", s"[BeaconEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
   switch evt.step {
     case 0:
       // Instant color
-      this.ApplyUtilityLightsParameters(true, false, false);
+      this.ApplyLightsParameters(true, false, false, evt.lightType);
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
       event.identifier = evt.identifier;
       event.step = 1;
+      event.lightType = evt.lightType;
       GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, beaconDelay, true);
       break;
       
     case 1:
       // Black color
-      this.ApplyUtilityLightsParameters(true, false, true, this.GetBlackColor());
+      this.ApplyLightsParameters(true, false, true, evt.lightType, this.GetBlackColor());
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
       event.identifier = evt.identifier;
       event.step = 2;
+      event.lightType = evt.lightType;
       GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, beaconDelay, true);
       break;
       
     case 2:
       // Instant color
-      this.ApplyUtilityLightsParameters(true, false, false);
+      this.ApplyLightsParameters(true, false, false, evt.lightType);
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
       event.identifier = evt.identifier;
       event.step = 3;
+      event.lightType = evt.lightType;
       GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, beaconDelay, true);
       break;
       
     case 3:
       // Black color
-      this.ApplyUtilityLightsParameters(true, false, true, this.GetBlackColor());
+      this.ApplyLightsParameters(true, false, true, evt.lightType, this.GetBlackColor());
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
       event.identifier = evt.identifier;
       event.step = 0;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -1728,32 +2299,36 @@ protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
 @addMethod(VehicleComponent)
 protected cb func OnPulseEffectEvent(evt: ref<PulseEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
-  if this.m_activeEffectIdentifier != evt.identifier {
+  if activeEffectIdentifier != evt.identifier {
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[PulseEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  // LogChannel(n"DEBUG", s"[PulseEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
   switch evt.step {
     case 0:
       // Fade to color
-      this.ApplyUtilityLightsParameters(false, false, false);
+      this.ApplyLightsParameters(false, false, false, evt.lightType);
 
       let event: ref<PulseEffectEvent> = new PulseEffectEvent();
       event.identifier = evt.identifier;
       event.step = 1;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
       
     case 1:
       // Fade to color minimum
-      this.ApplyUtilityLightsParameters(false, true, false);
+      this.ApplyLightsParameters(false, true, false, evt.lightType);
 
       let event: ref<PulseEffectEvent> = new PulseEffectEvent();
       event.identifier = evt.identifier;
       event.step = 0;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -1763,32 +2338,36 @@ protected cb func OnPulseEffectEvent(evt: ref<PulseEffectEvent>) -> Bool {
 @addMethod(VehicleComponent)
 protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
-  if this.m_activeEffectIdentifier != evt.identifier {
+  if activeEffectIdentifier != evt.identifier {
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[TwoColorsCycleEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  // LogChannel(n"DEBUG", s"[TwoColorsCycleEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
   switch evt.step {
     case 0:
       // Fade to custom color
-      this.ApplyUtilityLightsParameters(false, false, false);
+      this.ApplyLightsParameters(false, false, false, evt.lightType);
 
       let event: ref<TwoColorsCycleEffectEvent> = new TwoColorsCycleEffectEvent();
       event.identifier = evt.identifier;
       event.step = 1;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
       break;
       
     case 1:
       // Fade to cycle color
-      this.ApplyUtilityLightsParameters(false, false, false, this.GetCycleColor());
+      this.ApplyLightsParameters(false, false, false, evt.lightType, this.GetLightsCycleColor(evt.lightType));
 
       let event: ref<TwoColorsCycleEffectEvent> = new TwoColorsCycleEffectEvent();
       event.identifier = evt.identifier;
       event.step = 0;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
+      event.lightType = evt.lightType;
+      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
       break;
   }
 
@@ -1798,21 +2377,24 @@ protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent
 @addMethod(VehicleComponent)
 protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
-  if this.m_activeEffectIdentifier != evt.identifier {
+  if activeEffectIdentifier != evt.identifier {
     return false;
   }
 
-  // LogChannel(n"DEBUG", s"[RainbowEffect \(evt.identifier)] \(this.m_vehicleModel)");
+  // LogChannel(n"DEBUG", s"[RainbowEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
   let rainbowColor: Color = this.ToColor(VehicleData.Get(vehicle.GetGame()).rainbowColors[evt.colorIndex]);
 
-  this.ApplyUtilityLightsParameters(false, false, false, rainbowColor);
+  this.ApplyLightsParameters(false, false, false, evt.lightType, rainbowColor);
 
   let event: ref<RainbowEffectEvent> = new RainbowEffectEvent();
   event.identifier = evt.identifier;
   event.colorIndex = evt.colorIndex == 6 ? 0 : evt.colorIndex + 1;
-  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.utilityLightsColorSequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
+  event.lightType = evt.lightType;
+  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
 
   return true;
 }
@@ -1923,6 +2505,11 @@ protected cb func OnPlayerIsAwayFromVehicleEvent(evt: ref<PlayerIsAwayFromVehicl
 
 @wrapMethod(VehicleComponent)
 private final func RegisterInputListener() -> Void {
+  if this.IsUnsupportedVehicleType() {
+    wrappedMethod();
+    return;
+  }
+
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   wrappedMethod();
@@ -1944,6 +2531,7 @@ private final func RegisterInputListener() -> Void {
   player.RegisterInputListener(this, n"Exit");
   player.RegisterInputListener(this, n"CycleDome");
   player.RegisterInputListener(this, n"CycleSpoiler");
+
   player.RegisterInputListener(this, n"ModdedCycleLights");
 
   player.RegisterInputListener(this, n"Accelerate");
@@ -2029,7 +2617,11 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     };
   };
 
-
+  
+  
+  if this.IsUnsupportedVehicleType() {
+    return false;
+  }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
@@ -2052,7 +2644,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     if Equals(ListenerAction.GetName(action), n"ModdedCycleLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_RELEASED) {
       let holdTime: Float = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleLightsPressTime;
 
-      if !this.m_cycleLightsLongInputTriggered && holdTime >= this.m_cycleUtilityLightsHoldTime && this.m_useAuxiliary && !this.m_isPoliceVehicle {
+      if !this.m_cycleLightsLongInputTriggered && holdTime >= this.m_modSettings.cycleUtilityLightsHoldTime && this.m_useAuxiliary && !this.m_isPoliceVehicle {
 
         // If the headlights shutoff is active and the player toggles headlights then simply disable the headlights shutoff
         if this.m_temporaryHeadlightsShutOff && this.m_modSettings.utilityLightsSynchronizedWithHeadlightsShutoff {
@@ -2532,15 +3124,25 @@ protected final func GetPlayerSlotName() -> CName {
 
 @addMethod(VehicleComponent)
 protected final func ApplyHeadlightsModeWithShutOff() {
-  if this.IsPanzer() {
-    return;
-  }
 
   if !this.m_temporaryHeadlightsShutOff && NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState) {
+    if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Head);
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Brake);
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Blinkers);
+    }
+
     this.GetVehicleControllerPS().SetHeadLightMode(this.m_currentHeadlightsState);
+    this.ApplyTailLightsSettingsChange();
+    this.ApplyHeadlightsColorSettingsChange();
+    this.ApplyBlinkerLightsSettingsChange();
     // LogChannel(n"DEBUG", s"Set headlights -> \(this.m_currentHeadlightsState)");
   }
   else if this.m_temporaryHeadlightsShutOff && NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), vehicleELightMode.Off) {
+    this.UpdateActiveEffectIdentifier(vehicleELightType.Head);
+    this.UpdateActiveEffectIdentifier(vehicleELightType.Brake);
+    this.UpdateActiveEffectIdentifier(vehicleELightType.Blinkers);
+
     this.GetVehicleControllerPS().SetHeadLightMode(vehicleELightMode.Off);
     // LogChannel(n"DEBUG", s"Set headlights -> \(this.GetVehicleControllerPS().GetHeadLightMode())");
   }
@@ -2548,12 +3150,18 @@ protected final func ApplyHeadlightsModeWithShutOff() {
 
 @addMethod(VehicleComponent)
 protected final func ApplyHeadlightsMode() {
-  if this.IsPanzer() {
-    return;
-  }
 
-  if NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState) {    
+  if NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState) {   
+    if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Head);
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Brake);
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Blinkers);
+    }
+
     this.GetVehicleControllerPS().SetHeadLightMode(this.m_currentHeadlightsState);
+    this.ApplyTailLightsSettingsChange();
+    this.ApplyHeadlightsColorSettingsChange();
+    this.ApplyBlinkerLightsSettingsChange();
     // LogChannel(n"DEBUG", s"Set headlights -> \(this.m_currentHeadlightsState)");
   }
 }
@@ -2770,7 +3378,7 @@ protected final func ApplyUtilityLightsWithShutOff() {
   }
   else { // Shut off
     if this.m_modSettings.utilityLightsSynchronizedWithHeadlightsShutoff {
-      this.m_activeEffectIdentifier += 1;
+      this.UpdateActiveEffectIdentifier(vehicleELightType.Utility);
       this.GetVehicleController().ToggleLights(false, vehicleELightType.Utility);
       // LogChannel(n"DEBUG", s"Set utility lights with shutoff -> false");
     }
@@ -2793,7 +3401,7 @@ protected final func EnsureIsActive_UtilityLights() {
 @addMethod(VehicleComponent)
 protected final func EnsureIsDisabled_UtilityLights() {
   if !this.m_auxiliaryState && !this.m_isPoliceVehicle {
-    this.m_activeEffectIdentifier += 1;
+    this.UpdateActiveEffectIdentifier(vehicleELightType.Utility);
     this.GetVehicleController().ToggleLights(this.m_auxiliaryState, vehicleELightType.Utility);
     // LogChannel(n"DEBUG", s"Ensure utility lights disabled -> \(this.m_auxiliaryState)");
   }
@@ -2813,10 +3421,6 @@ protected final func TogglePlayerMounted(toggle: Bool) {
 
 @addMethod(VehicleComponent)
 protected final func ToggleDashboard(toggle: Bool) {
-  if this.IsPanzer() {
-    return;
-  }
-
   this.GetVehicle().SetInteriorUIEnabled(toggle);
   // LogChannel(n"DEBUG", s"Set dashboard -> \(toggle)");
 }
@@ -3077,6 +3681,18 @@ public func IsAfter(time1: GameTime, time2: GameTime) -> Bool {
 }
 
 @addMethod(VehicleComponent)
+public func IsHeadlightsOff() -> Bool {
+  return Equals(this.GetVehicleControllerPS().GetHeadLightMode(), vehicleELightMode.Off);
+}
+
+@addMethod(VehicleComponent)
+public func ShouldApplyReverseLights() -> Bool {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+
+  return vehicle.GetCurrentSpeed() < -0.10 && !this.m_reverseLightsUpdatedSinceLastReverse && Equals(this.m_vehicleMomentumType, EMomentumType.Accelerate);
+}
+
+@addMethod(VehicleComponent)
 public func GameTimeToString(time: GameTime) -> String {
   return s"\(GameTime.Hours(time)):\(GameTime.Minutes(time)):\(GameTime.Seconds(time))";
 }
@@ -3095,100 +3711,195 @@ public func GameTimeEquals(time1: GameTime, time2: GameTime) -> Bool {
 }
 
 @addMethod(VehicleComponent)
-public func ResetUtilityLightsDefaultColor(instant: Bool) -> Void {
-  let delay: Float = instant ? 0.00 : this.m_modSettings.utilityLightsColorSequenceSpeed;
+public func ResetLightsDefaultColor(instant: Bool, lightType: vehicleELightType) -> Void {
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(lightType);
+  let defaultColor: Color = this.TryGetDefaultLightsColor(lightType);
+  let isDefaultColor: Bool = this.GetLightsIsDefaultColor(lightType);
 
-  let defaultColor: Color = this.TryGetDefaultColor();
+  let delay: Float = instant ? 0.00 : sequenceSpeed;
 
-  if !this.m_utilityLightsIsDefaultColor {
+  if !isDefaultColor {
 
     if this.IsColorDefined(defaultColor) {
-      this.GetVehicleController().SetLightColor(vehicleELightType.Utility, defaultColor, delay);
+      this.GetVehicleController().SetLightColor(lightType, defaultColor, delay);
     }
     else {
-      this.GetVehicleController().ResetLightColor(vehicleELightType.Utility, delay);
+      this.GetVehicleController().ResetLightColor(lightType, delay);
     }
 
-    this.m_utilityLightsIsDefaultColor = true;
+    this.SetLightsIsDefaultColor(true, lightType);
   }
 }
 
 @addMethod(VehicleComponent)
-public func ResetUtilityLightsDefaultIntensity(instant: Bool) -> Void {
-  let delay: Float = instant ? 0.00 : this.m_modSettings.utilityLightsColorSequenceSpeed;
+public func ResetLightsDefaultIntensity(instant: Bool, lightType: vehicleELightType) -> Void {
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(lightType);
+  let isDefaultIntensity: Bool = this.GetLightsIsDefaultIntensity(lightType);
 
-  if !this.m_utilityLightsIsDefaultIntensity {
-    this.GetVehicleController().ResetLightStrength(vehicleELightType.Utility, delay);
+  let delay: Float = instant ? 0.00 : sequenceSpeed;
 
-    this.m_utilityLightsIsDefaultIntensity = true;
+  if !isDefaultIntensity {
+    this.GetVehicleController().ResetLightStrength(lightType, delay);
+    this.SetLightsIsDefaultIntensity(true, lightType);
   }
 }
 
 @addMethod(VehicleComponent)
-public func ResetUtilityLightsParameters(instant: Bool) -> Void {
-  this.ResetUtilityLightsDefaultColor(instant);
-  this.ResetUtilityLightsDefaultIntensity(instant);
-}
+public func ApplyLightsParameters(instant: Bool, minimalIntensity: Bool, nullIntensity: Bool, lightType: vehicleELightType, opt inputColor: Color) -> Void {
+  let sequenceSpeed: Float = this.GetLightsSequenceSpeed(lightType);
+  let customColor: Color = this.GetLightsCustomColor(lightType);
+  let customIntensityEnabled: Bool = this.GetLightsColorIntensityEnabled(lightType);
+  let customIntensity: Int32 = this.GetLightsColorIntensity(lightType);
 
-@addMethod(VehicleComponent)
-public func ApplyUtilityLightsParameters(instant: Bool, minimalIntensity: Bool, nullIntensity: Bool, opt inputColor: Color) -> Void {
-  let delay: Float = instant ? 0.00 : this.m_modSettings.utilityLightsColorSequenceSpeed;
+  let delay: Float = instant ? 0.00 : sequenceSpeed;
 
   let inputColorDefined: Bool = this.IsColorDefined(inputColor);
-  let color: Color = inputColorDefined ? inputColor : this.GetCustomColor();
+  let color: Color = inputColorDefined ? inputColor : customColor;
 
   if inputColorDefined {
-    this.m_utilityLightsIsDefaultColor = false;
-    this.GetVehicleController().SetLightColor(vehicleELightType.Utility, inputColor, delay);
+    this.SetLightsIsDefaultColor(false, lightType);    
+    this.GetVehicleController().SetLightColor(lightType, inputColor, delay);
   }
-  else if this.m_modSettings.customUtilityLightsColorEnabled {
-    this.m_utilityLightsIsDefaultColor = false;
-    this.GetVehicleController().SetLightColor(vehicleELightType.Utility, color, delay);
+  else if this.GetLightsCustomColorEnabled(lightType) {
+    this.SetLightsIsDefaultColor(false, lightType);    
+    this.GetVehicleController().SetLightColor(lightType, color, delay);
   }
   else {
-    this.ResetUtilityLightsDefaultColor(instant);
+    this.ResetLightsDefaultColor(instant, lightType);
   }
 
   if nullIntensity {
-    this.m_utilityLightsIsDefaultIntensity = false;
-    this.GetVehicleController().SetLightStrength(vehicleELightType.Utility, 0.00, delay);
+    this.SetLightsIsDefaultIntensity(false, lightType);
+    this.GetVehicleController().SetLightStrength(lightType, 0.00, delay);
   }
   else if minimalIntensity {
-    this.m_utilityLightsIsDefaultIntensity = false;
-    this.GetVehicleController().SetLightStrength(vehicleELightType.Utility, this.m_minimalIntensity, delay);
+    this.SetLightsIsDefaultIntensity(false, lightType);
+    this.GetVehicleController().SetLightStrength(lightType, this.m_minimalIntensity, delay);
   }
-  else if this.m_modSettings.customUtilityLightsIntensityEnabled {
-    this.m_utilityLightsIsDefaultIntensity = false;
-    this.GetVehicleController().SetLightStrength(vehicleELightType.Utility, Cast<Float>(this.m_modSettings.utilityLightsColorIntensity) / 100.0, delay);
+  else if customIntensityEnabled {
+    this.SetLightsIsDefaultIntensity(false, lightType);
+    this.GetVehicleController().SetLightStrength(lightType, Cast<Float>(customIntensity) / 100.0, delay);
   }
   else {
-    this.ResetUtilityLightsDefaultIntensity(instant);
+    this.ResetLightsDefaultIntensity(instant, lightType);
   }
 }
 
 @addMethod(VehicleComponent)
-public func GetCustomColor() -> Color {
+public func ResetLightsParameters(instant: Bool, lightType: vehicleELightType) -> Void {
+  this.ResetLightsDefaultColor(instant, lightType);
+  this.ResetLightsDefaultIntensity(instant, lightType);
+}
 
-  let customRed = Cast<Uint8>(this.m_modSettings.R_utilityLightsColor);
-  let customGreen = Cast<Uint8>(this.m_modSettings.G_utilityLightsColor);
-  let customBlue = Cast<Uint8>(this.m_modSettings.B_utilityLightsColor);
+@addMethod(VehicleComponent)
+public func GetLightsCustomColor(lightType: vehicleELightType) -> Color {
+  let customRed: Uint8;
+  let customGreen: Uint8;
+  let customBlue: Uint8;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      customRed = Cast<Uint8>(this.m_modSettings.R_utilityLightsColor);
+      customGreen = Cast<Uint8>(this.m_modSettings.G_utilityLightsColor);
+      customBlue = Cast<Uint8>(this.m_modSettings.B_utilityLightsColor);
+      break;
+      
+    case vehicleELightType.Head:
+      customRed = Cast<Uint8>(this.m_modSettings.R_headlightsColor);
+      customGreen = Cast<Uint8>(this.m_modSettings.G_headlightsColor);
+      customBlue = Cast<Uint8>(this.m_modSettings.B_headlightsColor);
+      break;
+      
+    case vehicleELightType.Brake:
+      customRed = Cast<Uint8>(this.m_modSettings.R_tailLightsColor);
+      customGreen = Cast<Uint8>(this.m_modSettings.G_tailLightsColor);
+      customBlue = Cast<Uint8>(this.m_modSettings.B_tailLightsColor);
+      break;
+      
+    case vehicleELightType.Blinkers:
+      customRed = Cast<Uint8>(this.m_modSettings.R_blinkerLightsColor);
+      customGreen = Cast<Uint8>(this.m_modSettings.G_blinkerLightsColor);
+      customBlue = Cast<Uint8>(this.m_modSettings.B_blinkerLightsColor);
+      break;
+      
+    case vehicleELightType.Reverse:
+      customRed = Cast<Uint8>(this.m_modSettings.R_reverseLightsColor);
+      customGreen = Cast<Uint8>(this.m_modSettings.G_reverseLightsColor);
+      customBlue = Cast<Uint8>(this.m_modSettings.B_reverseLightsColor);
+      break;
+  }
   
   return new Color(customRed, customGreen, customBlue, Cast<Uint8>(255));
 }
 
 @addMethod(VehicleComponent)
-public func GetCycleColor() -> Color {
+public func GetLightsCycleColor(lightType: vehicleELightType) -> Color {
+  let cycleRed: Uint8;
+  let cycleGreen: Uint8;
+  let cycleBlue: Uint8;
 
-  let cycleRed = Cast<Uint8>(this.m_modSettings.R_cycle_utilityLightsColor);
-  let cycleGreen = Cast<Uint8>(this.m_modSettings.G_cycle_utilityLightsColor);
-  let cycleBlue = Cast<Uint8>(this.m_modSettings.B_cycle_utilityLightsColor);
+  switch lightType {
+    case vehicleELightType.Utility:
+      cycleRed = Cast<Uint8>(this.m_modSettings.R_cycle_utilityLightsColor);
+      cycleGreen = Cast<Uint8>(this.m_modSettings.G_cycle_utilityLightsColor);
+      cycleBlue = Cast<Uint8>(this.m_modSettings.B_cycle_utilityLightsColor);
+      break;
+      
+    case vehicleELightType.Head:
+      cycleRed = Cast<Uint8>(this.m_modSettings.R_cycle_headlightsColor);
+      cycleGreen = Cast<Uint8>(this.m_modSettings.G_cycle_headlightsColor);
+      cycleBlue = Cast<Uint8>(this.m_modSettings.B_cycle_headlightsColor);
+      break;
+      
+    case vehicleELightType.Brake:
+      cycleRed = Cast<Uint8>(this.m_modSettings.R_cycle_tailLightsColor);
+      cycleGreen = Cast<Uint8>(this.m_modSettings.G_cycle_tailLightsColor);
+      cycleBlue = Cast<Uint8>(this.m_modSettings.B_cycle_tailLightsColor);
+      break;
+      
+    case vehicleELightType.Blinkers:
+      cycleRed = Cast<Uint8>(this.m_modSettings.R_cycle_blinkerLightsColor);
+      cycleGreen = Cast<Uint8>(this.m_modSettings.G_cycle_blinkerLightsColor);
+      cycleBlue = Cast<Uint8>(this.m_modSettings.B_cycle_blinkerLightsColor);
+      break;
+      
+    case vehicleELightType.Reverse:
+      cycleRed = Cast<Uint8>(this.m_modSettings.R_cycle_reverseLightsColor);
+      cycleGreen = Cast<Uint8>(this.m_modSettings.G_cycle_reverseLightsColor);
+      cycleBlue = Cast<Uint8>(this.m_modSettings.B_cycle_reverseLightsColor);
+      break;
+  }
   
   return new Color(cycleRed, cycleGreen, cycleBlue, Cast<Uint8>(255));
 }
 
 @addMethod(VehicleComponent)
-public func TryGetDefaultColor() -> Color {
-  return this.ToColor(this.m_vehicleRecord.UtilityLightColor());
+public func TryGetDefaultLightsColor(lightType: vehicleELightType) -> Color {
+  let defaultColor: Color;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      defaultColor = this.ToColor(this.m_vehicleRecord.UtilityLightColor());
+      break;
+      
+    case vehicleELightType.Head:
+      defaultColor = this.ToColor(this.m_vehicleRecord.HeadlightColor());
+      break;
+      
+    case vehicleELightType.Brake:
+      defaultColor = this.ToColor(this.m_vehicleRecord.BrakelightColor());
+      break;
+      
+    case vehicleELightType.Blinkers:
+      defaultColor = this.ToColor(this.m_vehicleRecord.LeftBlinkerlightColor());
+      break;
+      
+    case vehicleELightType.Reverse:
+      defaultColor = this.ToColor(this.m_vehicleRecord.ReverselightColor());
+      break;
+  }
+
+  return defaultColor;
 }
 
 @addMethod(VehicleComponent)
@@ -3197,6 +3908,367 @@ public func GetBlackColor() -> Color {
   let zero: Uint8 = Cast<Uint8>(0);
   
   return new Color(zero, zero, zero, zero);
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsSequenceSpeed(lightType: vehicleELightType) -> Float {
+  let sequenceSpeed: Float;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      sequenceSpeed = this.m_modSettings.utilityLightsColorSequenceSpeed;
+      break;
+      
+    case vehicleELightType.Head:
+      sequenceSpeed = this.m_modSettings.headlightsColorSequenceSpeed;
+      break;
+      
+    case vehicleELightType.Brake:
+      sequenceSpeed = this.m_modSettings.tailLightsColorSequenceSpeed;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      sequenceSpeed = this.m_modSettings.blinkerLightsColorSequenceSpeed;
+      break;
+      
+    case vehicleELightType.Reverse:
+      sequenceSpeed = this.m_modSettings.reverseLightsColorSequenceSpeed;
+      break;
+  }
+
+  return sequenceSpeed;
+}
+
+@addMethod(VehicleComponent)
+public func SetLightsSequenceSpeed(value: Float, lightType: vehicleELightType) {
+  switch lightType {
+    case vehicleELightType.Utility:
+      this.m_modSettings.utilityLightsColorSequenceSpeed = value;
+      break;
+      
+    case vehicleELightType.Head:
+      this.m_modSettings.headlightsColorSequenceSpeed = value;
+      break;
+      
+    case vehicleELightType.Brake:
+      this.m_modSettings.tailLightsColorSequenceSpeed = value;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      this.m_modSettings.blinkerLightsColorSequenceSpeed = value;
+      break;
+      
+    case vehicleELightType.Reverse:
+      this.m_modSettings.reverseLightsColorSequenceSpeed = value;
+      break;
+  }
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsIsDefaultColor(lightType: vehicleELightType) -> Bool {
+  let isDefaultColor: Bool;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      isDefaultColor = this.m_utilityLightsIsDefaultColor;
+      break;
+      
+    case vehicleELightType.Head:
+      isDefaultColor = this.m_headlightsIsDefaultColor;
+      break;
+      
+    case vehicleELightType.Brake:
+      isDefaultColor = this.m_tailLightsIsDefaultColor;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      isDefaultColor = this.m_blinkerLightsIsDefaultColor;
+      break;
+      
+    case vehicleELightType.Reverse:
+      isDefaultColor = this.m_reverseLightsIsDefaultColor;
+      break;
+  }
+
+  return isDefaultColor;
+}
+
+@addMethod(VehicleComponent)
+public func SetLightsIsDefaultColor(value: Bool, lightType: vehicleELightType) {
+  switch lightType {
+    case vehicleELightType.Utility:
+      this.m_utilityLightsIsDefaultColor = value;
+      break;
+      
+    case vehicleELightType.Head:
+      this.m_headlightsIsDefaultColor = value;
+      break;
+      
+    case vehicleELightType.Brake:
+      this.m_tailLightsIsDefaultColor = value;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      this.m_blinkerLightsIsDefaultColor = value;
+      break;
+      
+    case vehicleELightType.Reverse:
+      this.m_reverseLightsIsDefaultColor = value;
+      break;
+  }
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsIsDefaultIntensity(lightType: vehicleELightType) -> Bool {
+  let isDefaultColor: Bool;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      isDefaultColor = this.m_utilityLightsIsDefaultIntensity;
+      break;
+      
+    case vehicleELightType.Head:
+      isDefaultColor = this.m_headlightsIsDefaultIntensity;
+      break;
+      
+    case vehicleELightType.Brake:
+      isDefaultColor = this.m_tailLightsIsDefaultIntensity;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      isDefaultColor = this.m_blinkerLightsIsDefaultIntensity;
+      break;
+      
+    case vehicleELightType.Reverse:
+      isDefaultColor = this.m_reverseLightsIsDefaultIntensity;
+      break;
+  }
+
+  return isDefaultColor;
+}
+
+@addMethod(VehicleComponent)
+public func SetLightsIsDefaultIntensity(value: Bool, lightType: vehicleELightType) {
+  switch lightType {
+    case vehicleELightType.Utility:
+      this.m_utilityLightsIsDefaultIntensity = value;
+      break;
+      
+    case vehicleELightType.Head:
+      this.m_headlightsIsDefaultIntensity = value;
+      break;
+      
+    case vehicleELightType.Brake:
+      this.m_tailLightsIsDefaultIntensity = value;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      this.m_blinkerLightsIsDefaultIntensity = value;
+      break;
+      
+    case vehicleELightType.Reverse:
+      this.m_reverseLightsIsDefaultIntensity = value;
+      break;
+  }
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsColorIntensity(lightType: vehicleELightType) -> Int32 {
+  let intensity: Int32;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      intensity = this.m_modSettings.utilityLightsColorIntensity;
+      break;
+      
+    case vehicleELightType.Head:
+      intensity = this.m_modSettings.headlightsColorIntensity;
+      break;
+      
+    case vehicleELightType.Brake:
+      intensity = this.m_modSettings.tailLightsColorIntensity;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      intensity = this.m_modSettings.blinkerLightsColorIntensity;
+      break;
+      
+    case vehicleELightType.Reverse:
+      intensity = this.m_modSettings.reverseLightsColorIntensity;
+      break;
+  }
+
+  return intensity;
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsCustomColorEnabled(lightType: vehicleELightType) -> Bool {
+  let enabled: Bool;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      enabled = this.m_modSettings.customUtilityLightsColorEnabled;
+      break;
+      
+    case vehicleELightType.Head:
+      enabled = this.m_modSettings.customHeadlightsColorEnabled;
+      break;
+      
+    case vehicleELightType.Brake:
+      enabled = this.m_modSettings.customTailLightsColorEnabled;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      enabled = this.m_modSettings.customBlinkerLightsColorEnabled;
+      break;
+      
+    case vehicleELightType.Reverse:
+      enabled = this.m_modSettings.customReverseLightsColorEnabled;
+      break;
+  }
+
+  return enabled;
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsColorIntensityEnabled(lightType: vehicleELightType) -> Bool {
+  let enabled: Bool;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      enabled = this.m_modSettings.customUtilityLightsIntensityEnabled;
+      break;
+      
+    case vehicleELightType.Head:
+      enabled = this.m_modSettings.customHeadlightsIntensityEnabled;
+      break;
+      
+    case vehicleELightType.Brake:
+      enabled = this.m_modSettings.customTailLightsIntensityEnabled;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      enabled = this.m_modSettings.customBlinkerLightsIntensityEnabled;
+      break;
+      
+    case vehicleELightType.Reverse:
+      enabled = this.m_modSettings.customReverseLightsIntensityEnabled;
+      break;
+  }
+
+  return enabled;
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsColorVehicleType(lightType: vehicleELightType) -> ELightsColorVehicleType {
+  let vehicleType: ELightsColorVehicleType;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      vehicleType = this.m_modSettings.customUtilityLightsColorVehicleType;
+      break;
+      
+    case vehicleELightType.Head:
+      vehicleType = this.m_modSettings.customHeadlightsColorVehicleType;
+      break;
+      
+    case vehicleELightType.Brake:
+      vehicleType = this.m_modSettings.customTailLightsColorVehicleType;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      vehicleType = this.m_modSettings.customBlinkerLightsColorVehicleType;
+      break;
+      
+    case vehicleELightType.Reverse:
+      vehicleType = this.m_modSettings.customReverseLightsColorVehicleType;
+      break;
+  }
+
+  return vehicleType;
+}
+
+@addMethod(VehicleComponent)
+public func GetLightsColorSequence(lightType: vehicleELightType) -> ELightsColorCycleType {
+  let cycleType : ELightsColorCycleType;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      cycleType = this.m_modSettings.utilityLightsColorSequence;
+      break;
+      
+    case vehicleELightType.Head:
+      cycleType = this.m_modSettings.headlightsColorSequence;
+      break;
+      
+    case vehicleELightType.Brake:
+      cycleType = this.m_modSettings.tailLightsColorSequence;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      cycleType = this.m_modSettings.blinkerLightsColorSequence;
+      break;
+      
+    case vehicleELightType.Reverse:
+      cycleType = this.m_modSettings.reverseLightsColorSequence;
+      break;
+  }
+
+  return cycleType;
+}
+
+@addMethod(VehicleComponent)
+public func GetActiveEffectIdentifier(lightType: vehicleELightType) -> Int32 {
+  let identifier : Int32;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      identifier = this.m_activeUtilityLightsEffectIdentifier;
+      break;
+      
+    case vehicleELightType.Head:
+      identifier = this.m_activeHeadlightsEffectIdentifier;
+      break;
+      
+    case vehicleELightType.Brake:
+      identifier = this.m_activeTailLightsEffectIdentifier;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      identifier = this.m_activeBlinkerLightsEffectIdentifier;
+      break;
+      
+    case vehicleELightType.Reverse:
+      identifier = this.m_activeReverseLightsEffectIdentifier;
+      break;
+  }
+
+  return identifier;
+}
+
+@addMethod(VehicleComponent)
+public func UpdateActiveEffectIdentifier(lightType: vehicleELightType) {
+  switch lightType {
+    case vehicleELightType.Utility:
+      this.m_activeUtilityLightsEffectIdentifier += 1;
+      break;
+      
+    case vehicleELightType.Head:
+      this.m_activeHeadlightsEffectIdentifier += 1;
+      break;
+      
+    case vehicleELightType.Brake:
+      this.m_activeTailLightsEffectIdentifier += 1;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      this.m_activeBlinkerLightsEffectIdentifier += 1;
+      break;
+      
+    case vehicleELightType.Reverse:
+      this.m_activeReverseLightsEffectIdentifier += 1;
+      break;
+  }
 }
 
 @addMethod(VehicleComponent)
@@ -3218,14 +4290,14 @@ public func RealSpeedMultiplier(speed: Float) -> Float {
 
 @addMethod(VehicleComponent)
 public func ToGameSpeed(mph_kmh_speed: Float) -> Float {
-  let kmh_multiplier: Float = this.m_isKmH ? 1.609344 : 1.000000;
+  let kmh_multiplier: Float = this.m_isKmH ? VehicleData.Get(this.GetVehicle().GetGame()).kmh_multiplier : 1.000000;
 
   return mph_kmh_speed / kmh_multiplier / this.RealSpeedMultiplier(mph_kmh_speed);
 }
 
 @addMethod(VehicleComponent)
 public func ToRealWorldSpeed(gameSpeed: Float) -> Float {
-  let kmh_multiplier: Float = this.m_isKmH ? 1.609344 : 1.000000;
+  let kmh_multiplier: Float = this.m_isKmH ? VehicleData.Get(this.GetVehicle().GetGame()).kmh_multiplier : 1.000000;
 
   return gameSpeed * kmh_multiplier * this.GameSpeedMultiplier(gameSpeed);
 }
@@ -3262,74 +4334,133 @@ public func UpdateMomentumType(gameSpeed: Float) -> Void {
 
 @addMethod(VehicleComponent)
 public func ApplyUtilityLightsSettingsChange() -> Void {
-  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   if !this.m_useAuxiliary || this.m_isPoliceVehicle || !this.m_auxiliaryState {
     return;
   }
 
-  this.m_activeEffectIdentifier += 1;
+  this.ApplyLightsColorSettingsChange(vehicleELightType.Utility);
+}
 
-  if Equals(this.m_modSettings.customUtilityLightsColorVehicleType, EUtilityLightsColorVehicleType.Motorcycles)
+@addMethod(VehicleComponent)
+public func ApplyTailLightsSettingsChange() -> Void {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+
+  if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
+    return;
+  }
+
+  this.ApplyLightsColorSettingsChange(vehicleELightType.Brake);
+  
+  // New plastic color effect on the car mesh will only properly apply when the vehicle brakes for the first time
+  if !vehicle.IsPlayerDriver() {
+    vehicle.ForceBrakesFor(0.25);
+  }
+}
+
+@addMethod(VehicleComponent)
+public func ApplyBlinkerLightsSettingsChange() -> Void {
+
+  if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
+    return;
+  }
+
+  this.ApplyLightsColorSettingsChange(vehicleELightType.Blinkers);
+}
+
+@addMethod(VehicleComponent)
+public func ApplyReverseLightsSettingsChange() -> Void {
+
+  if !this.ShouldApplyReverseLights() {
+    return;
+  }
+
+  this.m_reverseLightsUpdatedSinceLastReverse = true;
+  this.ApplyLightsColorSettingsChange(vehicleELightType.Reverse);
+}
+
+@addMethod(VehicleComponent)
+public func ApplyHeadlightsColorSettingsChange() -> Void {
+
+  if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
+    return;
+  }
+
+  this.ApplyLightsColorSettingsChange(vehicleELightType.Head);
+}
+
+@addMethod(VehicleComponent)
+public func ApplyLightsColorSettingsChange(lightType: vehicleELightType) -> Void {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+
+  this.UpdateActiveEffectIdentifier(lightType);
+
+  if Equals(this.GetLightsColorVehicleType(lightType), ELightsColorVehicleType.Motorcycles)
   && vehicle != (vehicle as BikeObject) {
-    this.ResetUtilityLightsParameters(false);
+    this.ResetLightsParameters(false, lightType);
     return;
   }
   
-  switch this.m_modSettings.utilityLightsColorSequence {
+  switch this.GetLightsColorSequence(lightType) {
 
-    case EUtilityLightsColorCycleType.Solid:
+    case ELightsColorCycleType.Solid:
 
       let event: ref<SolidColorEffectEvent> = new SolidColorEffectEvent();
-      event.identifier = this.m_activeEffectIdentifier;
+      event.identifier = this.GetActiveEffectIdentifier(lightType);
       event.step = 0;
+      event.lightType = lightType;
       vehicle.QueueEvent(event);
       break;
 
-    case EUtilityLightsColorCycleType.Blinker:
+    case ELightsColorCycleType.Blinker:
 
       let event: ref<BlinkerEffectEvent> = new BlinkerEffectEvent();
-      event.identifier = this.m_activeEffectIdentifier;
+      event.identifier = this.GetActiveEffectIdentifier(lightType);
       event.step = 0;
+      event.lightType = lightType;
       vehicle.QueueEvent(event);
       break;
 
-    case EUtilityLightsColorCycleType.Beacon:
+    case ELightsColorCycleType.Beacon:
 
       let event: ref<BeaconEffectEvent> = new BeaconEffectEvent();
-      event.identifier = this.m_activeEffectIdentifier;
+      event.identifier = this.GetActiveEffectIdentifier(lightType);
       event.step = 0;
+      event.lightType = lightType;
       vehicle.QueueEvent(event);
       break;
 
-    case EUtilityLightsColorCycleType.Pulse:
+    case ELightsColorCycleType.Pulse:
 
       let event: ref<PulseEffectEvent> = new PulseEffectEvent();
-      event.identifier = this.m_activeEffectIdentifier;
+      event.identifier = this.GetActiveEffectIdentifier(lightType);
       event.step = 0;
+      event.lightType = lightType;
       vehicle.QueueEvent(event);
       break;
 
-    case EUtilityLightsColorCycleType.TwoColorsCycle:
+    case ELightsColorCycleType.TwoColorsCycle:
 
       let event: ref<TwoColorsCycleEffectEvent> = new TwoColorsCycleEffectEvent();
-      event.identifier = this.m_activeEffectIdentifier;
+      event.identifier = this.GetActiveEffectIdentifier(lightType);
       event.step = 0;
+      event.lightType = lightType;
       vehicle.QueueEvent(event);
       break;
 
-    case EUtilityLightsColorCycleType.Rainbow:
+    case ELightsColorCycleType.Rainbow:
     
       let event: ref<RainbowEffectEvent> = new RainbowEffectEvent();
-      event.identifier = this.m_activeEffectIdentifier;
+      event.identifier = this.GetActiveEffectIdentifier(lightType);
       event.colorIndex = 0;
+      event.lightType = lightType;
       vehicle.QueueEvent(event);
       break;
   }
 }
 
 @addMethod(VehicleComponent)
-public func ApplyHeadlightsSettingsChange() -> Void {
+public func ApplyHeadlightsTimeSyncSettingsChange() -> Void {
   this.m_headlightsTimerIdentifier += 1;
 
   if this.m_modSettings.headlightsSynchronizedWithTimeEnabled {
@@ -3347,22 +4478,36 @@ public func ApplyHeadlightsSettingsChange() -> Void {
 }
 
 @addMethod(VehicleComponent)
+public func ApplyHeadlightsSettingsChange() -> Void {
+  this.ApplyHeadlightsColorSettingsChange();
+  this.ApplyHeadlightsTimeSyncSettingsChange();
+}
+
+@addMethod(VehicleComponent)
 public func OnModSettingsChange() -> Void {
   // LogChannel(n"DEBUG", s"OnModSettingsChange");
   
+  this.ApplyTailLightsSettingsChange();
   this.ApplyHeadlightsSettingsChange();
+  this.ApplyBlinkerLightsSettingsChange();
+  this.ApplyReverseLightsSettingsChange();
   this.ApplyUtilityLightsSettingsChange();
 }
 
 @wrapMethod(VehicleComponent)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   wrappedMethod(evt);
+  
+  if this.IsUnsupportedVehicleType() {
+    return false;
+  }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gameInstance: GameInstance = vehicle.GetGame();
   let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
 
   if mountChild.IsPlayer() {
+    // LogChannel(n"DEBUG", s"Player OnMountingEvent to -> \(evt.relationship.slotId.id) | IsMountedToProvidedVehicle -> \(VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), mountChild.GetEntityID(), vehicle))");
     this.TogglePlayerMounted(true);
     
     // Only the first time V enters into this vehicle in any seat
@@ -3391,7 +4536,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       
       this.m_vehicleModel = s"\(this.m_vehicleRecord.Manufacturer().EnumName()) \(this.m_vehicleRecord.Model().EnumName())";
       // LogChannel(n"DEBUG", s"Model -> \(this.m_vehicleModel)");
-
+      
       /////////////////////////////
       // Adapt vehicles
       //
@@ -3464,64 +4609,87 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
 @wrapMethod(VehicleComponent)
 protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingEvent>) -> Bool {
   wrappedMethod(evt);
+  
+  if this.IsUnsupportedVehicleType() {
+    return false;
+  }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
-    if !evt.isMounting && vehicle.IsPlayerDriver() {
-      this.TogglePlayerMounted(false);
-    
-      this.m_playerIsDismounting = true;
+  let mountingSlotId: MountingSlotId;
+  mountingSlotId.id = evt.slotID;
+
+  if evt.character.IsPlayer() && this.m_vehicleDrivenByV {
+    if !evt.isMounting {
+
+      let previousMountingSlotId: MountingSlotId;
+      if ArraySize(this.m_mountedSeats) >= 2 {
+        ArrayUtils.SecondToLast(this.m_mountedSeats, previousMountingSlotId);
+      }
+
+      // LogChannel(n"DEBUG", s"this.m_mountedSeats (size:\(ArraySize(this.m_mountedSeats))) -> previousMountingSlotId = \(previousMountingSlotId)");
+      if Equals(mountingSlotId, VehicleComponent.GetDriverSlotID()) || (Equals(mountingSlotId, VehicleComponent.GetFrontPassengerSlotID()) && ArraySize(this.m_mountedSeats) >= 2 && Equals(previousMountingSlotId, VehicleComponent.GetDriverSlotID())) {
+        // Dismounting from driver seat or from passenger seat with previous driver seat
+        
+        // LogChannel(n"DEBUG", s"Player started unmounting from -> \(evt.slotID) | IsMountedToProvidedVehicle -> \(VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), evt.character.GetEntityID(), vehicle))");
+        this.TogglePlayerMounted(false);
       
-      // Prevents the vehicle from shutting down because of the game
-      this.Ensure_VehicleState(vehicleEState.Default);
+        this.m_playerIsDismounting = true;
+        
+        // Prevents the vehicle from shutting down because of the game
+        this.Ensure_VehicleState(vehicleEState.Default);
 
-      switch this.m_modSettings.exitBehavior {
-        case EExitBehavior.PowerOff:
-          this.TogglePowerState(false);
-          vehicle.TurnEngineOn(false);
-          // LogChannel(n"DEBUG", s"Turn engine -> false");
-          break;
+        switch this.m_modSettings.exitBehavior {
+          case EExitBehavior.PowerOff:
+            this.TogglePowerState(false);
+            vehicle.TurnEngineOn(false);
+            // LogChannel(n"DEBUG", s"Turn engine -> false");
+            break;
 
-        case EExitBehavior.StopEngine:
-          vehicle.TurnEngineOn(false);
-          // LogChannel(n"DEBUG", s"Turn engine -> false");
-          break;
+          case EExitBehavior.StopEngine:
+            vehicle.TurnEngineOn(false);
+            // LogChannel(n"DEBUG", s"Turn engine -> false");
+            break;
 
-        case EExitBehavior.KeepCurrentState:
-          // Do nothing
-          break;
+          case EExitBehavior.KeepCurrentState:
+            // Do nothing
+            break;
 
-        default:
-          // Do nothing
-          break;
+          default:
+            // Do nothing
+            break;
+        }
+
+        if this.GetPS().GetCrystalDomeState()
+        && this.m_modSettings.crystalDomeSynchronizedWithPowerState
+        && this.m_modSettings.crystalDomeKeepOnUntilExit
+        && !this.m_powerState
+        && this.m_poweredOnAtLeastOnceSinceLastEnter {
+          this.MyToggleCrystalDome(false);
+        }
+
+        // Restore external mesh for crystal dome vehicles
+        this.OnExit_CrystalDomeMesh();
       }
-
-      if this.GetPS().GetCrystalDomeState()
-      && this.m_modSettings.crystalDomeSynchronizedWithPowerState
-      && this.m_modSettings.crystalDomeKeepOnUntilExit
-      && !this.m_powerState
-      && this.m_poweredOnAtLeastOnceSinceLastEnter {
-        this.MyToggleCrystalDome(false);
-      }
-
-      // Restore external mesh for crystal dome vehicles
-      this.OnExit_CrystalDomeMesh();
     }
-    else if evt.character.IsPlayer() { // Started mounting
-            
-      // Apply external mesh for crystal dome vehicles
-      if this.GetPS().GetCrystalDomeState() {
-        if Equals(evt.slotID, n"seat_front_right") {
-          this.m_playerIsMountedFromPassengerSeat = true;
-          this.OnPassengerEnter_CrystalDomeMesh();
-        }
-        else if Equals(evt.slotID, n"seat_front_left") && !this.m_playerIsMountedFromPassengerSeat {
-          this.OnEnter_CrystalDomeMesh();
+    else if evt.isMounting {
+      if ArraySize(this.m_mountedSeats) == 0 { // It means this is the first seat the player is mounting since the last entry (not switching seats)
+        
+        // LogChannel(n"DEBUG", s"Started mounting to -> \(evt.slotID) | IsMountedToProvidedVehicle -> \(VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), evt.character.GetEntityID(), vehicle))");
+
+        // Apply external mesh for crystal dome vehicles
+        if this.GetPS().GetCrystalDomeState() {
+          if Equals(evt.slotID, n"seat_front_right") {
+            this.m_playerIsMountedFromPassengerSeat = true;
+            this.OnPassengerEnter_CrystalDomeMesh();
+          }
+          else if Equals(evt.slotID, n"seat_front_left") && !this.m_playerIsMountedFromPassengerSeat {
+            this.OnEnter_CrystalDomeMesh();
+          }
         }
       }
+
+      ArrayPush(this.m_mountedSeats, mountingSlotId);
     }
   }
 }
@@ -3539,9 +4707,15 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   let mountChildIsPrevention: Bool = IsDefined(mountChild) && mountChild.IsPrevention();
   VehicleComponent.SetAnimsetOverrideForPassenger(mountChild, evt.request.lowLevelMountingInfo.parentId, evt.request.lowLevelMountingInfo.slotId.id, 0.00);
 
+  let previousMountingSlotId: MountingSlotId;
+  if ArraySize(this.m_mountedSeats) >= 2 {
+    ArrayUtils.SecondToLast(this.m_mountedSeats, previousMountingSlotId);
+  }
+
   // // // // // // //
   // When any of V or a police driver (not passenger) NPC get out of the car
-  if (this.m_isPoliceVehicle || vehicle.IsPrevention()) && IsDefined(mountChild) && VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id) {
+  if (this.m_isPoliceVehicle || vehicle.IsPrevention()) && IsDefined(mountChild) && !this.IsUnsupportedVehicleType()
+  && (VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id) || (mountChild.IsPlayer() && ArraySize(this.m_mountedSeats) >= 2 && Equals(previousMountingSlotId, VehicleComponent.GetDriverSlotID()))) {
     
     // Turn the siren OFF if necessary
     if (mountChild.IsPlayer() && !ModSettings_EVS.Get(vehicle.GetGame()).keepSirenOnWhileOutsidePlayerEnabled)
@@ -3590,7 +4764,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
     if Equals(evt.request.lowLevelMountingInfo.slotId.id, n"seat_front_left") {
       PreventionSystemHackerLoop.UpdatePlayerVehicle(gameInstance, null);
 
-      if !this.m_vehicleDrivenByV || this.IsPanzer() {
+      if !this.m_vehicleDrivenByV || this.IsUnsupportedVehicleType() {
         this.ToggleCrystalDome(false, true);
       }
             
@@ -3625,30 +4799,43 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
 
 
-  if IsDefined(mountChild) && mountChild.IsPlayer()
-  && Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetDriverSlotID()) {
-      // LogChannel(n"DEBUG", s"OnUnmountingEvent -> Player has dismounted from driver seat");
 
-      // Restore headlights
-      this.ApplyHeadlightsModeWithShutOff();
-      
-      // Restore utility lights
-      this.ApplyUtilityLightsWithShutOff();
-      
-      // Restore interior lights
-      this.EnsureIsActive_InteriorLights();
+  if this.IsUnsupportedVehicleType() {
+    return false;
+  }
+
+  if IsDefined(mountChild) && mountChild.IsPlayer() && this.m_vehicleDrivenByV
+  && (Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetDriverSlotID()) || Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetFrontPassengerSlotID()))
+  && !VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), mountChild.GetEntityID(), vehicle) {
+    // LogChannel(n"DEBUG", s"OnUnmountingEvent -> exiting player");
+
+    // Restore headlights
+    this.ApplyHeadlightsModeWithShutOff();
+    
+    // Restore utility lights
+    this.ApplyUtilityLightsWithShutOff();
+    
+    // Restore interior lights
+    this.EnsureIsActive_InteriorLights();
+
+    ArrayClear(this.m_mountedSeats);
   }
 }
 
 @wrapMethod(VehicleComponent)
 protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountingEvent>) -> Bool {
   wrappedMethod(evt);
+  
+  if this.IsUnsupportedVehicleType() {
+    return false;
+  }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if vehicle.IsPlayerDriver() {
     if evt.isMounting {
+      // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent -> mounted player driver");
 
       if player.IsInCombat() {
 
@@ -3695,7 +4882,8 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
       this.ApplyUtilityLightsWithShutOff();
     }
   }
-  else if this.m_vehicleDrivenByV && evt.character.IsPlayer() { // Unmounted player
+  else if this.m_vehicleDrivenByV && evt.character.IsPlayer() && !evt.isMounting { // Unmounted player
+    // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent -> unmounted player");
 
     // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent RecallVehicleDoorsState");
     this.RecallVehicleDoorsState();
@@ -3747,6 +4935,11 @@ protected final func AllowCloseDoorsWithSpeed(speed: Float) -> Bool {
   return false;
 }
 
+@addMethod(VehicleComponent)
+protected final func IsUnsupportedVehicleType() -> Bool {
+  return this.IsNCARTMetro() || this.IsPanzer();
+}
+
 // Only deploy/retract the spoiler when the vehicle speed is getting just higher/lower than deploy/retract speed
 // Outside of a short speed window the spoiler state shall not change
 @addMethod(VehicleComponent)
@@ -3780,6 +4973,11 @@ protected final func IsPanzer() -> Bool {
   return this.GetVehicle() == (this.GetVehicle() as TankObject);
 }
 
+@addMethod(VehicleComponent)
+protected final func IsNCARTMetro() -> Bool {
+  return this.GetVehicle() == (this.GetVehicle() as ncartMetroObject);
+}
+
 @replaceMethod(VehicleComponent)
 protected final func OnVehicleCameraChange(state: Bool) -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
@@ -3804,7 +5002,8 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   // Keep default behavior for NPCs
-  if !VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+  if this.IsUnsupportedVehicleType()
+  || !VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
     wrappedMethod(speed);
     return;
   }
@@ -3819,6 +5018,16 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
     vehicle.SetInteriorUIEnabled(true);
   }
 
+  if this.ShouldApplyReverseLights() {
+    this.ApplyReverseLightsSettingsChange();
+  }
+  if speed >= -3.00 && this.m_reverseLightsUpdatedSinceLastReverse && Equals(this.m_vehicleMomentumType, EMomentumType.Decelerate) {
+    this.m_reverseLightsUpdatedSinceLastReverse = false;
+    
+    this.UpdateActiveEffectIdentifier(vehicleELightType.Reverse);
+    this.GetVehicleController().ToggleLights(false, vehicleELightType.Reverse);
+  }
+  
   // Update vehicle momentum type
   this.UpdateMomentumType(speed);
 
@@ -3885,6 +5094,7 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
 @replaceMethod(VehicleComponent)
 protected final func ToggleVehicleSystems(toggle: Bool, vehicle: Bool, engine: Bool, opt lockState: VehicleQuestEngineLockState) -> Void {
   let vehicleObj: ref<VehicleObject> = this.GetVehicle();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicleObj.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if vehicleObj.IsVehicleOnStateLocked() {
     if Equals(lockState, VehicleQuestEngineLockState.DontToggleIfLocked) {
@@ -3892,14 +5102,23 @@ protected final func ToggleVehicleSystems(toggle: Bool, vehicle: Bool, engine: B
     };
     vehicleObj.LockVehicleOnState(false);
   };
-  if !vehicleObj.IsPlayerDriver() || this.IsPanzer() {
+  // During staged scene when the player does not have complete control, the vehicle must be able to start normally (ex.: mission Firestarter)
+  if !this.m_vehicleDrivenByV || this.IsUnsupportedVehicleType() || !player.IsFullGameplay() {
     if vehicle {
       vehicleObj.TurnVehicleOn(toggle);
       vehicleObj.SetInteriorUIEnabled(toggle); // Allows mission vehicles to have dashboards enabled properly
+
+      if toggle && vehicleObj.IsPlayerDriver() && !player.IsFullGameplay() {
+        this.TogglePowerState(toggle);
+      }
     };
     if engine {
       vehicleObj.TurnEngineOn(toggle);
       vehicleObj.SetInteriorUIEnabled(toggle); // Allows mission vehicles to have dashboards enabled properly
+
+      if toggle && vehicleObj.IsPlayerDriver() && !player.IsFullGameplay() {
+        this.TogglePowerState(toggle);
+      }
     };
   }
   if Equals(lockState, VehicleQuestEngineLockState.Lock) {
@@ -3927,7 +5146,7 @@ protected cb func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> Bool {
     let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
     
     // Define doors state when V gets in or out
-    if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+    if !this.IsUnsupportedVehicleType() && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
       // LogChannel(n"DEBUG", s"OnVehicleDoorOpen IsMountedToProvidedVehicle -> RecallVehicleDoorsState");
       this.RecallVehicleDoorsState(autoCloseDelay);
     }
@@ -3946,7 +5165,7 @@ protected cb func OnCurrentWantedLevelChanged(value: Int32) -> Bool {
   // // // // // // //
   // When the wanted level gets down to zero, the game turns all the police cars to siren state OFF
   // This code prevents V driving a police car to be affected by this behavior
-  if value == 0 && !vehicle.IsPlayerDriver() {
+  if value == 0 && (!vehicle.IsPlayerDriver() || this.IsUnsupportedVehicleType()) {
     this.ToggleSiren(false, false);
 
     // Update the siren state accordingly
@@ -3986,7 +5205,7 @@ protected cb func OnChangeState(evt: ref<vehicleChangeStateEvent>) -> Bool {
       if this.GetVehicle() != (this.GetVehicle() as AVObject) {
 
         // Keep the default behavior for NPCs
-        if !this.m_vehicleDrivenByV || this.IsPanzer() {
+        if !this.m_vehicleDrivenByV || this.IsUnsupportedVehicleType() {
           this.ToggleCrystalDome(true);
         }
 
@@ -4001,7 +5220,7 @@ protected cb func OnChangeState(evt: ref<vehicleChangeStateEvent>) -> Bool {
       if this.GetVehicle() != (this.GetVehicle() as AVObject) {
 
         // Keep the default behavior for NPCs
-        if !this.m_vehicleDrivenByV || this.IsPanzer() {
+        if !this.m_vehicleDrivenByV || this.IsUnsupportedVehicleType() {
           this.ToggleCrystalDome(false);
         }
 
@@ -4025,7 +5244,7 @@ protected cb func OnChangeState(evt: ref<vehicleChangeStateEvent>) -> Bool {
     this.GetPS().SetIsDefaultLightToggleSet(true);
   };
 
-  if vehicle.IsPlayerDriver() {
+  if vehicle.IsPlayerDriver() && !this.IsUnsupportedVehicleType() {
     // Update headlights here so it will minimize the auto-HighBeam state
     this.ApplyHeadlightsModeWithShutOff();
   }
@@ -4038,6 +5257,10 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     return false;
   };
   if mountChild.IsPlayer() {
+
+    if IsDefined(this.GetVehicleComponent()) && this.GetVehicleComponent().IsUnsupportedVehicleType() {
+      this.SetInteriorUIEnabled(true);
+    }
 
     if this.ReevaluateStealing(mountChild, evt.request.lowLevelMountingInfo.slotId.id, evt.request.mountData.mountEventOptions.occupiedByNonFriendly) {
       this.StealVehicle(mountChild);
@@ -4060,8 +5283,8 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   if IsDefined(mountChild) {
 
     if IsDefined(vehicleComp) && mountChild.IsPlayer() && !vehicleComp.m_vehicleDrivenByV {
-      if !isSilentUnmount {
-        //this.SetInteriorUIEnabled(false);
+      if !isSilentUnmount && vehicleComp.IsUnsupportedVehicleType() {
+        this.SetInteriorUIEnabled(false);
       }
 
       // If the player gets out and has not driven the vehicle, then he is the passenger of a story vehicle. Is this case, close his window
@@ -4070,8 +5293,8 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
     }
 
     // Only disable UI if the driver NPC gets out
-    if !mountChild.IsPlayer() && Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetDriverSlotID()) {
-      this.SetInteriorUIEnabled(false);
+    if !mountChild.IsPlayer() && Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetDriverSlotID()) && !this.IsStolen() {
+      this.SetInteriorUIEnabled(false); // Only if the vehicle is not being stolen
     }
   }
 }
@@ -4098,7 +5321,7 @@ protected cb func OnInitialize() -> Bool {
 private final func DeactivateUI() -> Void {
   let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
-  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState {
+  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicleComp.IsUnsupportedVehicleType() {
     // LogChannel(n"DEBUG", s"vehicleUIGameController.DeactivateUI -> PREVENT");
     return;
   }
@@ -4113,7 +5336,7 @@ private final func DeactivateUI() -> Void {
 private final func TurnOff() -> Void {
   let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
-  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState {
+  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicleComp.IsUnsupportedVehicleType() {
     // LogChannel(n"DEBUG", s"vehicleUIGameController.TurnOff -> PREVENT");
     return;
   }
@@ -4129,13 +5352,13 @@ private final func IsUIactive() -> Bool {
   let vehicle: ref<VehicleObject> = this.m_vehicle;
   let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
-  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicle.IsPlayerDriver() {
+  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicle.IsPlayerDriver() && !vehicleComp.IsUnsupportedVehicleType() {
     // LogChannel(n"DEBUG", s"vehicleUIGameController.IsUIactive -> turn on for player");
     this.TurnOn();
 
     return this.m_vehicle.GetVehicleComponent().m_powerState;
   }
-
+  
   return wrappedMethod();
 }
 
@@ -4167,7 +5390,7 @@ public final const func ToDrive(const stateContext: ref<StateContext>, const scr
       scriptInterface.GetMountingFacility().Mount(mountingRequest);
 
       // Only close the door while changing seat if the player is out
-      if IsDefined(vehicleComp) && !vehicleComp.m_playerIsMounted {
+      if IsDefined(vehicleComp) && !vehicleComp.m_playerIsMounted && !vehicleComp.IsUnsupportedVehicleType() {
         VehicleComponent.CloseDoor(vehicle, lowLevelMountingInfo.slotId);
       }
       return true;
@@ -4197,7 +5420,8 @@ protected func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<Sta
   let gameInstance: GameInstance = vehicle.GetGame();
   let vehicleComp: ref<VehicleComponent> = player.m_mountedVehicle.GetVehicleComponent();
   
-  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted {
+  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted
+  && !vehicleComp.IsUnsupportedVehicleType() {
     let FL_doorState: VehicleDoorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
     let FR_doorState: VehicleDoorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
 
@@ -4242,7 +5466,8 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
   let vehicleComp: ref<VehicleComponent> = player.m_mountedVehicle.GetVehicleComponent();
 
   // Close front windows only if their previous state was closed
-  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted {
+  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted
+  && !vehicleComp.IsUnsupportedVehicleType() {
     if vehicleComp.m_hasWindows {
       vehicleComp.Recall_FL_WindowsState();
       vehicleComp.Recall_FR_WindowsState();
@@ -4254,6 +5479,11 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
 
   this.SendEquipmentSystemWeaponManipulationRequest(scriptInterface, EquipmentManipulationAction.UnequipAll);
   StatusEffectHelper.RemoveStatusEffect(scriptInterface.executionOwner, t"BaseStatusEffect.PhotoModeForceFPPCamera");
+}
+
+@addMethod(PlayerPuppet)
+protected cb func IsFullGameplay() -> Bool {
+  return Equals(this.m_sceneTier, GameplayTier.Tier1_FullGameplay);
 }
 
 @replaceMethod(PlayerPuppet)
@@ -4299,7 +5529,7 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
         if Equals(vehicleRecord.VehDataPackage().DriverCombat().Type(), gamedataDriverCombatType.Doors) {
           
           // If the player is exiting combat, then check previous door state and apply them back
-          if IsDefined(vehicleComp) && isExitingCombat {
+          if IsDefined(vehicleComp) && isExitingCombat && !vehicleComp.IsUnsupportedVehicleType() {
             // LogChannel(n"DEBUG", s"OnVehicleStateChange RecallVehicleDoorsState");
             vehicleComp.RecallVehicleDoorsState();
           }
@@ -4341,8 +5571,9 @@ private final func HandleDoorsForCombat(vehicle: wref<VehicleObject>) -> Void {
       let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
       // Define doors state when V gets out
-      if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
-        if IsDefined(vehicleComp) && !vehicleComp.m_playerIsMounted {
+      if IsDefined(vehicleComp) && !vehicleComp.IsUnsupportedVehicleType()
+      && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+        if !vehicleComp.m_playerIsMounted {
           // LogChannel(n"DEBUG", s"HandleDoorsForCombat RecallVehicleDoorsState");
           vehicleComp.RecallVehicleDoorsState();
         }
@@ -4361,10 +5592,11 @@ protected cb func OnCombatStateChanged(newState: Int32) -> Bool {
 
   let inCombat: Bool = newState == 1;
 
-  if IsDefined(this.m_mountedVehicle) && this.m_mountedVehicle.IsPlayerDriver() {
+  if IsDefined(this.m_mountedVehicle) && this.m_mountedVehicle.IsPlayerDriver() && IsDefined(this.m_mountedVehicle.GetVehicleComponent())
+  && !this.m_mountedVehicle.GetVehicleComponent().IsUnsupportedVehicleType() {
     let vehicleComp: ref<VehicleComponent> = this.m_mountedVehicle.GetVehicleComponent();
 
-    if inCombat && IsDefined(vehicleComp) {
+    if inCombat {
 
       if vehicleComp.m_modSettings.autoStartEngineDuringCombat && !this.m_mountedVehicle.IsEngineTurnedOn() {
         vehicleComp.TogglePowerState(true);
@@ -4383,6 +5615,7 @@ protected cb func OnCombatStateChanged(newState: Int32) -> Bool {
 
 @wrapMethod(hudCarController)
 protected func SetMeasurementUnits(value: Int32) -> Void {
+  // LogChannel(n"DEBUG", s"SetMeasurementUnits");
   wrappedMethod(value);
   
   // Get the current user setting for KMH or MPH unit
