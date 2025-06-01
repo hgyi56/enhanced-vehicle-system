@@ -15,6 +15,7 @@
         <action name="Exit"                 map="ExitVehicle_Button" />
         <action name="QuickExit"            map="QuickExit_Button"  />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
+        <action name="ModdedCycleEngine"    map="Vehicle_CycleEngine" />
         <action name="RangedAttack"         map="VehicleDriverCombatRangedAttack_Button" />
         <action name="Reload"               map="Reload_Button" />
         <action name="ZoomIn"               map="ZoomIn_Button"/>
@@ -42,6 +43,7 @@
         <action name="Exit"                 map="ExitVehicle_Button" />
         <action name="QuickExit"            map="QuickExit_Button"  />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
+        <action name="ModdedCycleEngine"    map="Vehicle_CycleEngine" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="ZoomIn"               map="ZoomIn_Button"/>
         <action name="ZoomOut"              map="ZoomOut_Button"/>
@@ -67,6 +69,7 @@
         <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
         <action name="Exit"                 map="ExitVehicle_Button" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
+        <action name="ModdedCycleEngine"    map="Vehicle_CycleEngine" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
@@ -87,6 +90,7 @@
         <action name="RockFB"               map="LeftY_Axis_Vehicle_RockFB" />
         <action name="Exit"             map="ExitVehicle_Button" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
+        <action name="ModdedCycleEngine"    map="Vehicle_CycleEngine" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
@@ -114,6 +118,7 @@
         <action name="Exit"                 map="ExitVehicle_Button" />
         <action name="QuickExit"            map="QuickExit_Button"  />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
+        <action name="ModdedCycleEngine"    map="Vehicle_CycleEngine" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
         <action name="VehicleSiren"                 map="Vehicle_Siren" />
         <action name="MeleeAttack"          map="VehicleDriverCombatRangedAttack_Button" />
@@ -142,6 +147,7 @@
         <action name="VehicleCameraReset"   map="VehicleCameraReset_Button"/>
         <action name="Exit"                 map="ExitVehicle_Button" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
+        <action name="ModdedCycleEngine"    map="Vehicle_CycleEngine" />
         <action name="Handbrake"            map="Vehicle_Handbrake" />
         <action name="ZoomIn"               map="ZoomIn_Button"/>
         <action name="ZoomOut"              map="ZoomOut_Button"/>
@@ -151,7 +157,13 @@
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
+    <mapping name="Vehicle_CycleEngine" type="Button">
+        <button id="IK_L" overridableUI="vehicleCycleEngine"/>
+        <button id="IK_Pad_DigitLeft" />
+    </mapping>
+
 	<hold action="CycleLights"			timeout="99.0" />
 	<hold action="ModdedCycleLights"	timeout="0.25" />
+    <hold action="ModdedCycleEngine"    timeout="0.25" />
 
 </bindings>
