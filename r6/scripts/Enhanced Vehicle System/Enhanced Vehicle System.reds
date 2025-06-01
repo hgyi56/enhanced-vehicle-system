@@ -845,14 +845,14 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Synchronized with power state")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall deploy and retract according to power state.")
-  public let spoilerSynchronizedWithPowerState: Bool = false;
+  public let spoilerSynchronizedWithPowerState: Bool = true;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
   @runtimeProperty("ModSettings.category.order", "9")
   @runtimeProperty("ModSettings.displayName", "Deploy with speed")
   @runtimeProperty("ModSettings.description", "Choose if the spoiler shall deploy according to speed.")
-  public let spoilerDeploySpeedEnabled: Bool = true;
+  public let spoilerDeploySpeedEnabled: Bool = false;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
   @runtimeProperty("ModSettings.category", "Rear spoiler")
@@ -922,6 +922,13 @@ public class ModSettings_EVS extends ScriptableSystem {
   @runtimeProperty("ModSettings.min", "0.00")
   @runtimeProperty("ModSettings.max", "0.20")
   public let cycleUtilityLightsHoldTime: Float = 0.05;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "Other settings")
+  @runtimeProperty("ModSettings.category.order", "11")
+  @runtimeProperty("ModSettings.displayName", "Display input hints")
+  @runtimeProperty("ModSettings.description", "Defines if this mod's input hints shall be displayed with the default ones.")
+  public let displayInputHints: Bool = true;
 
   public static func Get(gi: GameInstance) -> ref<ModSettings_EVS> {
     return GameInstance.GetScriptableSystemsContainer(gi).Get(n"ModSettings_EVS") as ModSettings_EVS;
@@ -1491,14 +1498,14 @@ public class ModSettings_EVS extends ScriptableSystem {
   }
 }
 
-public class FloatArrayWrapper {
+public class CrystalDomeTimingsArray {
   public let FL_in: Float;
   public let FL_out: Float;
   public let FR_in: Float;
 
-  public static func Create(FL_in: Float, FL_out: Float, FR_in: Float) -> ref<FloatArrayWrapper> {
+  public static func Create(FL_in: Float, FL_out: Float, FR_in: Float) -> ref<CrystalDomeTimingsArray> {
 
-    let floatarray = new FloatArrayWrapper();
+    let floatarray = new CrystalDomeTimingsArray();
 
     floatarray.FL_in = FL_in;
     floatarray.FL_out = FL_out;
@@ -1508,20 +1515,74 @@ public class FloatArrayWrapper {
   }
 }
 
+public class WindowTimingsArray {
+  public let openTiming: Float;
+  public let closeTiming: Float;
+
+  public static func Create(openTiming: Float, closeTiming: Float) -> ref<WindowTimingsArray> {
+
+    let floatarray = new WindowTimingsArray();
+
+    floatarray.openTiming = openTiming;
+    floatarray.closeTiming = closeTiming;
+
+    return floatarray;
+  }
+}
+
+public class StringWrapper {
+  public let name: String;
+
+  public static func Create(name: String) -> ref<StringWrapper> {
+
+    let stringWrapper = new StringWrapper();
+
+    stringWrapper.name = name;
+
+    return stringWrapper;
+  }
+}
+
 public class VehicleData extends ScriptableSystem {
 
   public let kmh_multiplier: Float = 1.609344;
 
   public let hasIncompatibleSlidingDoorsWindow_VehicleMap: ref<inkStringMap>;
   public let incorrectDoorNumber_VehicleMap: ref<inkStringMap>;
-  public let incorrectHasWindow_VehicleMap: ref<inkStringMap>;
   public let isSlidingDoors_VehicleMap: ref<inkStringMap>;
-  public let crystalDomeMeshTiming_VehicleMap: ref<inkHashMap>;
+  public let isSingleFrontDoor_VehicleMap: ref<inkStringMap>;
+
+  public let crystalDomeMeshTimings_VehicleMap: ref<inkHashMap>;
+  public let windowTimings_VehicleMap: ref<inkHashMap>;
+  public let drivingParamsGeneric_VehicleMap: ref<inkHashMap>;
 
   public let rainbowColors: array<array<Int32>>;
 
   public static func Get(gi: GameInstance) -> ref<VehicleData> {
     return GameInstance.GetScriptableSystemsContainer(gi).Get(n"VehicleData") as VehicleData;
+  }
+  
+  public func RemoveBlankSpecialCharacters(string: String) -> String {
+    return StrReplaceAll(string, " ", " ");
+  }
+  
+  public func ShortModelName(vehicleModel: String) -> String {
+    // Get the first word of the vehicle model
+    let parts: array<String> = StrSplit(VehicleData.Get(this.GetGameInstance()).RemoveBlankSpecialCharacters(vehicleModel), " ");
+    
+    if ArraySize(parts) > 2 {
+      vehicleModel = s"\(parts[0]) \(parts[1])";
+    }
+
+    return vehicleModel;
+  }
+
+  public func KeyExist(vehicleModel: String, map: ref<inkStringMap>) -> Bool {
+    return map.KeyExist(vehicleModel);
+  }
+
+  public func KeyExist(vehicleModel: String, map: ref<inkHashMap>) -> Bool {
+    return map.KeyExist(TDBID.ToNumber(TDBID.Create(vehicleModel)));
   }
 
   private func OnAttach() -> Void {
@@ -1535,7 +1596,7 @@ public class VehicleData extends ScriptableSystem {
     ArrayPush(vehicleData.rainbowColors, [75, 0, 130]); // Indigo
     ArrayPush(vehicleData.rainbowColors, [148, 0, 211]); // Violet
 
-    vehicleData.crystalDomeMeshTiming_VehicleMap = new inkHashMap();
+    vehicleData.crystalDomeMeshTimings_VehicleMap = new inkHashMap();
     // We can distinguish two types of crystal dome vehicles:
     // - Internal crystal dome with no external mesh like the Rayfield Caliburn, Rayfield Aerondight, Militech Hellhound...
     //   These vehicles won't change their external appearance whether the player is using FPP (cockpit) or TPP (external) camera.
@@ -1550,44 +1611,61 @@ public class VehicleData extends ScriptableSystem {
     // The purpose of the map below is to define custom timings to show and hide external elements for each affected vehicles. This problem appears because this mod allows to
     // keep the crystal dome working while V is outside of the vehicle. This raises the problem of showing or hiding external elements in a smooth way so the player barely
     // realizes that these elements have just been hidden or displayed again. This is not a perfect solution but it's working pretty nicely.
-    vehicleData.crystalDomeMeshTiming_VehicleMap.Insert(TDBID.ToNumber(t"Mizutani Shion"), FloatArrayWrapper.Create(2.00, 0.85, 1.65)); // Shion "Coyote" / "Wendigo" / "Samum" / "Bonewrecker" / "Blackbird"
-    vehicleData.crystalDomeMeshTiming_VehicleMap.Insert(TDBID.ToNumber(t"Quadra Type66"), FloatArrayWrapper.Create(2.15, 0.75, 1.85)); // Type-66 "Javelina" / "Reaver" / "Wingate"
-    vehicleData.crystalDomeMeshTiming_VehicleMap.Insert(TDBID.ToNumber(t"Thorton Turbo"), FloatArrayWrapper.Create(1.85, 0.75, 1.55)); // Colby "Little Mule" / "Revenant" / "Vulture"
+    vehicleData.crystalDomeMeshTimings_VehicleMap.Insert(TDBID.ToNumber(t"Mizutani Shion"), CrystalDomeTimingsArray.Create(2.00, 0.85, 1.65)); // Shion "Coyote" / "Wendigo" / "Samum" / "Bonewrecker" / "Blackbird"
+    vehicleData.crystalDomeMeshTimings_VehicleMap.Insert(TDBID.ToNumber(t"Quadra Type-66"), CrystalDomeTimingsArray.Create(2.15, 0.75, 1.85)); // Type-66 "Javelina" / "Reaver" / "Wingate"
+    vehicleData.crystalDomeMeshTimings_VehicleMap.Insert(TDBID.ToNumber(t"Thorton Colby"), CrystalDomeTimingsArray.Create(1.85, 0.75, 1.55)); // Colby "Little Mule" / "Revenant" / "Vulture"
     // Archer Quartz "Sidewinder" / "Specter" has an additional issue: the game cannot
     // display both external elements and internal crystal dome without a merge glitch between them. There is no solution for this.
     // As a workaround I used a very short transition timing for "driver/passenger getting in" so it is the least glitchy I can do.
-    vehicleData.crystalDomeMeshTiming_VehicleMap.Insert(TDBID.ToNumber(t"Archer Turbo"), FloatArrayWrapper.Create(0.20, 0.75, 0.20)); // Quartz "Sidewinder" / "Specter"
-    vehicleData.crystalDomeMeshTiming_VehicleMap.Insert(TDBID.ToNumber(t"Thorton GalenaNomad"), FloatArrayWrapper.Create(1.50, 0.75, 1.00)); // Galena "Gecko" / "Ghoul" / "Locust"
-    vehicleData.crystalDomeMeshTiming_VehicleMap.Insert(TDBID.ToNumber(t"Mahir Turbo"), FloatArrayWrapper.Create(0.00, 1.10, 0.00)); // Supron "Trailbruiser"
+    vehicleData.crystalDomeMeshTimings_VehicleMap.Insert(TDBID.ToNumber(t"Archer Quartz"), CrystalDomeTimingsArray.Create(0.20, 0.75, 0.20)); // Quartz "Sidewinder" / "Specter"
+    vehicleData.crystalDomeMeshTimings_VehicleMap.Insert(TDBID.ToNumber(t"Thorton Galena"), CrystalDomeTimingsArray.Create(1.50, 0.75, 1.00)); // Galena "Gecko" / "Ghoul" / "Locust"
+    vehicleData.crystalDomeMeshTimings_VehicleMap.Insert(TDBID.ToNumber(t"Mahir Supron"), CrystalDomeTimingsArray.Create(0.00, 1.10, 0.00)); // Supron "Trailbruiser"
     // Militech "Hellhound" does not use external crystal dome mesh
     // Rayfield Caliburn does not use external crystal dome mesh
     // Rayfield Aerondight does not use external crystal dome mesh
     
+    vehicleData.windowTimings_VehicleMap = new inkHashMap();
+    // When a vehicle is marked as "hasIncompatibleSlidingDoorsWindow" it means that this vehicle must have windows open while doors are open and the user
+    // must not be able to manipulate windows while doors are open. Moreover if the windows are open and the player opens the door we must close the window with a precise timing
+    // so the window does not get out of the door mesh while the door is opening.
+    // For this particular cases we need to define window timings that depends on vehicle model.
+    vehicleData.windowTimings_VehicleMap.Insert(TDBID.ToNumber(t"Quadra Type-66"), WindowTimingsArray.Create(0.59, 0.40));
+    vehicleData.windowTimings_VehicleMap.Insert(TDBID.ToNumber(t"Herrera Riptide"), WindowTimingsArray.Create(0.59, 0.29));
+
+    vehicleData.drivingParamsGeneric_VehicleMap = new inkHashMap();
+    vehicleData.drivingParamsGeneric_VehicleMap.Insert(TDBID.ToNumber(t"Driving.Default_Delamain"), StringWrapper.Create("Driving.Default_Delamain"));
+
     vehicleData.incorrectDoorNumber_VehicleMap = new inkStringMap();
     //vehicleData.incorrectDoorNumber_VehicleMap.Insert("Thorton Mackinaw", Cast<Uint64>(2)); // Defined with 4 seats but only 3 real windows, and 3 real doors with back left door glitchy
-    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Militech Turbo", Cast<Uint64>(4)); // Militech "Hellhound" is defined with 2 seats but it has 4 real doors
-    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Mahir Turbo", Cast<Uint64>(4)); // Supron "Trailbruiser" is defined with 2 seats but it has 4 real doors
-    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Villefort Alvarado", Cast<Uint64>(4)); // Defined with 2 seats but it has 4 real doors
+    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Militech Hellhound", Cast<Uint64>(4)); // Militech "Hellhound" is defined with 2 seats but it has 4 real doors
+    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Mahir Supron", Cast<Uint64>(4)); // Supron "Trailbruiser" is defined with 2 seats but it has 4 real doors
+    
+    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Villefort Alvarado", Cast<Uint64>(4)); // Defined with 2 seats but it has 4 real windows
+    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Villefort Alvarado V4FH 570 Herman", Cast<Uint64>(2)); // Defined with 2 seats but it has 4 real windows
+    
     vehicleData.incorrectDoorNumber_VehicleMap.Insert("Chevillon Bratsk", Cast<Uint64>(4)); // Defined with 2 seats but it has 4 real doors
+    vehicleData.incorrectDoorNumber_VehicleMap.Insert("Quadra Sport", Cast<Uint64>(2)); // "Sport R-7 580" Defined with 4 windows but it has 2 real doors
 
-    vehicleData.incorrectHasWindow_VehicleMap = new inkStringMap();
+    vehicleData.isSingleFrontDoor_VehicleMap = new inkStringMap();
+    vehicleData.isSingleFrontDoor_VehicleMap.Insert("Herrera Riptide", Cast<Uint64>(0)); // Riptide GT2
 
     vehicleData.isSlidingDoors_VehicleMap = new inkStringMap();
-    vehicleData.isSlidingDoors_VehicleMap.Insert("Rayfield Turbo", Cast<Uint64>(0)); // Caliburn
+    vehicleData.isSlidingDoors_VehicleMap.Insert("Rayfield Caliburn", Cast<Uint64>(0));
     vehicleData.isSlidingDoors_VehicleMap.Insert("Rayfield Aerondight", Cast<Uint64>(0));
     vehicleData.isSlidingDoors_VehicleMap.Insert("Mizutani Shion", Cast<Uint64>(0)); // Shion "Coyote" / "Wendigo" / "Samum" / "Bonewrecker" / "Blackbird" / MZ1 / MZ2 / Targa MZT / "Kyokotsu"
-    vehicleData.isSlidingDoors_VehicleMap.Insert("Quadra Turbo", Cast<Uint64>(0)); // "Quadra Turbo R V-Tech" / "Quadra Turbo R 740"
-    vehicleData.isSlidingDoors_VehicleMap.Insert("Quadra Type66", Cast<Uint64>(0)); // Type-66 640 TS / 680 TS / Avenger / "Cthulhu" / "Jen Rowley" / "Mistral" / "Javelina" / "Reaver" / "Hoon" / "Wingate"
+    vehicleData.isSlidingDoors_VehicleMap.Insert("Quadra Turbo-R", Cast<Uint64>(0)); // "Quadra Turbo-R V-Tech" / "Quadra Turbo-R 740"
+    vehicleData.isSlidingDoors_VehicleMap.Insert("Quadra Type-66", Cast<Uint64>(0)); // Type-66 640 TS / 680 TS / Avenger / "Cthulhu" / "Jen Rowley" / "Mistral" / "Javelina" / "Reaver" / "Hoon" / "Wingate"
 
     vehicleData.hasIncompatibleSlidingDoorsWindow_VehicleMap = new inkStringMap();
     // This is the list of vehicles that use sliding doors that must not be able to toggle windows while doors are opened
     // Otherwise the window will go out of the door mesh because the window animation for these vehicles is not meant to play while doors are opened
     // All vehicles that match this list won't be able to toggle windows while doors are opened
-    vehicleData.hasIncompatibleSlidingDoorsWindow_VehicleMap.Insert("Quadra Type66", Cast<Uint64>(0)); // Type-66 640 TS / 680 TS / Avenger / "Cthulhu" / "Jen Rowley" / "Mistral" / "Javelina" / "Reaver" / "Hoon" / "Wingate"
+    vehicleData.hasIncompatibleSlidingDoorsWindow_VehicleMap.Insert("Quadra Type-66", Cast<Uint64>(0)); // Type-66 640 TS / 680 TS / Avenger / "Cthulhu" / "Jen Rowley" / "Mistral" / "Javelina" / "Reaver" / "Hoon" / "Wingate"
+    vehicleData.hasIncompatibleSlidingDoorsWindow_VehicleMap.Insert("Herrera Riptide", Cast<Uint64>(0)); // Riptide GT2
   }
 }
 
-public class ArrayUtils {
+public class Utils {
 
   public static func SecondToLast(arrayObj: array<MountingSlotId>, out slodId: MountingSlotId) -> Bool {
 
@@ -1598,6 +1676,10 @@ public class ArrayUtils {
     slodId = arrayObj[ArraySize(arrayObj) - 2];
     
     return true;
+  }
+
+  public static func GetCurrentTime(gi: GameInstance) -> Float {
+    return EngineTime.ToFloat(GameInstance.GetEngineTime(gi));
   }
 }
 
@@ -1674,7 +1756,10 @@ public let m_isDriverCombat: Bool = false;
 public let m_isDriverCombatType_Doors: Bool = false;
 
 @addField(VehicleComponent)
-public let m_crystalDomeMeshTimings: ref<FloatArrayWrapper> = null;
+public let m_crystalDomeMeshTimings: ref<CrystalDomeTimingsArray> = null;
+
+@addField(VehicleComponent)
+public let m_windowTimings: ref<WindowTimingsArray> = null;
 
 @addField(VehicleComponent)
 public let m_isKmH: Bool = false;
@@ -1684,6 +1769,12 @@ public let m_FL_windowState: EVehicleWindowState = EVehicleWindowState.Closed;
 
 @addField(VehicleComponent)
 public let m_FR_windowState: EVehicleWindowState = EVehicleWindowState.Closed;
+
+@addField(VehicleComponent)
+public let m_BL_windowState: EVehicleWindowState = EVehicleWindowState.Closed;
+
+@addField(VehicleComponent)
+public let m_BR_windowState: EVehicleWindowState = EVehicleWindowState.Closed;
 
 @addField(VehicleComponent)
 public let m_FL_doorState: VehicleDoorState = VehicleDoorState.Closed;
@@ -1709,6 +1800,9 @@ public let m_vehicleDrivenByV: Bool = false;
 public let m_vehicleModel: String;
 
 @addField(VehicleComponent)
+public let m_vehicleLongModel: String;
+
+@addField(VehicleComponent)
 public let m_cycleEngineLastPressTime: Float = 0.00;
 
 @addField(VehicleComponent)
@@ -1716,6 +1810,9 @@ public let m_hasWindows: Bool = false;
 
 @addField(VehicleComponent)
 public let m_isSlidingDoors: Bool = false;
+
+@addField(VehicleComponent)
+public let m_isSingleFrontDoor: Bool = false;
 
 @addField(VehicleComponent)
 public let m_isPoliceVehicle: Bool = false;
@@ -1804,9 +1901,6 @@ public let m_reverseLightsUpdatedSinceLastReverse: Bool = false;
 @addField(VehicleComponent)
 public let m_headlightsSynchronizedWithTimeShallEnable: Bool = false;
 
-@addField(VehicleObject)
-public let m_vehicleUIGameController: ref<vehicleUIGameController>;
-
 @addField(VehicleComponent)
 public let m_mountedSeats: array<MountingSlotId>;
 
@@ -1815,6 +1909,52 @@ public let m_mountedSeats: array<MountingSlotId>;
 // 1 = Roof lights ON + side banner lights RED
 // 2 = Roof lights ON + side banner lights RED + Siren ON
 public let m_threeStatesSiren: Int32 = 0;
+
+@addField(VehicleObject)
+public let m_vehicleUIGameController: ref<vehicleUIGameController>;
+
+@addField(VehicleDoorClose)
+public let shouldOpenWindow: Bool = false;
+
+@addField(VehicleDoorOpen)
+public let shouldOpenWindow: Bool = false;
+
+@addField(PlayerPuppet)
+public let m_customHeadlightsEnabled: Bool = true;
+
+@addField(PlayerPuppet)
+public let m_customTailLightsEnabled: Bool = true;
+
+@addField(PlayerPuppet)
+public let m_customUtilityLightsEnabled: Bool = true;
+
+@addField(PlayerPuppet)
+public let m_customReverseLightsEnabled: Bool = true;
+
+@addField(PlayerPuppet)
+public let m_customBlinkerLightsEnabled: Bool = true;
+
+@addField(PlayerPuppet)
+public let m_customLightsAreBeingToggled: Bool = false; // False means that the player is modifying the ModSettings. True means that the player is toggling the custom lights settings
+
+@addField(PlayerPuppet)
+public let m_drivenVehicles: array<ref<VehicleComponent>>;
+
+@addField(PlayerPuppet)
+public let m_toggleCustomLightsLongInputTriggered: Bool = false;
+
+@addField(PlayerPuppet)
+public let m_toggleCustomLightsLastPressTime: Float = 0.00;
+
+@addField(PlayerPuppet)
+public let m_toggleCustomLightsStep: Int32 = 0;
+
+@addField(PlayerPuppet)
+public let m_modSettings: ref<ModSettings_EVS>;
+
+public class MultiTapLightsToggleEvent extends Event {
+  let tapCount: Int32 = 0;
+}
 
 public class MultiTapDoorEvent extends Event {
   let tapCount: Int32 = 0;
@@ -1876,6 +2016,53 @@ public class PlayerIsAwayFromVehicleEvent extends Event {
   let hasBeenOutOfVehicleRange: Bool = false;
 }
 
+@addMethod(PlayerPuppet)
+protected cb func OnMultiTapLightsToggleEvent(evt: ref<MultiTapLightsToggleEvent>) -> Bool {
+  if evt.tapCount != this.m_toggleCustomLightsStep {
+    return false;
+  }
+
+  switch evt.tapCount {
+    case 1:
+      this.m_customHeadlightsEnabled = !this.m_customHeadlightsEnabled;
+      break;
+
+    case 2:
+      this.m_customTailLightsEnabled = !this.m_customTailLightsEnabled;
+      break;
+
+    case 3:
+      this.m_customUtilityLightsEnabled = !this.m_customUtilityLightsEnabled;
+      break;
+
+    case 4:
+      this.m_customBlinkerLightsEnabled = !this.m_customBlinkerLightsEnabled;
+      break;
+
+    case 5:
+      this.m_customReverseLightsEnabled = !this.m_customReverseLightsEnabled;
+      break;
+
+    default:
+      return false; // Don't update lights if user's choice is out of range
+      break;
+  }
+  
+  this.m_customLightsAreBeingToggled = true;
+  let i = 0;
+  while i < ArraySize(this.m_drivenVehicles) {
+
+    if IsDefined(this.m_drivenVehicles[i]) {
+      this.m_drivenVehicles[i].OnModSettingsChange();
+    }
+
+    i += 1;
+  }
+  this.m_customLightsAreBeingToggled = false;
+
+  return true;
+}
+
 @addMethod(VehicleComponent)
 protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
   if evt.tapCount != this.m_cycleDoorStep {
@@ -1887,7 +2074,15 @@ protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
     return false;
   }
 
+  // Some vehicles have a single front door for both sides
+  if this.m_isSingleFrontDoor {
+    evt.tapCount = 1; // Redirect all doors actions to drivers door
+  }
+
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
   let preventDoorClosingDuringCombat: Bool = this.m_isDriverCombat && this.m_isDriverCombatType_Doors;
   let preventWindowClosingDuringCombat: Bool = this.m_isDriverCombat && !this.m_isDriverCombatType_Doors;
   let playerSlotID: MountingSlotId = this.GetPlayerSlotID();
@@ -1930,6 +2125,24 @@ protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
     case 1:
       if !preventDoorClosingDuringCombat && Equals(this.GetPS().GetDoorState(step1_VehicleDoor), VehicleDoorState.Open) {
         VehicleComponent.CloseDoor(vehicle, step1_SlotID);
+        this.m_FL_doorState = VehicleDoorState.Closed;
+        // LogChannel(n"DEBUG", s"CloseDoor -> Memory FL set to \(this.m_FL_doorState)");
+
+        if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+          if Equals(this.m_FL_windowState, EVehicleWindowState.Open) {
+            let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+            event.slotID = step1_SlotID.id;
+            GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+          }
+
+          if this.m_isSingleFrontDoor {
+            if Equals(this.m_FR_windowState, EVehicleWindowState.Open) {
+              let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+              event.slotID = VehicleComponent.GetFrontPassengerSlotName();
+              GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+            }
+          }
+        }
 
         // DriverCombat modes:
         // - Doors: front doors need to be opened (like Rayfield Caliburn)
@@ -1938,12 +2151,31 @@ protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
           this.ForceFrontWindowsDuringCombat(VehicleDoorState.Closed, FR_doorState);
         }
       }
-      else {
+      else if !preventDoorClosingDuringCombat {
         // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
-        if this.m_hasIncompatibleSlidingDoorsWindow && Equals(this.GetPS().GetWindowState(step1_VehicleDoor), EVehicleWindowState.Open) {
-          VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, step1_SlotID, false);
+        if this.m_hasIncompatibleSlidingDoorsWindow {
+          if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+            this.m_FL_windowState = this.GetPS().GetWindowState(step1_VehicleDoor);
+          }
+
+          if Equals(this.GetPS().GetWindowState(step1_VehicleDoor), EVehicleWindowState.Open) {
+            VehicleComponent.ToggleVehicleWindow(gi, vehicle, step1_SlotID, false, n"Custom");
+          }
+
+          if this.m_isSingleFrontDoor {
+            if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+              this.m_FR_windowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
+            }
+
+            if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_right), EVehicleWindowState.Open) {
+              VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false, n"Custom");
+            }
+          }
         }
+        
         VehicleComponent.OpenDoor(vehicle, step1_SlotID);
+        this.m_FL_doorState = VehicleDoorState.Open;
+        // LogChannel(n"DEBUG", s"OpenDoor -> Memory FL set to \(this.m_FL_doorState)");
 
         // DriverCombat mode Standard: if doors type is Sliding Door (like Quadra V-Tech) then the user can still manipulate windows while doors are open only
         // If doors are hinged then windows will always stay opened during combat
@@ -1956,6 +2188,15 @@ protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
     case 2:
       if !preventDoorClosingDuringCombat && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), VehicleDoorState.Open) {
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+        this.m_FR_doorState = VehicleDoorState.Closed;
+
+        if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+          if Equals(this.m_FR_windowState, EVehicleWindowState.Open) {
+            let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+            event.slotID = VehicleComponent.GetFrontPassengerSlotName();
+            GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+          }
+        }
 
         // DriverCombat modes:
         // - Doors: front doors need to be opened (like Rayfield Caliburn)
@@ -1964,12 +2205,19 @@ protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
           this.ForceFrontWindowsDuringCombat(FL_doorState, VehicleDoorState.Closed);
         }
       }
-      else {
+      else if !preventDoorClosingDuringCombat {
         // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
-        if this.m_hasIncompatibleSlidingDoorsWindow && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_right), EVehicleWindowState.Open) {
-          VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetFrontPassengerSlotID(), false);
+        if this.m_hasIncompatibleSlidingDoorsWindow {
+          if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+            this.m_FR_windowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
+          }
+          
+          if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_right), EVehicleWindowState.Open) {
+            VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false, n"Custom");
+          }
         }
         VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+        this.m_FR_doorState = VehicleDoorState.Open;
 
         // DriverCombat mode Standard: if doors type is Sliding Door (like Quadra V-Tech) then the user can still manipulate windows while doors are open only
         // If doors are hinged then windows will always stay opened during combat
@@ -1982,26 +2230,58 @@ protected cb func OnMultiTapDoorEvent(evt: ref<MultiTapDoorEvent>) -> Bool {
     case 3:
       if Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_left), VehicleDoorState.Open) {
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetBackLeftPassengerSlotID());
+        this.m_BL_doorState = VehicleDoorState.Closed;
+
+        if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+          if Equals(this.m_BL_windowState, EVehicleWindowState.Open) {
+            let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+            event.slotID = VehicleComponent.GetBackLeftPassengerSlotName();
+            GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+          }
+        }
       }
       else {
         // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
-        if this.m_hasIncompatibleSlidingDoorsWindow && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_left), EVehicleWindowState.Open) {
-          VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), false);
+        if this.m_hasIncompatibleSlidingDoorsWindow {
+          if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+            this.m_BL_windowState = this.GetPS().GetWindowState(EVehicleDoor.seat_back_left);
+          }
+          
+          if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_left), EVehicleWindowState.Open) {
+            VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), false, n"Custom");
+          }
         }
         VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetBackLeftPassengerSlotID());
+        this.m_BL_doorState = VehicleDoorState.Open;
       }
       break;
 
     case 4:
       if Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_right), VehicleDoorState.Open) {
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetBackRightPassengerSlotID());
+        this.m_BR_doorState = VehicleDoorState.Closed;
+
+        if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+          if Equals(this.m_BR_windowState, EVehicleWindowState.Open) {
+            let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+            event.slotID = VehicleComponent.GetBackRightPassengerSlotName();
+            GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+          }
+        }
       }
       else {
         // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
-        if this.m_hasIncompatibleSlidingDoorsWindow && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_right), EVehicleWindowState.Open) {
-          VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetBackRightPassengerSlotID(), false);
+        if this.m_hasIncompatibleSlidingDoorsWindow {
+          if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+            this.m_BR_windowState = this.GetPS().GetWindowState(EVehicleDoor.seat_back_right);
+          }
+          
+          if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_right), EVehicleWindowState.Open) {
+            VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), false, n"Custom");
+          }
         }
         VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetBackRightPassengerSlotID());
+        this.m_BR_doorState = VehicleDoorState.Open;
       }
       break;
   }
@@ -2021,6 +2301,7 @@ protected cb func OnMultiTapWindowEvent(evt: ref<MultiTapWindowEvent>) -> Bool {
   }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let preventWindowClosingDuringCombat: Bool = this.m_isDriverCombat && !this.m_isDriverCombatType_Doors;
   let playerSlotID: MountingSlotId = this.GetPlayerSlotID();
 
@@ -2036,6 +2317,10 @@ protected cb func OnMultiTapWindowEvent(evt: ref<MultiTapWindowEvent>) -> Bool {
   let step1_SlotID: MountingSlotId = VehicleComponent.GetDriverSlotID(); // Defaults to driver seat
   let step1_EVehicleWindowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_left); // Defaults to driver seat
   let step1_VehicleDoorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_left); // Defaults to driver seat
+
+  if this.m_isSingleFrontDoor {
+    FR_doorState = step1_VehicleDoorState;
+  }
 
   // If the player is mounted as a passenger then only allow him to toggle his own window
   // Redirect all multi-tap actions to the current player seat
@@ -2067,12 +2352,10 @@ protected cb func OnMultiTapWindowEvent(evt: ref<MultiTapWindowEvent>) -> Bool {
       // Only opened sliding doors can still manipulate windows during combat
       if !preventWindowClosingDuringCombat || (this.m_isSlidingDoors && Equals(step1_VehicleDoorState, VehicleDoorState.Open)) {
         if !this.m_hasIncompatibleSlidingDoorsWindow || Equals(step1_VehicleDoorState, VehicleDoorState.Closed) {
-          VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, step1_SlotID, Equals(step1_EVehicleWindowState, EVehicleWindowState.Open) ? false : true);
+          VehicleComponent.ToggleVehicleWindow(gi, vehicle, step1_SlotID, Equals(step1_EVehicleWindowState, EVehicleWindowState.Open) ? false : true);
 
           // During DriverCombat mode: if the user manipulates window while sliding doors are open then remember these new states as the recall state
-          if preventWindowClosingDuringCombat {
-            this.m_FL_windowState = Equals(step1_EVehicleWindowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
-          }
+          this.m_FL_windowState = Equals(step1_EVehicleWindowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
         }
       }
       break;
@@ -2081,25 +2364,25 @@ protected cb func OnMultiTapWindowEvent(evt: ref<MultiTapWindowEvent>) -> Bool {
       // Only opened sliding doors can still manipulate windows during combat
       if !preventWindowClosingDuringCombat || (this.m_isSlidingDoors && Equals(FR_doorState, VehicleDoorState.Open)) {
         if !this.m_hasIncompatibleSlidingDoorsWindow || Equals(FR_doorState, VehicleDoorState.Closed) {
-          VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetFrontPassengerSlotID(), Equals(FR_windowState, EVehicleWindowState.Open) ? false : true);
+          VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), Equals(FR_windowState, EVehicleWindowState.Open) ? false : true);
         
           // During DriverCombat mode: if the user manipulates window while sliding doors are open then remember these new states as the recall state
-          if preventWindowClosingDuringCombat {
-            this.m_FR_windowState = Equals(FR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
-          }
+          this.m_FR_windowState = Equals(FR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
         }
       }
       break;
 
     case 3:
       if !this.m_hasIncompatibleSlidingDoorsWindow || Equals(BL_doorState, VehicleDoorState.Closed) {
-        VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), Equals(BL_windowState, EVehicleWindowState.Open) ? false : true);
+        VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), Equals(BL_windowState, EVehicleWindowState.Open) ? false : true);
+        this.m_BL_windowState = Equals(BL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
       }
       break;
 
     case 4:
       if !this.m_hasIncompatibleSlidingDoorsWindow || Equals(BR_doorState, VehicleDoorState.Closed) {
-        VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetBackRightPassengerSlotID(), Equals(BR_windowState, EVehicleWindowState.Open) ? false : true);
+        VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), Equals(BR_windowState, EVehicleWindowState.Open) ? false : true);
+        this.m_BR_windowState = Equals(BR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
       }
       break;
   }
@@ -2172,6 +2455,7 @@ protected cb func OnCrystalDomeMeshEvent(evt: ref<CrystalDomeMeshEvent>) -> Bool
 @addMethod(VehicleComponent)
 protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
 
   if activeEffectIdentifier != evt.identifier {
@@ -2190,7 +2474,7 @@ protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bo
   event.identifier = evt.identifier;
   event.step = evt.step + 1;
   event.lightType = evt.lightType;
-  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, 0.10, true);
+  GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, 0.10, true);
 
   return true;
 }
@@ -2198,6 +2482,7 @@ protected cb func OnSolidColorEffectEvent(evt: ref<SolidColorEffectEvent>) -> Bo
 @addMethod(VehicleComponent)
 protected cb func OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
   let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
@@ -2216,7 +2501,7 @@ protected cb func OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 1;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
       
     case 1:
@@ -2227,7 +2512,7 @@ protected cb func OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 0;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -2237,6 +2522,7 @@ protected cb func OnBlinkerEffectEvent(evt: ref<BlinkerEffectEvent>) -> Bool {
 @addMethod(VehicleComponent)
 protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let beaconDelay: Float = 0.10;
   let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
   let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
@@ -2256,7 +2542,7 @@ protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 1;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, beaconDelay, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, beaconDelay, true);
       break;
       
     case 1:
@@ -2267,7 +2553,7 @@ protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 2;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, beaconDelay, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, beaconDelay, true);
       break;
       
     case 2:
@@ -2278,7 +2564,7 @@ protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 3;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, beaconDelay, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, beaconDelay, true);
       break;
       
     case 3:
@@ -2289,7 +2575,7 @@ protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 0;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -2299,6 +2585,7 @@ protected cb func OnBeaconEffectEvent(evt: ref<BeaconEffectEvent>) -> Bool {
 @addMethod(VehicleComponent)
 protected cb func OnPulseEffectEvent(evt: ref<PulseEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
   let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
@@ -2317,7 +2604,7 @@ protected cb func OnPulseEffectEvent(evt: ref<PulseEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 1;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
       
     case 1:
@@ -2328,7 +2615,7 @@ protected cb func OnPulseEffectEvent(evt: ref<PulseEffectEvent>) -> Bool {
       event.identifier = evt.identifier;
       event.step = 0;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed, true);
       break;
   }
 
@@ -2338,6 +2625,7 @@ protected cb func OnPulseEffectEvent(evt: ref<PulseEffectEvent>) -> Bool {
 @addMethod(VehicleComponent)
 protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
   let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
@@ -2356,7 +2644,7 @@ protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent
       event.identifier = evt.identifier;
       event.step = 1;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
       break;
       
     case 1:
@@ -2367,7 +2655,7 @@ protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent
       event.identifier = evt.identifier;
       event.step = 0;
       event.lightType = evt.lightType;
-      GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
+      GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
       break;
   }
 
@@ -2377,6 +2665,7 @@ protected cb func OnTwoColorsCycleEffectEvent(evt: ref<TwoColorsCycleEffectEvent
 @addMethod(VehicleComponent)
 protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let activeEffectIdentifier: Int32 = this.GetActiveEffectIdentifier(evt.lightType);
   let sequenceSpeed: Float = this.GetLightsSequenceSpeed(evt.lightType);
 
@@ -2386,7 +2675,7 @@ protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
 
   // LogChannel(n"DEBUG", s"[RainbowEffect \(evt.lightType)Light \(evt.identifier)] \(this.m_vehicleModel)");
 
-  let rainbowColor: Color = this.ToColor(VehicleData.Get(vehicle.GetGame()).rainbowColors[evt.colorIndex]);
+  let rainbowColor: Color = this.ToColor(VehicleData.Get(gi).rainbowColors[evt.colorIndex]);
 
   this.ApplyLightsParameters(false, false, false, evt.lightType, rainbowColor);
 
@@ -2394,7 +2683,7 @@ protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
   event.identifier = evt.identifier;
   event.colorIndex = evt.colorIndex == 6 ? 0 : evt.colorIndex + 1;
   event.lightType = evt.lightType;
-  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
+  GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, sequenceSpeed * this.m_colorFadeLatencyMultiplier, true);
 
   return true;
 }
@@ -2402,6 +2691,7 @@ protected cb func OnRainbowEffectEvent(evt: ref<RainbowEffectEvent>) -> Bool {
 @addMethod(VehicleComponent)
 protected cb func OnGameTimeElapsedEvent(evt: ref<GameTimeElapsedEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
 
   if this.m_headlightsTimerIdentifier != evt.identifier {
     return false;
@@ -2411,7 +2701,7 @@ protected cb func OnGameTimeElapsedEvent(evt: ref<GameTimeElapsedEvent>) -> Bool
     return false;
   }
 
-  let historyTime: GameTime = GameInstance.GetTimeSystem(vehicle.GetGame()).GetGameTime();
+  let historyTime: GameTime = GameInstance.GetTimeSystem(gi).GetGameTime();
 
   let turnOnTime: GameTime = GameTime.MakeGameTime(0, this.m_modSettings.headlightsTurnOnHour, this.m_modSettings.headlightsTurnOnMinute, 0);
   let turnOffTime: GameTime = GameTime.MakeGameTime(0, this.m_modSettings.headlightsTurnOffHour, this.m_modSettings.headlightsTurnOffMinute, 0);
@@ -2462,7 +2752,7 @@ protected cb func OnGameTimeElapsedEvent(evt: ref<GameTimeElapsedEvent>) -> Bool
 
   let event: ref<GameTimeElapsedEvent> = new GameTimeElapsedEvent();
   event.identifier = evt.identifier;
-  GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, 1.00, true);
+  GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, 1.00, true);
 
   return true;
 }
@@ -2470,6 +2760,7 @@ protected cb func OnGameTimeElapsedEvent(evt: ref<GameTimeElapsedEvent>) -> Bool
 @addMethod(VehicleComponent)
 protected cb func OnPlayerIsAwayFromVehicleEvent(evt: ref<PlayerIsAwayFromVehicleEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
   let enableDistance: Float = 400.0; // Meters
   let distancePlayerVehicle: Float = Vector4.DistanceSquared(player.GetWorldPosition(), vehicle.GetWorldPosition()) * 0.3048; // Base unit is feet
@@ -2492,10 +2783,10 @@ protected cb func OnPlayerIsAwayFromVehicleEvent(evt: ref<PlayerIsAwayFromVehicl
   // - vehicle has been driven by the player
   // - crystal dome state shall be on
   // - player is not mounted into the vehicle
-  if this.m_vehicleDrivenByV && this.GetPS().GetCrystalDomeState() && !VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), player.GetEntityID(), vehicle) {
+  if this.m_vehicleDrivenByV && this.GetPS().GetCrystalDomeState() && !VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) {
     let event: ref<PlayerIsAwayFromVehicleEvent> = new PlayerIsAwayFromVehicleEvent();
     event.hasBeenOutOfVehicleRange = evt.hasBeenOutOfVehicleRange;
-    GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, 1.00, true);
+    GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, 1.00, true);
 
     return false;
   }
@@ -2533,6 +2824,7 @@ private final func RegisterInputListener() -> Void {
   player.RegisterInputListener(this, n"CycleSpoiler");
 
   player.RegisterInputListener(this, n"ModdedCycleLights");
+  player.RegisterInputListener(this, n"ToggleCustomLights");
 
   player.RegisterInputListener(this, n"Accelerate");
   player.RegisterInputListener(this, n"Decelerate");
@@ -2552,13 +2844,14 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
   if !IsDefined(vehicle) {
     return false;
   };
+  let gi: GameInstance = vehicle.GetGame();
   if Equals(ListenerAction.GetName(action), n"VehicleInsideWheel") {
-    if !StatusEffectSystem.ObjectHasStatusEffectWithTag(vehicle, n"VehicleBlockRadioInput") && this.IsRadioEnabled(vehicle.GetGame()) {
+    if !StatusEffectSystem.ObjectHasStatusEffectWithTag(vehicle, n"VehicleBlockRadioInput") && this.IsRadioEnabled(gi) {
       if ListenerAction.IsButtonJustPressed(action) {
-        this.m_radioPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+        this.m_radioPressTime = Utils.GetCurrentTime(gi);
       };
       if ListenerAction.IsButtonJustReleased(action) {
-        releaseTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+        releaseTime = Utils.GetCurrentTime(gi);
         if releaseTime <= this.m_radioPressTime + 0.20 {
           radioEvent = new RadioToggleEvent();
           vehicle.QueueEvent(radioEvent);
@@ -2580,9 +2873,9 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
   };
   if this.m_useAuxiliary && this.m_isPoliceVehicle && Equals(ListenerAction.GetName(action), n"VehicleSiren") {
     if ListenerAction.IsButtonJustPressed(action) {
-      this.m_sirenPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+      this.m_sirenPressTime = Utils.GetCurrentTime(gi);
     };
-    if ListenerAction.IsButtonJustReleased(action) && EngineTime.ToFloat(GameInstance.GetEngineTime(this.GetVehicle().GetGame())) - this.m_sirenPressTime < 0.25 {
+    if ListenerAction.IsButtonJustReleased(action) && Utils.GetCurrentTime(gi) - this.m_sirenPressTime < 0.25 {
       sirenState = this.GetPS().GetSirenState();
       
       if vehicle == (vehicle as BikeObject) {
@@ -2624,14 +2917,14 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
   }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if !IsDefined(vehicle) {
     return false;
   };
 
-  if VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+  if VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) {
 
     // // // // // // //
     // Event that toggles utility/auxiliary lights (short press)
@@ -2639,10 +2932,10 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     // Short press: toggle utility lights
     //
     if Equals(ListenerAction.GetName(action), n"ModdedCycleLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED) {
-      this.m_cycleLightsPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+      this.m_cycleLightsPressTime = Utils.GetCurrentTime(gi);
     }
     if Equals(ListenerAction.GetName(action), n"ModdedCycleLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_RELEASED) {
-      let holdTime: Float = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleLightsPressTime;
+      let holdTime: Float = Utils.GetCurrentTime(gi) - this.m_cycleLightsPressTime;
 
       if !this.m_cycleLightsLongInputTriggered && holdTime >= this.m_modSettings.cycleUtilityLightsHoldTime && this.m_useAuxiliary && !this.m_isPoliceVehicle {
 
@@ -2695,12 +2988,14 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     if vehicle != (vehicle as BikeObject) {
       // // // // // // //
       // Listen to the Exit user input so we can save doors state before the vehicle modifies them
-      if Equals(ListenerAction.GetName(action), n"Exit") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED) {
+      if Equals(ListenerAction.GetName(action), n"Exit") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_HOLD_COMPLETE) {
         // Remember current doors state so when the player has finished unmounting we can restore the doors state
         this.m_FL_doorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
-        this.m_FR_doorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
+        this.m_FR_doorState = this.m_isSingleFrontDoor ? this.m_FL_doorState : this.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
         this.m_BL_doorState = this.GetPS().GetDoorState(EVehicleDoor.seat_back_left);
         this.m_BR_doorState = this.GetPS().GetDoorState(EVehicleDoor.seat_back_right);
+        // LogChannel(n"DEBUG", s"Exit -> Memory FL set to \(this.m_FL_doorState)");
+        // LogChannel(n"DEBUG", s"Exit -> Memory FR set to \(this.m_FR_doorState)");
       }
       // // // // // // //
 
@@ -2713,16 +3008,16 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 
         if !this.m_cycleDoorLongInputTriggered {
           // If the last press time is older than "this.m_modSettings.multiTapTimeWindow" consider this is a new sequence
-          if EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleDoorLastPressTime > this.m_modSettings.multiTapTimeWindow {
+          if Utils.GetCurrentTime(gi) - this.m_cycleDoorLastPressTime > this.m_modSettings.multiTapTimeWindow {
             this.m_cycleDoorStep = 0;
           }
 
-          this.m_cycleDoorLastPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+          this.m_cycleDoorLastPressTime = Utils.GetCurrentTime(gi);
           this.m_cycleDoorStep += 1;
 
           let event: ref<MultiTapDoorEvent> = new MultiTapDoorEvent();
           event.tapCount = this.m_cycleDoorStep;
-          GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.multiTapTimeWindow, false);
+          GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, this.m_modSettings.multiTapTimeWindow, false);
         }
 
         this.m_cycleDoorLongInputTriggered = false;
@@ -2741,20 +3036,37 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
           let preventWindowClosingDuringCombat: Bool = this.m_isDriverCombat && !this.m_isDriverCombatType_Doors;
 
           let FL_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
-          let FR_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
+          let FR_doorState: VehicleDoorState = this.m_isSingleFrontDoor ? FL_doorState : this.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
 
           let FL_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_left);
           let FR_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
           let BL_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_back_left);
           let BR_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_back_right);
 
-          if Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_left), VehicleDoorState.Open)
-          || Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), VehicleDoorState.Open)
-          || Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_left), VehicleDoorState.Open)
-          || Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_right), VehicleDoorState.Open) {
+          if (this.m_totalSeatSlots > 0 && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_left), VehicleDoorState.Open))
+          || (this.m_totalSeatSlots > 1 && !this.m_isSingleFrontDoor && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), VehicleDoorState.Open))
+          || (this.m_totalSeatSlots > 2 && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_left), VehicleDoorState.Open))
+          || (this.m_totalSeatSlots > 3 && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_right), VehicleDoorState.Open)) {
 
             if this.m_totalSeatSlots > 0 && !preventDoorClosingDuringCombat {
               VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetDriverSlotID());
+              this.m_FL_doorState = VehicleDoorState.Closed;
+        
+              if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+                if Equals(this.m_FL_windowState, EVehicleWindowState.Open) {
+                  let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+                  event.slotID = VehicleComponent.GetDriverSlotName();
+                  GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+                }
+
+                if this.m_isSingleFrontDoor {
+                  if Equals(this.m_FR_windowState, EVehicleWindowState.Open) {
+                    let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+                    event.slotID = VehicleComponent.GetFrontPassengerSlotName();
+                    GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+                  }
+                }
+              }
 
               // DriverCombat modes:
               // - Doors: front doors need to be opened (like Rayfield Caliburn)
@@ -2763,8 +3075,17 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
                 this.ForceFrontWindowsDuringCombat(VehicleDoorState.Closed, FR_doorState);
               }
             }
-            if this.m_totalSeatSlots > 1 && !preventDoorClosingDuringCombat {
+            if this.m_totalSeatSlots > 1 && !preventDoorClosingDuringCombat && !this.m_isSingleFrontDoor {
               VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+              this.m_FR_doorState = VehicleDoorState.Closed;
+        
+              if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+                if Equals(this.m_FR_windowState, EVehicleWindowState.Open) {
+                  let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+                  event.slotID = VehicleComponent.GetFrontPassengerSlotName();
+                  GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+                }
+              }
 
               // DriverCombat modes:
               // - Doors: front doors need to be opened (like Rayfield Caliburn)
@@ -2775,18 +3096,55 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
             }
             if this.m_totalSeatSlots > 2 {
               VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetBackLeftPassengerSlotID());
+              this.m_BL_doorState = VehicleDoorState.Closed;
+        
+              if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+                if Equals(this.m_BL_windowState, EVehicleWindowState.Open) {
+                  let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+                  event.slotID = VehicleComponent.GetBackLeftPassengerSlotName();
+                  GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+                }
+              }
             }
             if this.m_totalSeatSlots > 3 {
               VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetBackRightPassengerSlotID());
+              this.m_BR_doorState = VehicleDoorState.Closed;
+        
+              if this.m_hasIncompatibleSlidingDoorsWindow && IsDefined(this.m_windowTimings) {
+                if Equals(this.m_BR_windowState, EVehicleWindowState.Open) {
+                  let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+                  event.slotID = VehicleComponent.GetBackRightPassengerSlotName();
+                  GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event, this.m_windowTimings.openTiming, true);
+                }
+              }
             }
           }
           else {
             // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
             if this.m_totalSeatSlots > 0 {
-              if this.m_hasIncompatibleSlidingDoorsWindow && Equals(FL_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetDriverSlotID(), false);
+              // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
+              if this.m_hasIncompatibleSlidingDoorsWindow {
+                if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+                  this.m_FL_windowState = FL_windowState;
+                }
+                
+                if Equals(FL_windowState, EVehicleWindowState.Open) {
+                  VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), false, n"Custom");
+                }
+
+                if this.m_isSingleFrontDoor {
+                  if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+                    this.m_FR_windowState = FR_windowState;
+                  }
+                  
+                  if Equals(FR_windowState, EVehicleWindowState.Open) {
+                    VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false, n"Custom");
+                  }
+                }
               }
+
               VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetDriverSlotID());
+              this.m_FL_doorState = VehicleDoorState.Open;
 
               // DriverCombat mode Standard: if doors type is Sliding Door (like Quadra V-Tech) then the user can still manipulate windows while doors are open only
               if preventWindowClosingDuringCombat && this.m_isSlidingDoors {
@@ -2795,11 +3153,18 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
             }
 
             // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
-            if this.m_totalSeatSlots > 1 {
-              if this.m_hasIncompatibleSlidingDoorsWindow && Equals(FR_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false);
+            if this.m_totalSeatSlots > 1 && !this.m_isSingleFrontDoor {
+              if this.m_hasIncompatibleSlidingDoorsWindow {
+                if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+                  this.m_FR_windowState = FR_windowState;
+                }
+                
+                if Equals(FR_windowState, EVehicleWindowState.Open) {
+                  VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false, n"Custom");
+                }
               }
               VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+              this.m_FR_doorState = VehicleDoorState.Open;
 
               // DriverCombat mode Standard: if doors type is Sliding Door (like Quadra V-Tech) then the user can still manipulate windows while doors are open only
               if preventWindowClosingDuringCombat && this.m_isSlidingDoors {
@@ -2809,18 +3174,32 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 
             // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
             if this.m_totalSeatSlots > 2 {
-              if this.m_hasIncompatibleSlidingDoorsWindow && Equals(BL_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), false);
+              if this.m_hasIncompatibleSlidingDoorsWindow {
+                if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+                  this.m_BL_windowState = BL_windowState;
+                }
+                
+                if Equals(BL_windowState, EVehicleWindowState.Open) {
+                  VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), false, n"Custom");
+                }
               }
               VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetBackLeftPassengerSlotID());
+              this.m_BL_doorState = VehicleDoorState.Open;
             }
 
             // For some vehicles with sliding doors: if the window is opened we need to close it before we open the door because otherwise the window position will be weird once the sliding door is lift
             if this.m_totalSeatSlots > 3 {
-              if this.m_hasIncompatibleSlidingDoorsWindow && Equals(BR_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), false);
+              if this.m_hasIncompatibleSlidingDoorsWindow {
+                if !this.m_isDriverCombat || player.m_inMountedWeaponVehicle {
+                  this.m_BR_windowState = BR_windowState;
+                }
+                
+                if Equals(BR_windowState, EVehicleWindowState.Open) {
+                  VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), false, n"Custom");
+                }
               }
               VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetBackRightPassengerSlotID());
+              this.m_BR_doorState = VehicleDoorState.Open;
             }
           }
         }
@@ -2869,16 +3248,16 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 
           if !this.m_cycleWindowLongInputTriggered {
             // If the last press time is older than "this.m_modSettings.multiTapTimeWindow" consider this is a new sequence
-            if EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleWindowLastPressTime > this.m_modSettings.multiTapTimeWindow {
+            if Utils.GetCurrentTime(gi) - this.m_cycleWindowLastPressTime > this.m_modSettings.multiTapTimeWindow {
               this.m_cycleWindowStep = 0;
             }
 
-            this.m_cycleWindowLastPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+            this.m_cycleWindowLastPressTime = Utils.GetCurrentTime(gi);
             this.m_cycleWindowStep += 1;
 
             let event: ref<MultiTapWindowEvent> = new MultiTapWindowEvent();
             event.tapCount = this.m_cycleWindowStep;
-            GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.multiTapTimeWindow, false);
+            GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, this.m_modSettings.multiTapTimeWindow, false);
           }
 
           this.m_cycleWindowLongInputTriggered = false;
@@ -2896,7 +3275,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
             let preventWindowClosingDuringCombat: Bool = this.m_isDriverCombat && !this.m_isDriverCombatType_Doors;
 
             let FL_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
-            let FR_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
+            let FR_doorState: VehicleDoorState = this.m_isSingleFrontDoor ? FL_doorState : this.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
             let BL_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_back_left);
             let BR_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_back_right);
 
@@ -2909,56 +3288,52 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
             //  - Doors are "hasIncompatibleSlidingDoorsWindow" and closed (otherwise the window animation will become weird while the door is lift)
             //  - Doors are not "hasIncompatibleSlidingDoorsWindow"
             //
-            if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_left), EVehicleWindowState.Open)
-            || Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_right), EVehicleWindowState.Open)
-            || Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_left), EVehicleWindowState.Open)
-            || Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_right), EVehicleWindowState.Open) {
+            if (this.m_totalSeatSlots > 0 && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_left), EVehicleWindowState.Open))
+            || (this.m_totalSeatSlots > 1 && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_right), EVehicleWindowState.Open))
+            || (this.m_totalSeatSlots > 2 && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_left), EVehicleWindowState.Open))
+            || (this.m_totalSeatSlots > 3 && Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_back_right), EVehicleWindowState.Open)) {
 
               if this.m_totalSeatSlots > 0 && (!preventWindowClosingDuringCombat || (this.m_isSlidingDoors && Equals(FL_doorState, VehicleDoorState.Open))) && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(FL_doorState, VehicleDoorState.Closed)) && Equals(FL_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetDriverSlotID(), false);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), false);
 
                 // During DriverCombat mode: if the user manipulates window while sliding doors are open then remember these new states as the recall state
-                if preventWindowClosingDuringCombat {
-                  this.m_FL_windowState = Equals(FL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
-                }
+                this.m_FL_windowState = Equals(FL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
               if this.m_totalSeatSlots > 1 && (!preventWindowClosingDuringCombat || (this.m_isSlidingDoors && Equals(FR_doorState, VehicleDoorState.Open))) && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(FR_doorState, VehicleDoorState.Closed)) && Equals(FR_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false);
 
                 // During DriverCombat mode: if the user manipulates window while sliding doors are open then remember these new states as the recall state
-                if preventWindowClosingDuringCombat {
-                  this.m_FR_windowState = Equals(FR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
-                }
+                this.m_FR_windowState = Equals(FR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
               if this.m_totalSeatSlots > 2 && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(BL_doorState, VehicleDoorState.Closed)) && Equals(BL_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), false);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), false);
+                this.m_BL_windowState = Equals(BL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
               if this.m_totalSeatSlots > 3 && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(BR_doorState, VehicleDoorState.Closed)) && Equals(BR_windowState, EVehicleWindowState.Open) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), false);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), false);
+                this.m_BR_windowState = Equals(BR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
             }
             else {
               if this.m_totalSeatSlots > 0 && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(FL_doorState, VehicleDoorState.Closed)) && Equals(FL_windowState, EVehicleWindowState.Closed) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetDriverSlotID(), true);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), true);
 
                 // During DriverCombat mode: if the user manipulates window while sliding doors are open then remember these new states as the recall state
-                if preventWindowClosingDuringCombat {
-                  this.m_FL_windowState = Equals(FL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
-                }
+                this.m_FL_windowState = Equals(FL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
               if this.m_totalSeatSlots > 1 && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(FR_doorState, VehicleDoorState.Closed)) && Equals(FR_windowState, EVehicleWindowState.Closed) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
 
                 // During DriverCombat mode: if the user manipulates window while sliding doors are open then remember these new states as the recall state
-                if preventWindowClosingDuringCombat {
-                  this.m_FR_windowState = Equals(FR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
-                }
+                this.m_FR_windowState = Equals(FR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
               if this.m_totalSeatSlots > 2 && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(BL_doorState, VehicleDoorState.Closed)) && Equals(BL_windowState, EVehicleWindowState.Closed) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), true);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackLeftPassengerSlotID(), true);
+                this.m_BL_windowState = Equals(BL_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
               if this.m_totalSeatSlots > 3 && (!this.m_hasIncompatibleSlidingDoorsWindow || Equals(BR_doorState, VehicleDoorState.Closed)) && Equals(BR_windowState, EVehicleWindowState.Closed) {
-                VehicleComponent.ToggleVehicleWindow(gameInstance, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), true);
+                VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetBackRightPassengerSlotID(), true);
+                this.m_BR_windowState = Equals(BR_windowState, EVehicleWindowState.Open) ? EVehicleWindowState.Closed : EVehicleWindowState.Open;
               }
             }
           }
@@ -2978,16 +3353,16 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 
         if !this.m_cycleSpoilerLongInputTriggered {
           // If the last press time is older than "this.m_modSettings.multiTapTimeWindow" consider this is a new sequence
-          if EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleSpoilerLastPressTime > this.m_modSettings.multiTapTimeWindow {
+          if Utils.GetCurrentTime(gi) - this.m_cycleSpoilerLastPressTime > this.m_modSettings.multiTapTimeWindow {
             this.m_cycleSpoilerStep = 0;
           }
 
-          this.m_cycleSpoilerLastPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+          this.m_cycleSpoilerLastPressTime = Utils.GetCurrentTime(gi);
           this.m_cycleSpoilerStep += 1;
 
           let event: ref<MultiTapSpoilerEvent> = new MultiTapSpoilerEvent();
           event.tapCount = this.m_cycleSpoilerStep;
-          GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_modSettings.multiTapTimeWindow, false);
+          GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, this.m_modSettings.multiTapTimeWindow, false);
         }
 
         this.m_cycleSpoilerLongInputTriggered = false;
@@ -3033,7 +3408,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     }
     // // // // // // //
 
-    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
     let preventEngineShutdown: Bool = vehicle.IsEngineTurnedOn() && player.IsInCombat() && this.m_modSettings.preventPowerOffDuringCombat;
     let preventPowerShutdown: Bool = this.m_powerState && player.IsInCombat() && this.m_modSettings.preventPowerOffDuringCombat;
@@ -3046,8 +3421,8 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     if Equals(ListenerAction.GetName(action), n"CycleEngineStep1") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED) {
 
       // If the last press time is older than "this.m_modSettings.multiTapTimeWindow" consider this is a new sequence
-      if EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame())) - this.m_cycleEngineLastPressTime > this.m_modSettings.multiTapTimeWindow {
-        this.m_cycleEngineLastPressTime = EngineTime.ToFloat(GameInstance.GetEngineTime(vehicle.GetGame()));
+      if Utils.GetCurrentTime(gi) - this.m_cycleEngineLastPressTime > this.m_modSettings.multiTapTimeWindow {
+        this.m_cycleEngineLastPressTime = Utils.GetCurrentTime(gi);
       }
       else if !preventPowerShutdown {
         this.TogglePowerState(!this.m_powerState);
@@ -3103,10 +3478,10 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 @addMethod(VehicleComponent)
 protected final func GetPlayerSlotID() -> MountingSlotId {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gameInstance).GetMountingInfoSingleWithIds(player.GetEntityID());
+  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gi).GetMountingInfoSingleWithIds(player.GetEntityID());
   
   return mountInfos.slotId;
 }
@@ -3114,10 +3489,10 @@ protected final func GetPlayerSlotID() -> MountingSlotId {
 @addMethod(VehicleComponent)
 protected final func GetPlayerSlotName() -> CName {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gameInstance).GetMountingInfoSingleWithIds(player.GetEntityID());
+  let mountInfos: MountingInfo = GameInstance.GetMountingFacility(gi).GetMountingInfoSingleWithIds(player.GetEntityID());
   
   return mountInfos.slotId.id;
 }
@@ -3435,22 +3810,23 @@ protected final func Ensure_VehicleState(state: vehicleEState) {
 
 @addMethod(VehicleComponent)
 protected final func OnEnter_CrystalDomeMesh() {
-  // LogChannel(n"DEBUG", s"OnEnter_CrystalDomeMesh");
+  
   if IsDefined(this.m_crystalDomeMeshTimings) {
     let vehicle: ref<VehicleObject> = this.GetVehicle();
-    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let gi: GameInstance = vehicle.GetGame();
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
     let fastEntryMultiplier: Float = player.IsInCombat() ? 0.60 : 1.00;
 
     let event: ref<CrystalDomeMeshEvent> = new CrystalDomeMeshEvent();
     event.tppEnabled = this.GetPS().GetCrystalDomeState();
-    GameInstance.GetDelaySystem(vehicle.GetGame()).DelayEvent(vehicle, event, this.m_crystalDomeMeshTimings.FL_in * fastEntryMultiplier, true);
+    GameInstance.GetDelaySystem(gi).DelayEvent(vehicle, event, this.m_crystalDomeMeshTimings.FL_in * fastEntryMultiplier, true);
   }
 }
 
 @addMethod(VehicleComponent)
 protected final func OnPassengerEnter_CrystalDomeMesh() {
-  // LogChannel(n"DEBUG", s"OnPassengerEnter_CrystalDomeMesh");
+  
   if IsDefined(this.m_crystalDomeMeshTimings) {
     let event: ref<CrystalDomeMeshEvent> = new CrystalDomeMeshEvent();
     event.tppEnabled = this.GetPS().GetCrystalDomeState();
@@ -3460,10 +3836,11 @@ protected final func OnPassengerEnter_CrystalDomeMesh() {
 
 @addMethod(VehicleComponent)
 protected final func OnExit_CrystalDomeMesh() {
-  // LogChannel(n"DEBUG", s"OnExit_CrystalDomeMesh");
+  
   if IsDefined(this.m_crystalDomeMeshTimings) {
     let vehicle: ref<VehicleObject> = this.GetVehicle();
-    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let gi: GameInstance = vehicle.GetGame();
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
     let fastExitTiming: Float = player.IsInCombat() ? this.m_vehicleDataPackage.CombatEntering() / this.m_vehicleDataPackage.Entering() : 1.00;
 
@@ -3475,30 +3852,30 @@ protected final func OnExit_CrystalDomeMesh() {
 
 // This method will cycle doors only if their previous state before entering/exiting is the opposite
 @addMethod(VehicleComponent)
-private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
-  // LogChannel(n"DEBUG", s"RecallVehicleDoorsState");
+private final func RecallVehicleDoorsState(opt autoCloseDelay: Float, opt shouldOpenWindow: Bool) -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let PSVehicleDoorCloseRequest: ref<VehicleDoorClose>;
 
-  if NotEquals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_left), this.m_FL_doorState) {
+  if NotEquals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_left), this.m_FL_doorState)
+  || (this.m_isSingleFrontDoor && NotEquals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), this.m_FL_doorState)) {
     if Equals(this.m_FL_doorState, VehicleDoorState.Open) {
       VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetDriverSlotID());
     }
     else {
       if autoCloseDelay > 0.00 {
-        // LogChannel(n"DEBUG", s"RecallVehicleDoorsState DelayPSEvent");
         PSVehicleDoorCloseRequest = new VehicleDoorClose();
         PSVehicleDoorCloseRequest.slotID = VehicleComponent.GetDriverSlotName();
-        GameInstance.GetDelaySystem(vehicle.GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
+        PSVehicleDoorCloseRequest.shouldOpenWindow = shouldOpenWindow;
+        GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
       }
       else {
-        // LogChannel(n"DEBUG", s"RecallVehicleDoorsState CloseDoor");
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetDriverSlotID());
       }
     }
   }
   
-  if NotEquals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), this.m_FR_doorState) {
+  if !this.m_isSingleFrontDoor && NotEquals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), this.m_FR_doorState) {
     if Equals(this.m_FR_doorState, VehicleDoorState.Open) {
       VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
     }
@@ -3506,7 +3883,8 @@ private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
       if autoCloseDelay > 0.00 {
         PSVehicleDoorCloseRequest = new VehicleDoorClose();
         PSVehicleDoorCloseRequest.slotID = VehicleComponent.GetFrontPassengerSlotName();
-        GameInstance.GetDelaySystem(vehicle.GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
+        PSVehicleDoorCloseRequest.shouldOpenWindow = shouldOpenWindow;
+        GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
       }
       else {
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
@@ -3522,7 +3900,8 @@ private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
       if autoCloseDelay > 0.00 {
         PSVehicleDoorCloseRequest = new VehicleDoorClose();
         PSVehicleDoorCloseRequest.slotID = VehicleComponent.GetBackLeftPassengerSlotName();
-        GameInstance.GetDelaySystem(vehicle.GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
+        PSVehicleDoorCloseRequest.shouldOpenWindow = shouldOpenWindow;
+        GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
       }
       else {
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetBackLeftPassengerSlotID());
@@ -3538,7 +3917,8 @@ private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
       if autoCloseDelay > 0.00 {
         PSVehicleDoorCloseRequest = new VehicleDoorClose();
         PSVehicleDoorCloseRequest.slotID = VehicleComponent.GetBackRightPassengerSlotName();
-        GameInstance.GetDelaySystem(vehicle.GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
+        PSVehicleDoorCloseRequest.shouldOpenWindow = shouldOpenWindow;
+        GameInstance.GetDelaySystem(gi).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
       }
       else {
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetBackRightPassengerSlotID());
@@ -3550,34 +3930,51 @@ private final func RecallVehicleDoorsState(opt autoCloseDelay: Float) -> Void {
 @addMethod(VehicleComponent)
 private final func Recall_FL_WindowsState() -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
 
+  let FL_doorState: VehicleDoorState = this.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
   let FL_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_left);
 
-  if NotEquals(FL_windowState, this.m_FL_windowState) && Equals(this.m_FL_windowState, EVehicleWindowState.Closed) {
-    VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetDriverSlotID(), false);
+  if NotEquals(FL_windowState, this.m_FL_windowState) {
+
+    if Equals(this.m_FL_windowState, EVehicleWindowState.Closed) {
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), false);
+    }
+    else if this.m_hasIncompatibleSlidingDoorsWindow && Equals(FL_doorState, VehicleDoorState.Closed) {
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), true);
+    }
   }
 }
 
 @addMethod(VehicleComponent)
 private final func Recall_FR_WindowsState() -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
 
+  let FR_doorState: VehicleDoorState = this.GetPS().GetDoorState(this.m_isSingleFrontDoor ? EVehicleDoor.seat_front_left: EVehicleDoor.seat_front_right);
   let FR_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
 
-  if NotEquals(FR_windowState, this.m_FR_windowState) && Equals(this.m_FR_windowState, EVehicleWindowState.Closed) {
-    VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetFrontPassengerSlotID(), false);
+  if NotEquals(FR_windowState, this.m_FR_windowState) {
+
+    if Equals(this.m_FR_windowState, EVehicleWindowState.Closed) {
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false);
+    }
+    else if this.m_hasIncompatibleSlidingDoorsWindow && Equals(FR_doorState, VehicleDoorState.Closed) {
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
+    }
   }
 }
 
 @addMethod(VehicleComponent)
 private final func CloseWindow(slotId: MountingSlotId) -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
   let doorEnum: EVehicleDoor = EVehicleDoor.invalid;
 
   this.GetVehicleDoorEnum(doorEnum, slotId.id);
 
   if Equals(this.GetPS().GetWindowState(doorEnum), EVehicleWindowState.Open) {
-    VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, slotId, false);
+    VehicleComponent.ToggleVehicleWindow(gi, vehicle, slotId, false);
   }
 }
 
@@ -3590,27 +3987,32 @@ private final func ForceFrontWindowsDuringCombat(FL_doorState: VehicleDoorState,
   }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+
+  if this.m_isSingleFrontDoor {
+    FR_doorState = FL_doorState;
+  }
 
   let FL_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_left);
   let FR_windowState: EVehicleWindowState = this.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
 
-  if this.m_isSlidingDoors {
+  if this.m_isSlidingDoors || this.m_isSingleFrontDoor {
     // Sliding doors: only force windows open even if doors are closed
     if Equals(FL_doorState, VehicleDoorState.Closed)
     && Equals(FL_windowState, EVehicleWindowState.Closed) {
-      VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetDriverSlotID(), true);
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), true);
     }
     if Equals(FR_doorState, VehicleDoorState.Closed)
     && Equals(FR_windowState, EVehicleWindowState.Closed) {
-      VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
     }
   }
   else { // Hinged doors: always force windows open even if doors are open
     if Equals(FL_windowState, EVehicleWindowState.Closed) {
-      VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetDriverSlotID(), true);
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), true);
     }
     if Equals(FR_windowState, EVehicleWindowState.Closed) {
-      VehicleComponent.ToggleVehicleWindow(vehicle.GetGame(), vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
+      VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), true);
     }
   }
 }
@@ -4334,7 +4736,6 @@ public func UpdateMomentumType(gameSpeed: Float) -> Void {
 
 @addMethod(VehicleComponent)
 public func ApplyUtilityLightsSettingsChange() -> Void {
-
   if !this.m_useAuxiliary || this.m_isPoliceVehicle || !this.m_auxiliaryState {
     return;
   }
@@ -4352,7 +4753,7 @@ public func ApplyTailLightsSettingsChange() -> Void {
 
   this.ApplyLightsColorSettingsChange(vehicleELightType.Brake);
   
-  // New plastic color effect on the car mesh will only properly apply when the vehicle brakes for the first time
+  // New plastic color effect on the vehicle mesh will only properly apply when the vehicle brakes for the first time
   if !vehicle.IsPlayerDriver() {
     vehicle.ForceBrakesFor(0.25);
   }
@@ -4360,7 +4761,6 @@ public func ApplyTailLightsSettingsChange() -> Void {
 
 @addMethod(VehicleComponent)
 public func ApplyBlinkerLightsSettingsChange() -> Void {
-
   if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
     return;
   }
@@ -4370,7 +4770,6 @@ public func ApplyBlinkerLightsSettingsChange() -> Void {
 
 @addMethod(VehicleComponent)
 public func ApplyReverseLightsSettingsChange() -> Void {
-
   if !this.ShouldApplyReverseLights() {
     return;
   }
@@ -4381,7 +4780,6 @@ public func ApplyReverseLightsSettingsChange() -> Void {
 
 @addMethod(VehicleComponent)
 public func ApplyHeadlightsColorSettingsChange() -> Void {
-
   if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
     return;
   }
@@ -4392,11 +4790,18 @@ public func ApplyHeadlightsColorSettingsChange() -> Void {
 @addMethod(VehicleComponent)
 public func ApplyLightsColorSettingsChange(lightType: vehicleELightType) -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   this.UpdateActiveEffectIdentifier(lightType);
 
-  if Equals(this.GetLightsColorVehicleType(lightType), ELightsColorVehicleType.Motorcycles)
-  && vehicle != (vehicle as BikeObject) {
+  // If custom lights settings are disabled for this light type then restore default lights
+  if !player.GetLightsCustomSettingsEnabled(lightType) {
+    this.ResetLightsParameters(false, lightType);
+    return;
+  }
+
+  if Equals(this.GetLightsColorVehicleType(lightType), ELightsColorVehicleType.Motorcycles) && vehicle != (vehicle as BikeObject) {
     this.ResetLightsParameters(false, lightType);
     return;
   }
@@ -4485,7 +4890,14 @@ public func ApplyHeadlightsSettingsChange() -> Void {
 
 @addMethod(VehicleComponent)
 public func OnModSettingsChange() -> Void {
-  // LogChannel(n"DEBUG", s"OnModSettingsChange");
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  // Auto-enable custom lights settings if the player is modifying ModSettings
+  if !player.m_customLightsAreBeingToggled {
+    player.SetAllLightsCustomSettingsEnabled(true);
+  }
   
   this.ApplyTailLightsSettingsChange();
   this.ApplyHeadlightsSettingsChange();
@@ -4495,32 +4907,164 @@ public func OnModSettingsChange() -> Void {
 }
 
 @wrapMethod(VehicleComponent)
+private final func OnGameDetach() -> Void {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  // Unregister this vehicle until it is unloaded
+  if ArrayContains(player.m_drivenVehicles, this) {
+    ArrayRemove(player.m_drivenVehicles, this);
+  }
+
+  wrappedMethod();
+}
+
+@replaceMethod(VehicleComponent)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
-  wrappedMethod(evt);
+  let PSvehicleDooropenRequest: ref<VehicleDoorOpen>;
+  let isDriverSlot: Bool;
+  let vehicleDataPackage: wref<VehicleDataPackage_Record>;
+  let vehicleRecord: ref<Vehicle_Record>;
+  let shouldAutoClose: Bool = true;
+  let gameInstance: GameInstance = this.GetVehicle().GetGame();
+  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
+  VehicleComponent.GetVehicleDataPackage(gameInstance, this.GetVehicle(), vehicleDataPackage);
+  if mountChild.IsPlayer() {
+    this.m_mountedPlayer = mountChild as PlayerPuppet;
+    isDriverSlot = VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id);
+    if isDriverSlot {
+      PreventionSystem.SetPlayerMounted(gameInstance, true);
+      PreventionSystemHackerLoop.UpdatePlayerVehicle(gameInstance, this.GetVehicle());
+      PoliceRadioScriptSystem.UpdatePoliceRadioOnVehicleEntrance(gameInstance);
+    };
+    this.m_mountedPlayer.GetPlayerStateMachineBlackboard().SetBool(GetAllBlackboardDefs().PlayerStateMachine.MountedToVehicleInDriverSeat, isDriverSlot);
+    VehicleComponent.GetVehicleRecord(gameInstance, this.m_mountedPlayer, vehicleRecord);
+    VehicleComponent.QueueEventToAllPassengers(this.m_mountedPlayer.GetGame(), this.GetVehicle().GetEntityID(), PlayerMuntedToMyVehicle.Create(this.m_mountedPlayer));
+    PlayerPuppet.ReevaluateAllBreathingEffects(mountChild as PlayerPuppet);
+    if !this.GetVehicle().IsCrowdVehicle() {
+      this.GetVehicle().GetDeviceLink().TriggerSecuritySystemNotification(this.GetVehicle().GetWorldPosition(), mountChild, ESecurityNotificationType.ALARM);
+    };
+    this.ToggleScanningComponent(false);
+    if this.GetVehicle().GetHudManager().IsRegistered(this.GetVehicle().GetEntityID()) {
+      this.RegisterToHUDManager(false);
+    };
+    if this.GetVehicle().IsPlayerVehicle() && !this.GetPS().GetIsDestroyed() {
+      this.CreateMappin();
+    };
+    this.RegisterInputListener();
+    FastTravelSystem.AddFastTravelLock(n"InVehicle", gameInstance);
+    this.m_mounted = true;
+    this.m_ignoreAutoDoorClose = true;
+    this.SetupListeners();
+    this.DisableTargetingComponents();
+    if EntityID.IsDefined(evt.request.mountData.mountEventOptions.entityID) {
+      this.m_enterTime = vehicleDataPackage.Stealing() + vehicleDataPackage.SlideDuration();
+    } else {
+      if this.m_mountedPlayer.IsInCombat() && Equals(vehicleRecord.Type().Type(), gamedataVehicleType.Car) && isDriverSlot {
+        this.m_enterTime = vehicleDataPackage.CombatEntering() + vehicleDataPackage.SlideDuration();
+        if Equals(vehicleDataPackage.DriverCombat().Type(), gamedataDriverCombatType.Doors) && (IsDefined(GameInstance.GetTransactionSystem(this.m_mountedPlayer.GetGame()).GetItemInSlot(this.m_mountedPlayer, t"AttachmentSlots.WeaponLeft") as WeaponObject) || IsDefined(GameInstance.GetTransactionSystem(this.m_mountedPlayer.GetGame()).GetItemInSlot(this.m_mountedPlayer, t"AttachmentSlots.WeaponRight") as WeaponObject)) {
+          shouldAutoClose = false;
+        } else {
+          shouldAutoClose = true;
+        };
+      } else {
+        this.m_enterTime = vehicleDataPackage.Entering() + vehicleDataPackage.SlideDuration();
+      };
+    };
+    this.DrivingStimuli(true);
+    if Equals(evt.request.lowLevelMountingInfo.slotId.id, n"seat_front_left") {
+      if IsDefined(this.GetVehicle() as TankObject) {
+        this.TogglePlayerHitShapesForPanzer(this.m_mountedPlayer, false);
+        this.ToggleTargetingSystemForPanzer(this.m_mountedPlayer, true);
+      };
+      this.SetSteeringLimitAnimFeature(1);
+    };
+    GameInstance.GetStatPoolsSystem(this.GetVehicle().GetGame()).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, this.m_healthDecayThreshold, this.GetVehicle());
+  };
+  if !mountChild.IsPlayer() {
+    if evt.request.mountData.isInstant {
+      mountChild.QueueEvent(CreateDisableRagdollEvent(n"VehicleComponentOnMountingEvent"));
+    };
+    VehicleComponent.PushVehicleNPCData(gameInstance, mountChild);
+    if mountChild.IsPuppet() && !this.GetVehicle().IsPlayerVehicle() && (IsHostileTowardsPlayer(mountChild) || (mountChild as ScriptedPuppet).IsAggressive()) {
+      this.EnableTargetingComponents();
+    };
+  };
+  if !evt.request.mountData.isInstant {
+    PSvehicleDooropenRequest = new VehicleDoorOpen();
+
+    ///////////////////////////
+    // Handle windows when entering into the vehicle
+    //
+    if this.m_hasIncompatibleSlidingDoorsWindow {
+      let vehicle: ref<VehicleObject> = this.GetVehicle();
+      let gi: GameInstance = vehicle.GetGame();
+
+      if this.m_isSingleFrontDoor {
+        if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_left), EVehicleWindowState.Open) {
+          VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetDriverSlotID(), false, n"Custom");
+        }
+        if Equals(this.GetPS().GetWindowState(EVehicleDoor.seat_front_right), EVehicleWindowState.Open) {
+          VehicleComponent.ToggleVehicleWindow(gi, vehicle, VehicleComponent.GetFrontPassengerSlotID(), false, n"Custom");
+        }
+      }
+      else {
+        let doorEnum: EVehicleDoor = IntEnum(EnumValueFromName(n"EVehicleDoor", evt.request.lowLevelMountingInfo.slotId.id));
+
+        let windowState = this.GetPS().GetWindowState(doorEnum);
+        let doorState = this.GetPS().GetDoorState(doorEnum);
+
+        if Equals(windowState, EVehicleWindowState.Open) && Equals(doorState, VehicleDoorState.Open) {
+          VehicleComponent.ToggleVehicleWindow(gi, vehicle, evt.request.lowLevelMountingInfo.slotId, false, n"Custom");
+        }
+      }
+
+      PSvehicleDooropenRequest.shouldOpenWindow = true;
+    }
+    ///////////////////////////
+
+    PSvehicleDooropenRequest.slotID = this.GetVehicle().GetBoneNameFromSlot(evt.request.lowLevelMountingInfo.slotId.id);
+    if EntityID.IsDefined(evt.request.mountData.mountEventOptions.entityID) {
+      PSvehicleDooropenRequest.autoCloseTime = vehicleDataPackage.Stealing_open();
+    } else {
+      PSvehicleDooropenRequest.autoCloseTime = vehicleDataPackage.Normal_open();
+    };
+    if !this.GetPS().GetIsDestroyed() && shouldAutoClose {
+      PSvehicleDooropenRequest.shouldAutoClose = true;
+    };
+    GameInstance.GetPersistencySystem(gameInstance).QueuePSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSvehicleDooropenRequest);
+  };
+  this.ManageAdditionalAnimFeatures(mountChild, true);
+  if mountChild.IsPrevention() {
+    this.m_preventionPassengers += 1;
+    this.RegisterWantedLevelListener();
+    GameInstance.GetPreventionSpawnSystem(gameInstance).RegisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
+    this.CreateMappin();
+    this.GetVehicle().GetPreventionSystem().UpdateVehiclePassengerCount(this.GetVehicle().GetEntityID(), this.m_preventionPassengers);
+  };
+
+
   
   if this.IsUnsupportedVehicleType() {
     return false;
   }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
+  let gi: GameInstance = vehicle.GetGame();
+  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gi, evt.request.lowLevelMountingInfo.childId) as GameObject;
 
   if mountChild.IsPlayer() {
-    // LogChannel(n"DEBUG", s"Player OnMountingEvent to -> \(evt.relationship.slotId.id) | IsMountedToProvidedVehicle -> \(VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), mountChild.GetEntityID(), vehicle))");
     this.TogglePlayerMounted(true);
     
     // Only the first time V enters into this vehicle in any seat
     if !this.m_vehicleUsedByV {
-      // LogChannel(n"DEBUG", s"m_vehicleUsedByV -> true");
 
-      this.m_modSettings = ModSettings_EVS.Get(vehicle.GetGame());
+      this.m_modSettings = ModSettings_EVS.Get(gi);
 
       let occupiedSeatSlots: Int32 = 0;
       let reservedSeatSlots: Int32 = 0;
-      VehicleComponent.GetSeatsStatus(gameInstance, vehicle, this.m_totalSeatSlots, occupiedSeatSlots, reservedSeatSlots);
+      VehicleComponent.GetSeatsStatus(gi, vehicle, this.m_totalSeatSlots, occupiedSeatSlots, reservedSeatSlots);
       
-      VehicleComponent.GetVehicleDataPackage(gameInstance, vehicle, this.m_vehicleDataPackage);
+      VehicleComponent.GetVehicleDataPackage(gi, vehicle, this.m_vehicleDataPackage);
 
       this.m_hasWindows = this.m_vehicleDataPackage.WindowsRollDown();
 
@@ -4534,30 +5078,61 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
         this.m_isPoliceVehicle = true;
       }
       
-      this.m_vehicleModel = s"\(this.m_vehicleRecord.Manufacturer().EnumName()) \(this.m_vehicleRecord.Model().EnumName())";
-      // LogChannel(n"DEBUG", s"Model -> \(this.m_vehicleModel)");
+      this.m_vehicleLongModel = VehicleData.Get(gi).RemoveBlankSpecialCharacters(s"\(this.m_vehicleRecord.Manufacturer().EnumName()) \(GetLocalizedTextByKey(this.m_vehicleRecord.DisplayName()))");
+      this.m_vehicleModel = VehicleData.Get(gi).ShortModelName(this.m_vehicleLongModel);
+      // LogChannel(n"DEBUG", s"Short model -> \(this.m_vehicleModel)");
+      // LogChannel(n"DEBUG", s"Long model -> \(this.m_vehicleLongModel)");
       
       /////////////////////////////
       // Adapt vehicles
       //
-      if VehicleData.Get(gameInstance).incorrectDoorNumber_VehicleMap.KeyExist(this.m_vehicleModel) {
-        this.m_totalSeatSlots = Cast<Int32>(VehicleData.Get(gameInstance).incorrectDoorNumber_VehicleMap.Get(this.m_vehicleModel));
+      // - First step: look for custom data for the vehicle model (ex.: Mizutani Shion)
+      // 
+      // - Second step: look for custom data for the specific vehicle model (ex.: Mizutani Shion "Coyote")
+      //
+      if VehicleData.Get(gi).incorrectDoorNumber_VehicleMap.KeyExist(this.m_vehicleModel) {
+        this.m_totalSeatSlots = Cast<Int32>(VehicleData.Get(gi).incorrectDoorNumber_VehicleMap.Get(this.m_vehicleModel));
+      }
+      if VehicleData.Get(gi).incorrectDoorNumber_VehicleMap.KeyExist(this.m_vehicleLongModel) {
+        this.m_totalSeatSlots = Cast<Int32>(VehicleData.Get(gi).incorrectDoorNumber_VehicleMap.Get(this.m_vehicleLongModel));
       }
 
-      if VehicleData.Get(gameInstance).incorrectHasWindow_VehicleMap.KeyExist(this.m_vehicleModel) {
-        this.m_hasWindows = Cast<Int32>(VehicleData.Get(gameInstance).incorrectHasWindow_VehicleMap.Get(this.m_vehicleModel)) == 1;
+      if VehicleData.Get(gi).hasIncompatibleSlidingDoorsWindow_VehicleMap.KeyExist(this.m_vehicleModel) {
+        this.m_hasIncompatibleSlidingDoorsWindow = true;
       }
-
-      if VehicleData.Get(gameInstance).hasIncompatibleSlidingDoorsWindow_VehicleMap.KeyExist(this.m_vehicleModel) {
+      if VehicleData.Get(gi).hasIncompatibleSlidingDoorsWindow_VehicleMap.KeyExist(this.m_vehicleLongModel) {
         this.m_hasIncompatibleSlidingDoorsWindow = true;
       }
 
-      if VehicleData.Get(gameInstance).isSlidingDoors_VehicleMap.KeyExist(this.m_vehicleModel) {
+      if VehicleData.Get(gi).isSlidingDoors_VehicleMap.KeyExist(this.m_vehicleModel) {
+        this.m_isSlidingDoors = true;
+      }
+      if VehicleData.Get(gi).isSlidingDoors_VehicleMap.KeyExist(this.m_vehicleLongModel) {
         this.m_isSlidingDoors = true;
       }
 
-      if VehicleData.Get(gameInstance).crystalDomeMeshTiming_VehicleMap.KeyExist(TDBID.ToNumber(TDBID.Create(this.m_vehicleModel))) {
-        this.m_crystalDomeMeshTimings = VehicleData.Get(gameInstance).crystalDomeMeshTiming_VehicleMap.Get(TDBID.ToNumber(TDBID.Create(this.m_vehicleModel))) as FloatArrayWrapper;
+      if VehicleData.Get(gi).isSingleFrontDoor_VehicleMap.KeyExist(this.m_vehicleModel) {
+        this.m_isSingleFrontDoor = true;
+      }
+      if VehicleData.Get(gi).isSingleFrontDoor_VehicleMap.KeyExist(this.m_vehicleLongModel) {
+        this.m_isSingleFrontDoor = true;
+      }
+
+      let hashId: Uint64 = TDBID.ToNumber(TDBID.Create(this.m_vehicleModel));
+      let longHashId: Uint64 = TDBID.ToNumber(TDBID.Create(this.m_vehicleLongModel));
+
+      if VehicleData.Get(gi).crystalDomeMeshTimings_VehicleMap.KeyExist(hashId) {
+        this.m_crystalDomeMeshTimings = VehicleData.Get(gi).crystalDomeMeshTimings_VehicleMap.Get(hashId) as CrystalDomeTimingsArray;
+      }
+      if VehicleData.Get(gi).crystalDomeMeshTimings_VehicleMap.KeyExist(longHashId) {
+        this.m_crystalDomeMeshTimings = VehicleData.Get(gi).crystalDomeMeshTimings_VehicleMap.Get(longHashId) as CrystalDomeTimingsArray;
+      }
+
+      if VehicleData.Get(gi).windowTimings_VehicleMap.KeyExist(hashId) {
+        this.m_windowTimings = VehicleData.Get(gi).windowTimings_VehicleMap.Get(hashId) as WindowTimingsArray;
+      }
+      if VehicleData.Get(gi).windowTimings_VehicleMap.KeyExist(longHashId) {
+        this.m_windowTimings = VehicleData.Get(gi).windowTimings_VehicleMap.Get(longHashId) as WindowTimingsArray;
       }
       /////////////////////////////
 
@@ -4566,7 +5141,13 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   }
 
   if mountChild.IsPlayer() && vehicle.IsPlayerDriver() {
-    // LogChannel(n"DEBUG", s"player is driver -> true");
+    let player: ref<PlayerPuppet> = mountChild as PlayerPuppet;
+
+    // Register this vehicle until it is unloaded
+    if !ArrayContains(player.m_drivenVehicles, this) {
+      ArrayPush(player.m_drivenVehicles, this);
+    }
+    
     this.m_poweredOnAtLeastOnceSinceLastEnter = this.m_powerState;
     // LogChannel(n"DEBUG", s"Powered on at least once -> \(this.m_poweredOnAtLeastOnceSinceLastEnter)");
 
@@ -4594,7 +5175,10 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       
       // Apply modifications on first mount
       ModSettings.RegisterListenerToModifications(this);
+
+      player.m_customLightsAreBeingToggled = true; // Use this trick so the custom lights won't be toggled automatically on first mount if the player has disabled them
       this.OnModSettingsChange();
+      player.m_customLightsAreBeingToggled = false;
 
       this.m_vehicleDrivenByV = true;
     }
@@ -4624,14 +5208,12 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
 
       let previousMountingSlotId: MountingSlotId;
       if ArraySize(this.m_mountedSeats) >= 2 {
-        ArrayUtils.SecondToLast(this.m_mountedSeats, previousMountingSlotId);
+        Utils.SecondToLast(this.m_mountedSeats, previousMountingSlotId);
       }
 
-      // LogChannel(n"DEBUG", s"this.m_mountedSeats (size:\(ArraySize(this.m_mountedSeats))) -> previousMountingSlotId = \(previousMountingSlotId)");
       if Equals(mountingSlotId, VehicleComponent.GetDriverSlotID()) || (Equals(mountingSlotId, VehicleComponent.GetFrontPassengerSlotID()) && ArraySize(this.m_mountedSeats) >= 2 && Equals(previousMountingSlotId, VehicleComponent.GetDriverSlotID())) {
         // Dismounting from driver seat or from passenger seat with previous driver seat
         
-        // LogChannel(n"DEBUG", s"Player started unmounting from -> \(evt.slotID) | IsMountedToProvidedVehicle -> \(VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), evt.character.GetEntityID(), vehicle))");
         this.TogglePlayerMounted(false);
       
         this.m_playerIsDismounting = true;
@@ -4675,8 +5257,6 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
     else if evt.isMounting {
       if ArraySize(this.m_mountedSeats) == 0 { // It means this is the first seat the player is mounting since the last entry (not switching seats)
         
-        // LogChannel(n"DEBUG", s"Started mounting to -> \(evt.slotID) | IsMountedToProvidedVehicle -> \(VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), evt.character.GetEntityID(), vehicle))");
-
         // Apply external mesh for crystal dome vehicles
         if this.GetPS().GetCrystalDomeState() {
           if Equals(evt.slotID, n"seat_front_right") {
@@ -4702,30 +5282,26 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   let activePassengers: Int32;
-  let gameInstance: GameInstance = this.GetVehicle().GetGame();
-  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
+  let gi: GameInstance = vehicle.GetGame();
+  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gi, evt.request.lowLevelMountingInfo.childId) as GameObject;
   let mountChildIsPrevention: Bool = IsDefined(mountChild) && mountChild.IsPrevention();
   VehicleComponent.SetAnimsetOverrideForPassenger(mountChild, evt.request.lowLevelMountingInfo.parentId, evt.request.lowLevelMountingInfo.slotId.id, 0.00);
 
   let previousMountingSlotId: MountingSlotId;
   if ArraySize(this.m_mountedSeats) >= 2 {
-    ArrayUtils.SecondToLast(this.m_mountedSeats, previousMountingSlotId);
+    Utils.SecondToLast(this.m_mountedSeats, previousMountingSlotId);
   }
 
   // // // // // // //
-  // When any of V or a police driver (not passenger) NPC get out of the car
+  // When any of V or a police driver (not passenger) NPC get out of the vehicle
   if (this.m_isPoliceVehicle || vehicle.IsPrevention()) && IsDefined(mountChild) && !this.IsUnsupportedVehicleType()
   && (VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id) || (mountChild.IsPlayer() && ArraySize(this.m_mountedSeats) >= 2 && Equals(previousMountingSlotId, VehicleComponent.GetDriverSlotID()))) {
     
     // Turn the siren OFF if necessary
-    if (mountChild.IsPlayer() && !ModSettings_EVS.Get(vehicle.GetGame()).keepSirenOnWhileOutsidePlayerEnabled)
-    || (!mountChild.IsPlayer() && !ModSettings_EVS.Get(vehicle.GetGame()).keepSirenOnWhileOutsideNPCsEnabled) {
+    if (mountChild.IsPlayer() && !ModSettings_EVS.Get(gi).keepSirenOnWhileOutsidePlayerEnabled)
+    || (!mountChild.IsPlayer() && !ModSettings_EVS.Get(gi).keepSirenOnWhileOutsideNPCsEnabled) {
       this.GetVehicle().ToggleSiren(false);
       this.GetPS().SetSirenSoundsState(false);
-      // LogChannel(n"DEBUG", s"\(vehicle.GetEntityID()) -> siren OFF");
-    }
-    else {
-      // LogChannel(n"DEBUG", s"\(vehicle.GetEntityID()) -> keep siren ON");
     }
 
     // If the siren state is activated, keep the lights ON
@@ -4734,7 +5310,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
       this.GetPS().SetSirenLightsState(true);
       // LogChannel(n"DEBUG", s"Set police lights -> true");
 
-      // For some reason, when a police driver NPC get out of the car with the roof lights ON, the side banner lights may stay blue instead of going red
+      // For some reason, when a police driver NPC get out of the vehicle with the roof lights ON, the side banner lights may stay blue instead of going red
       // Fix this by forcing to red when roof lights are ON
       if !mountChild.IsPlayer() {
         this.StartEffectEvent(this.GetVehicle(), n"police_sign_combat", true);
@@ -4747,14 +5323,14 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   }
 
   if IsDefined(mountChild) && mountChild.IsPlayer() {
-    PreventionSystem.SetPlayerMounted(gameInstance, false);
+    PreventionSystem.SetPlayerMounted(gi, false);
     PlayerPuppet.ReevaluateAllBreathingEffects(mountChild as PlayerPuppet);
     this.ToggleScanningComponent(true);
     if this.GetVehicle().ShouldRegisterToHUD() {
       this.RegisterToHUDManager(true);
     };
     this.UnregisterInputListener();
-    FastTravelSystem.RemoveFastTravelLock(n"InVehicle", gameInstance);
+    FastTravelSystem.RemoveFastTravelLock(n"InVehicle", gi);
     this.m_mounted = false;
     this.UnregisterListeners();
     //this.ToggleSiren(false, false);
@@ -4762,7 +5338,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
       this.DrivingStimuli(false);
     };
     if Equals(evt.request.lowLevelMountingInfo.slotId.id, n"seat_front_left") {
-      PreventionSystemHackerLoop.UpdatePlayerVehicle(gameInstance, null);
+      PreventionSystemHackerLoop.UpdatePlayerVehicle(gi, null);
 
       if !this.m_vehicleDrivenByV || this.IsUnsupportedVehicleType() {
         this.ToggleCrystalDome(false, true);
@@ -4779,7 +5355,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   };
   if IsDefined(mountChild) {
     if mountChildIsPrevention {
-      GameInstance.GetPreventionSpawnSystem(gameInstance).UnregisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
+      GameInstance.GetPreventionSpawnSystem(gi).UnregisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
       if mountChild.IsActive() {
         this.m_preventionPassengers = Max(0, this.m_preventionPassengers - 1);
       };
@@ -4806,8 +5382,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
   if IsDefined(mountChild) && mountChild.IsPlayer() && this.m_vehicleDrivenByV
   && (Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetDriverSlotID()) || Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetFrontPassengerSlotID()))
-  && !VehicleComponent.IsMountedToProvidedVehicle(vehicle.GetGame(), mountChild.GetEntityID(), vehicle) {
-    // LogChannel(n"DEBUG", s"OnUnmountingEvent -> exiting player");
+  && !VehicleComponent.IsMountedToProvidedVehicle(gi, mountChild.GetEntityID(), vehicle) {
 
     // Restore headlights
     this.ApplyHeadlightsModeWithShutOff();
@@ -4831,11 +5406,11 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
   }
 
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicle.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   if vehicle.IsPlayerDriver() {
     if evt.isMounting {
-      // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent -> mounted player driver");
 
       if player.IsInCombat() {
 
@@ -4883,9 +5458,7 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
     }
   }
   else if this.m_vehicleDrivenByV && evt.character.IsPlayer() && !evt.isMounting { // Unmounted player
-    // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent -> unmounted player");
 
-    // LogChannel(n"DEBUG", s"OnVehicleFinishedMountingEvent RecallVehicleDoorsState");
     this.RecallVehicleDoorsState();
 
     this.m_playerIsDismounting = false;
@@ -4900,9 +5473,8 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
   // Get siren state
   let sirenState: Bool = this.GetPS().GetSirenState();
 
-  // When any of V or police officer NPCs get in the car and the siren state is ON
+  // When any of V or police officer NPCs get in the vehicle and the siren state is ON
   if evt.isMounting && sirenState && this.m_threeStatesSiren == 2 {
-    // LogChannel(n"DEBUG", s"\(vehicle.GetEntityID()) -> siren ON");
     // Then turn the siren back ON
     this.GetVehicle().ToggleSiren(true);
     this.GetPS().SetSirenSoundsState(true);
@@ -4950,14 +5522,11 @@ protected final func AllowSpoilerToggleWithSpeed(speed: Float, deploy: Bool) -> 
   let targetSpeed: Float = this.ToGameSpeed(deploy ? this.m_modSettings.spoilerDeploySpeed : this.m_modSettings.spoilerRetractSpeed); // Kmh or Mph -> Game speed unit
   
   if deploy {
-    // LogChannel(n"DEBUG", s"speed \(absSpeed) | deploy \(targetSpeed) | window \(speedWindow) | \(this.m_vehicleMomentumType)");
     if absSpeed >= targetSpeed && absSpeed < targetSpeed + speedWindow && Equals(this.m_vehicleMomentumType, EMomentumType.Accelerate) {
       return true;
     }
   }
   else { // Retract
-    // LogChannel(n"DEBUG", s"speed \(absSpeed) | retract \(targetSpeed) | window \(speedWindow) | \(this.m_vehicleMomentumType)");
-
     // In the case of a brutal deceleration (crash again an object or a wall) the speed gets down too fast for this spoiler retract window
     // If we record a brutal deceleration below the spoiler retract speed then retract the spoiler
     if (this.m_brutalDeceleration || absSpeed > targetSpeed - speedWindow) && absSpeed <= targetSpeed && Equals(this.m_vehicleMomentumType, EMomentumType.Decelerate) {
@@ -4978,11 +5547,32 @@ protected final func IsNCARTMetro() -> Bool {
   return this.GetVehicle() == (this.GetVehicle() as ncartMetroObject);
 }
 
+@addMethod(VehicleComponent)
+protected final func IsDelamainTaxi() -> Bool {
+  if !IsDefined(this.m_vehicleRecord) {
+    return false;
+  }
+
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+  let key: Uint64 = TDBID.ToNumber(this.m_vehicleRecord.DrivingParamsGeneric().GetID());
+
+  if VehicleData.Get(gi).drivingParamsGeneric_VehicleMap.KeyExist(key) {
+    let driveParams: ref<StringWrapper> = VehicleData.Get(gi).drivingParamsGeneric_VehicleMap.Get(key) as StringWrapper;
+    
+    if Equals(driveParams.name, "Driving.Default_Delamain") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 @replaceMethod(VehicleComponent)
 protected final func OnVehicleCameraChange(state: Bool) -> Void {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   let animFeature: ref<AnimFeature_VehicleState>;
   if this.GetPS().GetCrystalDomeState() && (!this.m_playerIsDismounting || !player.IsInCombat()) {
@@ -4998,20 +5588,19 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
   let doors: array<CName>;
   let vehDataPackage: wref<VehicleDataPackage_Record>;
   let vehicle: ref<VehicleObject> = this.GetVehicle();
-  let gameInstance: GameInstance = vehicle.GetGame();
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  let gi: GameInstance = vehicle.GetGame();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
   // Keep default behavior for NPCs
   if this.IsUnsupportedVehicleType()
-  || !VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+  || !VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) {
     wrappedMethod(speed);
     return;
   }
 
   // If the vehicle is moving during a scripted animation scene then ensure the dashboard is enabled. In the story quest "The Heist",
   // when V and Jackie get into the Delamain to get out of the building, there is no driver,
-  // only passengers and the car does not seem to power on normally (scripted behavior). The dashboard is not even turned on. This fixes this issue.
-  // vehicle.IsPerformingSceneAnimation()
+  // only passengers and the vehicle does not seem to power on normally (scripted behavior). The dashboard is not even turned on. This fixes this issue.
   if IsDefined(vehicle.m_vehicleUIGameController) && AbsF(speed) > 0.01 && !vehicle.IsPlayerDriver() && vehicle.IsPerformingSceneAnimation() && !vehicle.m_vehicleUIGameController.m_UIEnabled {
     vehicle.m_vehicleUIGameController.ActivateUI();
     vehicle.m_vehicleUIGameController.TurnOn();
@@ -5127,8 +5716,104 @@ protected final func ToggleVehicleSystems(toggle: Bool, vehicle: Bool, engine: B
 }
 
 @replaceMethod(VehicleComponent)
+protected final func EvaluateWindowReaction(doorID: CName, speed: CName) -> Void {
+  let door: EVehicleDoor;
+  let windowState: EVehicleWindowState;
+  let animFeature: ref<AnimFeature_PartData> = new AnimFeature_PartData();
+  let animFeatureName: CName = StringToName(NameToString(doorID) + "_window");
+  if !this.GetVehicleDoorEnum(door, doorID) {
+    return;
+  };
+  windowState = this.GetPS().GetWindowState(door);
+  if Equals(speed, n"Fast") {
+    animFeature.duration = 0.20;
+  }
+  else if Equals(speed, n"Custom") && IsDefined(this.m_windowTimings) {
+    animFeature.duration = Equals(windowState, EVehicleWindowState.Open) ? this.m_windowTimings.openTiming : this.m_windowTimings.closeTiming;
+  }
+  else {
+    animFeature.duration = -1.00;
+  };
+  if Equals(windowState, EVehicleWindowState.Open) {
+    animFeature.state = 1;
+    AnimationControllerComponent.ApplyFeatureToReplicate(this.GetVehicle(), animFeatureName, animFeature);
+  };
+  if Equals(windowState, EVehicleWindowState.Closed) {
+    animFeature.state = 3;
+    AnimationControllerComponent.ApplyFeatureToReplicate(this.GetVehicle(), animFeatureName, animFeature);
+  };
+}
+
+@addMethod(VehicleComponent)
+public func GetMemoryWindowState(doorEnum: EVehicleDoor) -> EVehicleWindowState {
+  let windowState: EVehicleWindowState;
+
+  switch doorEnum {
+    case EVehicleDoor.seat_front_left:
+      windowState = this.m_FL_windowState;
+      break;
+      
+    case EVehicleDoor.seat_front_right:
+      windowState = this.m_FR_windowState;
+      break;
+      
+    case EVehicleDoor.seat_back_left:
+      windowState = this.m_BL_windowState;
+      break;
+      
+    case EVehicleDoor.seat_back_right:
+      windowState = this.m_BR_windowState;
+      break;
+  }
+
+  return windowState;
+}
+
+@addMethod(VehicleComponent)
+public func SetMemoryDoorState(doorEnum: EVehicleDoor, doorState: VehicleDoorState) {
+
+  switch doorEnum {
+    case EVehicleDoor.seat_front_left:
+      this.m_FL_doorState = doorState;
+      break;
+      
+    case EVehicleDoor.seat_front_right:
+      this.m_FR_doorState = doorState;
+      break;
+      
+    case EVehicleDoor.seat_back_left:
+      this.m_BL_doorState = doorState;
+      break;
+      
+    case EVehicleDoor.seat_back_right:
+      this.m_BR_doorState = doorState;
+      break;
+  }
+}
+
+@replaceMethod(VehicleComponent)
 protected cb func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> Bool {
-  // LogChannel(n"DEBUG", s"OnVehicleDoorOpen");
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+
+  let shouldOpenWindow: Bool = evt.shouldOpenWindow;
+
+  let mountingSlotId: MountingSlotId;
+  mountingSlotId.id = evt.slotID;
+
+  // If the vehicle has incompatible sliding door windows and the window is open, then close the window while the door is opening
+  let doorEnum: EVehicleDoor = IntEnum(EnumValueFromName(n"EVehicleDoor", evt.slotID));
+  if this.m_hasIncompatibleSlidingDoorsWindow && Equals(this.GetPS().GetWindowState(doorEnum), EVehicleWindowState.Open) {
+    VehicleComponent.ToggleVehicleWindow(gi, vehicle, mountingSlotId, false);
+    shouldOpenWindow = true;
+  }
+
+  if this.m_isSingleFrontDoor && (Equals(evt.slotID, VehicleComponent.GetFrontPassengerSlotName()) || Equals(evt.slotID, VehicleComponent.GetDriverSlotName())) {
+    this.GetPS().SetDoorState(EVehicleDoor.seat_front_right, VehicleDoorState.Open, evt.forceScene);
+    this.GetPS().SetDoorState(EVehicleDoor.seat_front_left, VehicleDoorState.Open, evt.forceScene);
+    evt.slotID = VehicleComponent.GetDriverSlotName();
+  }
+
   let PSVehicleDoorCloseRequest: ref<VehicleDoorClose>;
   let autoCloseDelay: Float;
   this.EvaluateDoorReaction(evt.slotID, evt.forceScene, VehicleDoorState.Open);
@@ -5136,26 +5821,104 @@ protected cb func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> Bool {
   if evt.shouldAutoClose {
     PSVehicleDoorCloseRequest = new VehicleDoorClose();
     PSVehicleDoorCloseRequest.slotID = evt.slotID;
+    PSVehicleDoorCloseRequest.shouldOpenWindow = shouldOpenWindow;
     autoCloseDelay = evt.autoCloseTime;
     if autoCloseDelay == 0.00 {
       autoCloseDelay = 1.50;
     };
 
-    let vehicle: ref<VehicleObject> = this.GetVehicle();
-    let gameInstance: GameInstance = vehicle.GetGame();
-    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
     
     // Define doors state when V gets in or out
-    if !this.IsUnsupportedVehicleType() && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
-      // LogChannel(n"DEBUG", s"OnVehicleDoorOpen IsMountedToProvidedVehicle -> RecallVehicleDoorsState");
-      this.RecallVehicleDoorsState(autoCloseDelay);
+    if !this.IsUnsupportedVehicleType() && VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) {
+      this.RecallVehicleDoorsState(autoCloseDelay, shouldOpenWindow);
     }
     else { // NPCs behavior
-      // LogChannel(n"DEBUG", s"OnVehicleDoorOpen DelayPSEvent");
       GameInstance.GetDelaySystem(this.GetVehicle().GetGame()).DelayPSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest, autoCloseDelay, true);
     }
   };
   this.GetPS().SetHasAnyDoorOpen(true);
+}
+
+@wrapMethod(VehicleComponent)
+protected cb func OnVehicleDoorClose(evt: ref<VehicleDoorClose>) -> Bool {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = vehicle.GetGame();
+
+  let returnValue: Bool = wrappedMethod(evt);
+
+  if this.m_isSingleFrontDoor && (Equals(evt.slotID, VehicleComponent.GetFrontPassengerSlotName()) || Equals(evt.slotID, VehicleComponent.GetDriverSlotName())) {
+    this.GetPS().SetDoorState(EVehicleDoor.seat_front_right, VehicleDoorState.Closed, evt.forceScene);
+    this.GetPS().SetDoorState(EVehicleDoor.seat_front_left, VehicleDoorState.Closed, evt.forceScene);
+  }
+  
+  if evt.shouldOpenWindow {
+    let doorEnum: EVehicleDoor = IntEnum(EnumValueFromName(n"EVehicleDoor", evt.slotID));
+
+    if NotEquals(this.GetMemoryWindowState(doorEnum), this.GetPS().GetWindowState(doorEnum)) {
+      let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+      event.slotID = evt.slotID;    
+      GameInstance.GetPersistencySystem(gi).QueuePSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event);
+    }
+
+    if this.m_isSingleFrontDoor {
+      if NotEquals(this.m_FR_windowState, this.GetPS().GetWindowState(EVehicleDoor.seat_front_right)) {
+        let event: ref<VehicleWindowOpen> = new VehicleWindowOpen();
+        event.slotID = VehicleComponent.GetFrontPassengerSlotName();    
+        GameInstance.GetPersistencySystem(gi).QueuePSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), event);
+      }
+    }
+  }
+
+  return returnValue;
+}
+
+@replaceMethod(VehicleComponent)
+private final func CloseSelectedDoors(const doors: script_ref<array<CName>>) -> Void {
+  let PSVehicleDoorCloseRequest: ref<VehicleDoorClose>;
+  let size: Int32 = ArraySize(Deref(doors));
+  let i: Int32 = 0;
+
+  while i < size {    
+    let shouldOpenWindow: Bool = false;
+    let doorEnum: EVehicleDoor = IntEnum(EnumValueFromName(n"EVehicleDoor", Deref(doors)[i]));
+
+    if this.m_hasIncompatibleSlidingDoorsWindow {
+      if Equals(doorEnum, EVehicleDoor.seat_front_left)
+      && Equals(this.GetPS().GetDoorState(doorEnum), VehicleDoorState.Open)
+      && Equals(this.m_FL_windowState, EVehicleWindowState.Open) {
+        shouldOpenWindow = true;
+      }
+
+      if Equals(doorEnum, EVehicleDoor.seat_front_right)
+      && ((!this.m_isSingleFrontDoor && Equals(this.GetPS().GetDoorState(doorEnum), VehicleDoorState.Open)) || (this.m_isSingleFrontDoor && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_left), VehicleDoorState.Open)))
+      && Equals(this.m_FR_windowState, EVehicleWindowState.Open) {
+        shouldOpenWindow = true;
+      }
+
+      if Equals(doorEnum, EVehicleDoor.seat_back_left)
+      && Equals(this.GetPS().GetDoorState(doorEnum), VehicleDoorState.Open)
+      && Equals(this.m_BL_windowState, EVehicleWindowState.Open) {
+        shouldOpenWindow = true;
+      }
+
+      if Equals(doorEnum, EVehicleDoor.seat_back_right)
+      && Equals(this.GetPS().GetDoorState(doorEnum), VehicleDoorState.Open)
+      && Equals(this.m_BR_windowState, EVehicleWindowState.Open) {
+        shouldOpenWindow = true;
+      }
+    }
+
+    PSVehicleDoorCloseRequest = new VehicleDoorClose();
+    PSVehicleDoorCloseRequest.slotID = Deref(doors)[i];
+    PSVehicleDoorCloseRequest.shouldOpenWindow = shouldOpenWindow;
+    GameInstance.GetPersistencySystem(this.GetVehicle().GetGame()).QueuePSEvent(this.GetPS().GetID(), this.GetPS().GetClassName(), PSVehicleDoorCloseRequest);
+
+    this.SetMemoryDoorState(doorEnum, VehicleDoorState.Closed);
+
+    i += 1;
+  };
+  this.GetPS().SetHasAnyDoorOpen(false);
 }
 
 @replaceMethod(VehicleComponent)
@@ -5163,8 +5926,8 @@ protected cb func OnCurrentWantedLevelChanged(value: Int32) -> Bool {
   let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   // // // // // // //
-  // When the wanted level gets down to zero, the game turns all the police cars to siren state OFF
-  // This code prevents V driving a police car to be affected by this behavior
+  // When the wanted level gets down to zero, the game turns all the police vehicles to siren state OFF
+  // This code prevents V driving a police vehicle to be affected by this behavior
   if value == 0 && (!vehicle.IsPlayerDriver() || this.IsUnsupportedVehicleType()) {
     this.ToggleSiren(false, false);
 
@@ -5257,9 +6020,13 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     return false;
   };
   if mountChild.IsPlayer() {
+    let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
 
-    if IsDefined(this.GetVehicleComponent()) && this.GetVehicleComponent().IsUnsupportedVehicleType() {
-      this.SetInteriorUIEnabled(true);
+    if IsDefined(vehicleComp) {
+
+      if vehicleComp.IsUnsupportedVehicleType() || (vehicleComp.IsDelamainTaxi() && !this.IsPlayerDriver()) {
+        this.SetInteriorUIEnabled(true);
+      }
     }
 
     if this.ReevaluateStealing(mountChild, evt.request.lowLevelMountingInfo.slotId.id, evt.request.mountData.mountEventOptions.occupiedByNonFriendly) {
@@ -5268,7 +6035,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   }
   else if VehicleComponent.IsDriver(this.GetGame(), mountChild) {
     // If a NPC is mounting as the driver, then enable UI
-    // This behavior is useful when V enters in a story driven car as a passenger
+    // This behavior is useful when V enters in a story driven vehicle as a passenger
     // It also allows for all vehicle NPCs to have dashboard enabled by default
     this.SetInteriorUIEnabled(true);
   }
@@ -5301,17 +6068,16 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
 @wrapMethod(vehicleUIGameController)
 protected cb func OnInitialize() -> Bool {
-  // LogChannel(n"DEBUG", s"OnInitialize -> \(this.m_vehicle.GetEntityID())");
-
   wrappedMethod();
+
+  let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
   if !IsDefined(this.m_vehicle.m_vehicleUIGameController) {
     this.m_vehicle.m_vehicleUIGameController = this;
   }
 
   // Enable dashboard root widget but turn UI off
-  if this.m_vehicle.IsPlayerDriver() {
-    // LogChannel(n"DEBUG", s"OnInitialize -> player driver");
+  if this.m_vehicle.IsPlayerDriver() || (IsDefined(vehicleComp) && vehicleComp.IsDelamainTaxi() && !this.m_vehicle.IsPlayerDriver()) {
     this.ActivateUI();
     this.TurnOn();
   }
@@ -5321,12 +6087,14 @@ protected cb func OnInitialize() -> Bool {
 private final func DeactivateUI() -> Void {
   let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
-  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicleComp.IsUnsupportedVehicleType() {
-    // LogChannel(n"DEBUG", s"vehicleUIGameController.DeactivateUI -> PREVENT");
-    return;
+  if IsDefined(vehicleComp) && !vehicleComp.IsUnsupportedVehicleType() {
+
+    if (vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState)
+    || (vehicleComp.IsDelamainTaxi() && !this.m_vehicle.IsPlayerDriver()) {
+      return;
+    }
   }
 
-  // LogChannel(n"DEBUG", s"vehicleUIGameController.DeactivateUI");
   // Keep default behavior for NPCs
   wrappedMethod();
 }
@@ -5336,12 +6104,14 @@ private final func DeactivateUI() -> Void {
 private final func TurnOff() -> Void {
   let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
 
-  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicleComp.IsUnsupportedVehicleType() {
-    // LogChannel(n"DEBUG", s"vehicleUIGameController.TurnOff -> PREVENT");
-    return;
+  if IsDefined(vehicleComp) && !vehicleComp.IsUnsupportedVehicleType() {
+
+    if (vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState)
+    || (vehicleComp.IsDelamainTaxi() && !this.m_vehicle.IsPlayerDriver()) {
+      return;
+    }
   }
 
-  // LogChannel(n"DEBUG", s"vehicleUIGameController.TurnOff");
   // Keep default behavior for NPCs
   wrappedMethod();
 }
@@ -5352,11 +6122,14 @@ private final func IsUIactive() -> Bool {
   let vehicle: ref<VehicleObject> = this.m_vehicle;
   let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
 
-  if IsDefined(vehicleComp) && vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicle.IsPlayerDriver() && !vehicleComp.IsUnsupportedVehicleType() {
-    // LogChannel(n"DEBUG", s"vehicleUIGameController.IsUIactive -> turn on for player");
-    this.TurnOn();
+  if IsDefined(vehicleComp) && !vehicleComp.IsUnsupportedVehicleType() {
 
-    return this.m_vehicle.GetVehicleComponent().m_powerState;
+    if (vehicleComp.m_vehicleDrivenByV && vehicleComp.m_powerState && !vehicle.IsPlayerDriver())
+    || (vehicleComp.IsDelamainTaxi() && !this.m_vehicle.IsPlayerDriver()) {
+      this.TurnOn();
+
+      return this.m_vehicle.GetVehicleComponent().m_powerState;
+    }
   }
   
   return wrappedMethod();
@@ -5417,10 +6190,10 @@ protected func OnEnter(stateContext: ref<StateContext>, scriptInterface: ref<Sta
   // New feature: Also don't open front windows if the vehicle has windowed sliding doors open like the Quadra V-Tech
   let player: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
   let vehicle: ref<VehicleObject> = player.m_mountedVehicle;
-  let gameInstance: GameInstance = vehicle.GetGame();
+  let gi: GameInstance = vehicle.GetGame();
   let vehicleComp: ref<VehicleComponent> = player.m_mountedVehicle.GetVehicleComponent();
   
-  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted
+  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted
   && !vehicleComp.IsUnsupportedVehicleType() {
     let FL_doorState: VehicleDoorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
     let FR_doorState: VehicleDoorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
@@ -5462,11 +6235,11 @@ protected func OnExit(stateContext: ref<StateContext>, scriptInterface: ref<Stat
 
   let player: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
   let vehicle: ref<VehicleObject> = player.m_mountedVehicle;
-  let gameInstance: GameInstance = vehicle.GetGame();
+  let gi: GameInstance = vehicle.GetGame();
   let vehicleComp: ref<VehicleComponent> = player.m_mountedVehicle.GetVehicleComponent();
 
   // Close front windows only if their previous state was closed
-  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted
+  if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) && vehicleComp.m_playerIsMounted
   && !vehicleComp.IsUnsupportedVehicleType() {
     if vehicleComp.m_hasWindows {
       vehicleComp.Recall_FL_WindowsState();
@@ -5486,6 +6259,46 @@ protected cb func IsFullGameplay() -> Bool {
   return Equals(this.m_sceneTier, GameplayTier.Tier1_FullGameplay);
 }
 
+@addMethod(PlayerPuppet)
+public func GetLightsCustomSettingsEnabled(lightType: vehicleELightType) -> Bool {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  switch lightType {
+    case vehicleELightType.Utility:
+      return player.m_customUtilityLightsEnabled;
+      break;
+      
+    case vehicleELightType.Head:
+      return player.m_customHeadlightsEnabled;
+      break;
+      
+    case vehicleELightType.Brake:
+      return player.m_customTailLightsEnabled;
+      break;
+      
+    case vehicleELightType.Blinkers:
+      return player.m_customBlinkerLightsEnabled;
+      break;
+      
+    case vehicleELightType.Reverse:
+      return player.m_customReverseLightsEnabled;
+      break;
+  }
+
+  return false;
+}
+
+@addMethod(PlayerPuppet)
+public func SetAllLightsCustomSettingsEnabled(toggle: Bool) {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  player.m_customHeadlightsEnabled = toggle;
+  player.m_customTailLightsEnabled = toggle;
+  player.m_customUtilityLightsEnabled = toggle;
+  player.m_customBlinkerLightsEnabled = toggle;
+  player.m_customReverseLightsEnabled = toggle;
+}
+
 @replaceMethod(PlayerPuppet)
 protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
 
@@ -5503,12 +6316,18 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
 
     // Remember current front doors state so when the player has finished combat we can restore the doors state
     vehicleComp.m_FL_doorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_left);
-    vehicleComp.m_FR_doorState = vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
+    vehicleComp.m_FR_doorState = vehicleComp.m_isSingleFrontDoor ? vehicleComp.m_FL_doorState : vehicleComp.GetPS().GetDoorState(EVehicleDoor.seat_front_right);
 
     // Remember current front windows state so when the player has finished combat we can restore the windows state
     if vehicleComp.m_hasWindows {
-      vehicleComp.m_FL_windowState = vehicleComp.GetPS().GetWindowState(EVehicleDoor.seat_front_left);
-      vehicleComp.m_FR_windowState = vehicleComp.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
+
+      if !vehicleComp.m_hasIncompatibleSlidingDoorsWindow || Equals(vehicleComp.m_FL_doorState, VehicleDoorState.Closed) {
+        vehicleComp.m_FL_windowState = vehicleComp.GetPS().GetWindowState(EVehicleDoor.seat_front_left);
+      }
+
+      if !vehicleComp.m_hasIncompatibleSlidingDoorsWindow || Equals(vehicleComp.m_FR_doorState, VehicleDoorState.Closed) {
+        vehicleComp.m_FR_windowState = vehicleComp.GetPS().GetWindowState(EVehicleDoor.seat_front_right);
+      }
     }
   }
   else if IsDefined(vehicleComp) {    
@@ -5530,11 +6349,9 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
           
           // If the player is exiting combat, then check previous door state and apply them back
           if IsDefined(vehicleComp) && isExitingCombat && !vehicleComp.IsUnsupportedVehicleType() {
-            // LogChannel(n"DEBUG", s"OnVehicleStateChange RecallVehicleDoorsState");
             vehicleComp.RecallVehicleDoorsState();
           }
           else { // Otherwise do as usual
-            // LogChannel(n"DEBUG", s"OnVehicleStateChange HandleDoorsForCombat");
             this.HandleDoorsForCombat(vehicle);
           }
         } else {
@@ -5554,34 +6371,39 @@ protected cb func OnVehicleStateChange(newState: Int32) -> Bool {
 
 @replaceMethod(PlayerPuppet)
 private final func HandleDoorsForCombat(vehicle: wref<VehicleObject>) -> Void {
-  // LogChannel(n"DEBUG", s"HandleDoorsForCombat");
+  
   let ignoreAutoDoorCloseEvt: ref<SetIgnoreAutoDoorCloseEvent> = new SetIgnoreAutoDoorCloseEvent();
+  let gi: GameInstance = vehicle.GetGame();
+  let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
   if Equals(this.m_vehicleState, gamePSMVehicle.DriverCombat) {
     ignoreAutoDoorCloseEvt.set = true;
     vehicle.QueueEvent(ignoreAutoDoorCloseEvt);
     VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetDriverSlotID());
-    VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+
+    if !IsDefined(vehicleComp) || !vehicleComp.m_isSingleFrontDoor {
+      VehicleComponent.OpenDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+    }
   } else {
     if NotEquals(this.m_vehicleState, gamePSMVehicle.Transition) && NotEquals(this.m_vehicleState, gamePSMVehicle.Passenger) {
       ignoreAutoDoorCloseEvt.set = false;
       vehicle.QueueEvent(ignoreAutoDoorCloseEvt);
 
-      let gameInstance: GameInstance = vehicle.GetGame();
-      let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
-      let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+      let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
       // Define doors state when V gets out
       if IsDefined(vehicleComp) && !vehicleComp.IsUnsupportedVehicleType()
-      && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), vehicle) {
+      && VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) {
         if !vehicleComp.m_playerIsMounted {
-          // LogChannel(n"DEBUG", s"HandleDoorsForCombat RecallVehicleDoorsState");
           vehicleComp.RecallVehicleDoorsState();
         }
       }
       else { // Default game behavior for NPCs
-        // LogChannel(n"DEBUG", s"HandleDoorsForCombat CloseDoor");
         VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetDriverSlotID());
-        VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+        
+        if !IsDefined(vehicleComp) || !vehicleComp.m_isSingleFrontDoor {
+          VehicleComponent.CloseDoor(vehicle, VehicleComponent.GetFrontPassengerSlotID());
+        }
       }
     };
   };
@@ -5601,7 +6423,6 @@ protected cb func OnCombatStateChanged(newState: Int32) -> Bool {
       if vehicleComp.m_modSettings.autoStartEngineDuringCombat && !this.m_mountedVehicle.IsEngineTurnedOn() {
         vehicleComp.TogglePowerState(true);
         this.m_mountedVehicle.TurnEngineOn(true);
-        // LogChannel(n"DEBUG", s"Turn engine -> true");
       }
 
       if vehicleComp.m_modSettings.autoEnableCrystalDomeDuringCombat && !vehicleComp.GetPS().GetCrystalDomeState() {
@@ -5613,19 +6434,233 @@ protected cb func OnCombatStateChanged(newState: Int32) -> Bool {
   return wrappedMethod(newState);
 }
 
+@wrapMethod(PlayerPuppet)
+protected cb func OnGameAttached() -> Bool {
+  let returnValue: Bool = wrappedMethod();
+  let gi: GameInstance = this.GetGame();
+
+  this.m_modSettings = ModSettings_EVS.Get(gi);  
+  ModSettings.RegisterListenerToModifications(this);
+
+  return returnValue;
+}
+
+@wrapMethod(PlayerPuppet)
+protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsumer) -> Bool {
+  let returnValue: Bool = wrappedMethod(action, consumer);
+  let gi: GameInstance = this.GetGame();
+
+  // // // // // // //
+  // Event that toggles custom lights settings
+  //
+  // Multi-tap: toggle custom lights settings for each light type
+  //
+  if Equals(ListenerAction.GetName(action), n"ToggleCustomLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_RELEASED) {
+
+    if !this.m_toggleCustomLightsLongInputTriggered {
+      // If the last press time is older than "this.m_modSettings.multiTapTimeWindow" consider this is a new sequence
+      if Utils.GetCurrentTime(gi) - this.m_toggleCustomLightsLastPressTime > this.m_modSettings.multiTapTimeWindow {
+        this.m_toggleCustomLightsStep = 0;
+      }
+
+      this.m_toggleCustomLightsLastPressTime = Utils.GetCurrentTime(gi);
+      this.m_toggleCustomLightsStep += 1;
+
+      let event: ref<MultiTapLightsToggleEvent> = new MultiTapLightsToggleEvent();
+      event.tapCount = this.m_toggleCustomLightsStep;
+      GameInstance.GetDelaySystem(this.GetGame()).DelayEvent(this, event, this.m_modSettings.multiTapTimeWindow, false);
+    }
+
+    this.m_toggleCustomLightsLongInputTriggered = false;
+  }
+  // // // // // // //
+
+  // // // // // // //
+  // Hold: toggle custom lights settings for all light types
+  //
+  if Equals(ListenerAction.GetName(action), n"ToggleCustomLights") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_HOLD_COMPLETE) {
+    this.m_toggleCustomLightsLongInputTriggered = true;
+
+    // If any custom lights is activated then activate all of them
+    if this.m_customHeadlightsEnabled
+    || this.m_customTailLightsEnabled
+    || this.m_customUtilityLightsEnabled
+    || this.m_customBlinkerLightsEnabled
+    || this.m_customReverseLightsEnabled {
+
+      this.m_customHeadlightsEnabled = false;
+      this.m_customTailLightsEnabled = false;
+      this.m_customUtilityLightsEnabled = false;
+      this.m_customBlinkerLightsEnabled = false;
+      this.m_customReverseLightsEnabled = false;
+    }
+    else {
+      this.m_customHeadlightsEnabled = true;
+      this.m_customTailLightsEnabled = true;
+      this.m_customUtilityLightsEnabled = true;
+      this.m_customBlinkerLightsEnabled = true;
+      this.m_customReverseLightsEnabled = true;
+    }
+
+    this.m_customLightsAreBeingToggled = true;
+    let i = 0;
+    while i < ArraySize(this.m_drivenVehicles) {
+
+      if IsDefined(this.m_drivenVehicles[i]) {
+        this.m_drivenVehicles[i].OnModSettingsChange();
+      }
+
+      i += 1;
+    }
+    this.m_customLightsAreBeingToggled = false;
+  }
+
+  return returnValue;
+}
+
 @wrapMethod(hudCarController)
 protected func SetMeasurementUnits(value: Int32) -> Void {
-  // LogChannel(n"DEBUG", s"SetMeasurementUnits");
   wrappedMethod(value);
   
   // Get the current user setting for KMH or MPH unit
   if IsDefined(this.m_activeVehicle) {
-    let gameInstance: GameInstance = this.m_activeVehicle.GetGame();
-    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gameInstance).GetLocalPlayerMainGameObject() as PlayerPuppet;
+    let gi: GameInstance = this.m_activeVehicle.GetGame();
+    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
     let vehicleComp: ref<VehicleComponent> = this.m_activeVehicle.GetVehicleComponent();
 
-    if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gameInstance, player.GetEntityID(), this.m_activeVehicle) && vehicleComp.m_playerIsMounted {
+    if IsDefined(vehicleComp) && VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), this.m_activeVehicle) && vehicleComp.m_playerIsMounted {
       vehicleComp.m_isKmH = this.m_kmOn;
     }
   }
+}
+
+@addMethod(InputContextTransitionEvents)
+protected final const func ShowVehiclePowerEngineInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
+  let vehicle: wref<GameObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  this.ShowInputHint(scriptInterface, n"CycleEngineStep1", source, "Power/Engine", inkInputHintHoldIndicationType.Press, false, 127);
+}
+
+@addMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleDoorsInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
+  let vehicle: wref<GameObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  if vehicle == (vehicle as BikeObject) {
+    this.RemoveInputHint(scriptInterface, n"CycleDoor", source);
+  } else {
+    this.ShowInputHint(scriptInterface, n"CycleDoor", source, "Doors", inkInputHintHoldIndicationType.Press, false, 127);
+  }
+}
+
+@addMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleSpoilerInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
+  let vehicle: wref<GameObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  if vehicle == (vehicle as BikeObject) {
+    this.RemoveInputHint(scriptInterface, n"CycleSpoiler", source);
+  } else {
+    this.ShowInputHint(scriptInterface, n"CycleSpoiler", source, "Hood/Trunk/Spoiler", inkInputHintHoldIndicationType.Press, false, 127);
+  }
+}
+
+@addMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleWindowsInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
+  let vehicle: wref<VehicleObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  if vehicle == (vehicle as BikeObject) {
+    this.RemoveInputHint(scriptInterface, n"CycleWindow", source);
+  } else if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) {
+      if vehicleComp.m_hasWindows {
+        this.ShowInputHint(scriptInterface, n"CycleWindow", source, "Windows", inkInputHintHoldIndicationType.Press, false, 127);
+      }
+    }
+  }
+}
+
+@addMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleCrystalDomeInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
+  let vehicle: wref<GameObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  if vehicle == (vehicle as BikeObject) {
+    this.RemoveInputHint(scriptInterface, n"CycleDome", source);
+  } else {
+    this.ShowInputHint(scriptInterface, n"CycleDome", source, "Interior lights/Crystal dome", inkInputHintHoldIndicationType.Press, false, 127);
+  }
+}
+
+@addMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleToggleLightsSettingsInputHint(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>, source: CName) -> Void {
+  let vehicle: wref<GameObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  this.ShowInputHint(scriptInterface, n"ToggleCustomLights", source, "Toggle light settings", inkInputHintHoldIndicationType.Press, false, 127);
+}
+
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowVehicleDriverInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  let vehicle: wref<VehicleObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) && IsDefined(vehicleComp.m_modSettings) {
+      if vehicleComp.m_modSettings.displayInputHints {
+
+        this.ShowVehiclePowerEngineInputHint(stateContext, scriptInterface, n"VehicleDriver");
+        this.ShowVehicleDoorsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+        this.ShowVehicleSpoilerInputHint(stateContext, scriptInterface, n"VehicleDriver");
+        this.ShowVehicleWindowsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+        this.ShowVehicleCrystalDomeInputHint(stateContext, scriptInterface, n"VehicleDriver");
+        this.ShowVehicleToggleLightsSettingsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      }
+    }
+  }
+
+  wrappedMethod(stateContext, scriptInterface);
+}
+
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowVehiclePassengerInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  let vehicle: wref<VehicleObject>;
+  VehicleComponent.GetVehicle(scriptInterface.owner.GetGame(), scriptInterface.executionOwner, vehicle);
+
+  if IsDefined(vehicle) {
+    let vehicleComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
+
+    if IsDefined(vehicleComp) && IsDefined(vehicleComp.m_modSettings) {
+      if vehicleComp.m_modSettings.displayInputHints {
+
+        if vehicleComp.m_isSlidingDoors {
+          this.ShowVehicleDoorsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+        }
+
+        this.ShowVehicleWindowsInputHint(stateContext, scriptInterface, n"VehicleDriver");
+      }
+    }
+  }
+  
+  wrappedMethod(stateContext, scriptInterface);
+}
+
+@wrapMethod(InputContextTransitionEvents)
+protected final const func ShowGenericExplorationInputHints(stateContext: ref<StateContext>, scriptInterface: ref<StateGameScriptInterface>) -> Void {
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(scriptInterface.owner.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+
+  if IsDefined(player)
+  && ArraySize(player.m_drivenVehicles) > 0
+  && player.m_modSettings.displayInputHints {
+
+    this.ShowVehicleToggleLightsSettingsInputHint(stateContext, scriptInterface, n"Locomotion");
+  }
+
+  wrappedMethod(stateContext, scriptInterface);
 }

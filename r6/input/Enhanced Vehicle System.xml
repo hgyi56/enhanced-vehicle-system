@@ -1,5 +1,14 @@
 <?xml version="1.0"?>
 <bindings>
+
+    <context name="VisionActions" >
+        <action name="ToggleCustomLights"   map="Vehicle_ToggleCustomLights" />
+		<action name="VisionToggle"			map="Vision_Toggle_Button" />
+		<action name="VisionHold"			map="Vision_Hold_Button" />
+		<action name="QuickMelee"			map="QuickMelee_Button_Alternative" />
+		<action name="Ping"					map="Vision_Hold_Button" />
+		<action name="DescriptionChange" 	map="ToggleQHackDescription" priority="-1" />
+	</context>
     
     <context name="VehicleOnlyForward" >
         <include name="CameraMovement" />
@@ -258,6 +267,17 @@
         <button id="IK_F2" />
         <button id="IK_2" />
     </buttonGroup>
+    
+    <!-- TOGGLE CUSTOM LIGHTS -->
+    <buttonGroup id="IK_Pad_DigitDownLeftShoulder" timeWindow="0.08f" >
+        <button id="IK_Pad_DigitDown" />
+        <button id="IK_Pad_LeftShoulder" />
+    </buttonGroup>
+
+    <buttonGroup id="IK_F1_1" timeWindow="0.08f" >
+        <button id="IK_F1" />
+        <button id="IK_1" />
+    </buttonGroup>
 
     <!-- POWER STATE / ENGINE -->
     <buttonGroup id="IK_Pad_DigitLeftACross" timeWindow="0.08f" >
@@ -296,9 +316,15 @@
         <button id="IK_Pad_DigitRightXSquare" />
     </mapping>
 
+    <mapping name="Vehicle_ToggleCustomLights" type="Button">
+        <button id="IK_F1_1" />
+        <button id="IK_Pad_DigitDownLeftShoulder" />
+    </mapping>
+
     <hold action="CycleLights"          timeout="99.0" />
 	<hold action="VehicleInsideWheel"	timeout="99.0" />
     <hold action="ModdedCycleLights"    timeout="0.25" />
+    <hold action="ToggleCustomLights"   timeout="0.25" />
     <hold action="CycleEngineStep1"     timeout="0.25" />
     <hold action="CycleEngineStep2"     timeout="1.0" />
     <hold action="CycleDome"            timeout="0.25" />
