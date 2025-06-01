@@ -178,6 +178,8 @@ private final func RegisterInputListener() -> Void {
   // Register additional events we need.
   //
   playerPuppet.RegisterInputListener(this, n"ModdedCycleLights");
+  playerPuppet.RegisterInputListener(this, n"CameraX");
+  playerPuppet.RegisterInputListener(this, n"CameraY");
   playerPuppet.RegisterInputListener(this, n"CameraMouseX");
   playerPuppet.RegisterInputListener(this, n"CameraMouseY");
 
@@ -450,7 +452,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     // // // // // // //
     // Use camera movements to update headlights. Not a perfect solution but it works pretty well !
     //
-    if (Equals(ListenerAction.GetName(action), n"CameraMouseX") || Equals(ListenerAction.GetName(action), n"CameraMouseY")) && !this.m_temporaryHeadlightsShutOff {
+    if (Equals(ListenerAction.GetName(action), n"CameraMouseX") || Equals(ListenerAction.GetName(action), n"CameraMouseY") || Equals(ListenerAction.GetName(action), n"CameraX") || Equals(ListenerAction.GetName(action), n"CameraY")) && !this.m_temporaryHeadlightsShutOff {
       if NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState) {
         this.GetVehicleControllerPS().SetHeadLightMode(this.m_currentHeadlightsState);
       }

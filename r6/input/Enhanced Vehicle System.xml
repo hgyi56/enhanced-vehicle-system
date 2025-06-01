@@ -1,29 +1,32 @@
 <?xml version="1.0"?>
 <bindings>
-
-    <context name="VehicleNoDriveCombat" >
+    
+    <context name="VehicleOnlyForward" >
         <include name="CameraMovement" />
         <include name="VisionActions" />
         <include name="UIExploration" />
         <include name="PhotoMode" />
         <include name="QuickLoadAndSave" />
         <include name="Items" />
+        <include name="VehicleAuxillary" />
 
         <action name="IconicCyberware"      map="IconicCyberware_Button" />
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="TurnX"                map="LeftX_Axis_Vehicle" />
-        <action name="Exit"           map="ExitVehicle_Button" />
-        <action name="QuickExit"            map="QuickExit_Button"  />
+        <action name="Exit"                 map="ExitVehicle_Button" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
-        <action name="RangedAttack"         map="VehicleDriverCombatRangedAttack_Button" />
-        <action name="Reload"               map="Reload_Button" />
+        <action name="Accelerate"           map="Acceleration_Axis" />
+        <action name="UseConsumable"        map="UseConsumable_Button" />
+        <action name="TagButton"            map="Tag_Button" />
+        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
+        <action name="VehicleInverseCameraToggle"   map="VehicleInverseCameraToggle_Button"/>
+        <action name="VehicleCameraReset"   map="VehicleCameraReset_Button"/>
         <action name="ZoomIn"               map="ZoomIn_Button"/>
         <action name="ZoomOut"              map="ZoomOut_Button"/>
+        <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
     <context name="VehicleDriveBase" >
@@ -140,7 +143,7 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="VehicleHorn"          map="Vehicle_Horn" />
-        <action name="VehicleSiren"                 map="Vehicle_Siren" />
+        <action name="VehicleSiren"         map="Vehicle_Siren" />
         <action name="MeleeAttack"          map="VehicleDriverCombatRangedAttack_Button" />
         <action name="MeleeBlock"           map="VehicleDriverCombatRangedADS_Button" />
 
@@ -181,128 +184,44 @@
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
-    <context name="VehiclePassenger">
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="Items" />
-        <include name="QuestPauseActions" />
-        <action name="UseConsumable" map="UseConsumable_Button" />
-        <action name="Exit" map="ExitVehicle_Button" />
-        <action name="TagButton" map="Tag_Button" />
-        <action name="ToggleVehCamera" map="VehicleCameraToggle" />
-        <action name="ZoomIn" map="ZoomIn_Button" />
-        <action name="ZoomOut" map="ZoomOut_Button" />
-        <action name="CameraAim" map="Hit2_Button" />
-        <action name="Zoom" map="MouseWheel" />
-        <action name="UETExit" map="UETExit_Button" />
-        <action name="UETChangePose" map="UETChangePose_Button" />
-        <action name="UETWindow" map="UETWindow_Button" />
-    </context>
-
-    <context name="VehicleNoDrive">
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="Items" />
-        <include name="VehicleAuxillary" />
-        <action name="IconicCyberware" map="IconicCyberware_Button" />
-        <action name="TurnX" map="LeftX_Axis_Vehicle" />
-        <action name="Exit" map="ExitVehicle_Button" />
-        <action name="QuickExit" map="QuickExit_Button" />
-        <action name="UseConsumable" map="UseConsumable_Button" />
-        <action name="TagButton" map="Tag_Button" />
-        <action name="ToggleVehCamera" map="VehicleCameraToggle" />
-        <action name="VehicleInverseCameraToggle" map="VehicleInverseCameraToggle_Button" />
-        <action name="VehicleCameraReset" map="VehicleCameraReset_Button" />
-        <action name="ZoomIn" map="ZoomIn_Button" />
-        <action name="ZoomOut" map="ZoomOut_Button" />
-        <action name="VehicleHorn" map="Vehicle_Horn" />
-    </context>
-
-    <context name="VehicleTankDrive">
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="Items" />
-        <include name="VehicleAuxillary" />
-        <action name="UseConsumable" map="UseConsumable_Button" />
-        <action name="Accelerate" map="Acceleration_Axis_Tank" />
-        <action name="TurnX" map="LeftX_Axis_Vehicle" />
-        <action name="ToggleVehCamera" map="VehicleCameraToggle" />
-        <action name="VehicleInverseCameraToggle" map="VehicleInverseCameraToggle_Button" />
-        <action name="VehicleCameraReset" map="VehicleCameraReset_Button" />
-        <action name="Exit" map="ExitVehicle_Button" />
-        <action name="ShootPrimary" map="Vehicle_Shoot_Primary" />
-        <action name="ShootSecondary" map="Vehicle_Shoot_Secondary" />
-        <action name="ShootTertiary" map="Vehicle_Shoot_Tertiary" />
-        <action name="ZoomIn" map="ZoomIn_Button" />
-        <action name="ZoomOut" map="ZoomOut_Button" />
-        <action name="VehicleHorn" map="Vehicle_Horn" />
-    </context>
-
-    <context name="VehicleCombat">
-        <include name="Camera" />
-        <include name="Items" />
-        <include name="UIExploration" />
-        <include name="Abilities" />
-        <include name="VisionActions" />
-        <include name="Combat" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <action name="UseConsumable" map="UseConsumable_Button" />
-        <action name="Exit" map="ExitVehicle_Button" />
-        <action name="StrafeX" map="LeftX_Axis_Vehicle" />
-        <action name="StrafeY" map="LeftY_Axis_Vehicle" />
-        <action name="ZoomIn" map="ZoomIn_Button" />
-        <action name="ZoomOut" map="ZoomOut_Button" />
-        <action name="ToggleVehCamera" map="VehicleCameraToggle" />
-    </context>
-
-    <buttonGroup id="IK_Pad_DigitLeftUp" timeWindow="0.08f" >
+    <buttonGroup id="IK_Pad_DigitLeftXSquare" timeWindow="0.08f" >
         <button id="IK_Pad_DigitLeft" />
-        <button id="IK_Pad_DigitUp" />
+        <button id="IK_Pad_X_SQUARE" />
     </buttonGroup>
 
-    <buttonGroup id="IK_Pad_DigitLeftDown" timeWindow="0.08f" >
+    <buttonGroup id="IK_Pad_DigitLeftYTriangle" timeWindow="0.08f" >
         <button id="IK_Pad_DigitLeft" />
-        <button id="IK_Pad_DigitDown" />
+        <button id="IK_Pad_Y_TRIANGLE" />
     </buttonGroup>
 
-    <buttonGroup id="IK_Pad_DigitUpRightShoulder" timeWindow="0.08f" >
-        <button id="IK_Pad_DigitUp" />
-        <button id="IK_Pad_RightShoulder" />
+    <buttonGroup id="IK_Pad_DigitLeftACross" timeWindow="0.08f" >
+        <button id="IK_Pad_DigitLeft" />
+        <button id="IK_Pad_A_CROSS" />
     </buttonGroup>
 
-    <buttonGroup id="IK_Pad_DigitDownRightShoulder" timeWindow="0.08f" >
-        <button id="IK_Pad_DigitDown" />
-        <button id="IK_Pad_RightShoulder" />
+    <buttonGroup id="IK_Pad_DigitLeftBCircle" timeWindow="0.08f" >
+        <button id="IK_Pad_DigitLeft" />
+        <button id="IK_Pad_B_CIRCLE" />
     </buttonGroup>
 
     <mapping name="Vehicle_CycleEngine" type="Button">
         <button id="IK_F1" />
-        <button id="IK_Pad_DigitUpRightShoulder" />
+        <button id="IK_Pad_DigitLeftACross" />
     </mapping>
 
     <mapping name="Vehicle_CycleDoor" type="Button">
         <button id="IK_F2" />
-        <button id="IK_Pad_DigitLeftUp" />
+        <button id="IK_Pad_DigitLeftXSquare" />
     </mapping>
 
     <mapping name="Vehicle_CycleWindow" type="Button">
         <button id="IK_F3" />
-        <button id="IK_Pad_DigitLeftDown" />
+        <button id="IK_Pad_DigitLeftYTriangle" />
     </mapping>
 
     <mapping name="Vehicle_CycleDome" type="Button">
         <button id="IK_F4" />
-        <button id="IK_Pad_DigitDownRightShoulder" />
+        <button id="IK_Pad_DigitLeftBCircle" />
     </mapping>
 
     <hold action="CycleLights"          timeout="99.0" />
