@@ -1174,75 +1174,17 @@ function hgyi56_EVS.setup_light_CategorySetters(categoryData, additional)
 end
 
 function hgyi56_EVS.setup_crystalcoat_CategoryGetters(categoryData)
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "keepCrystalCoatEnabledOnExit", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].keepCrystalCoatEnabledOnExit
-  end)
-  
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "colorPickerOverridePrimarySBEnabled", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].colorPickerOverridePrimarySBEnabled
-  end)
-
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "colorPickerSaturationPrimary", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].colorPickerSaturationPrimary
-  end)
-
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "colorPickerBrightnessPrimary", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].colorPickerBrightnessPrimary
-  end)
-
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "colorPickerOverrideSecondarySBEnabled", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].colorPickerOverrideSecondarySBEnabled
-  end)
-
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "colorPickerSaturationSecondary", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].colorPickerSaturationSecondary
-  end)
-
-  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "colorPickerBrightnessSecondary", function(self, wrappedMethod)
-    return hgyi56_EVS.settings[categoryData.name].colorPickerBrightnessSecondary
+  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "crystalCoatDeactivationDistance", function(self, wrappedMethod)
+    return hgyi56_EVS.settings[categoryData.name].crystalCoatDeactivationDistance
   end)
 end
 
 function hgyi56_EVS.setup_crystalcoat_CategorySetters(categoryData)
   hgyi56_EVS.SetupCategory(categoryData)
 
-  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-keep_enabled"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-keep_enabled-desc"), hgyi56_EVS.settings[categoryData.name].keepCrystalCoatEnabledOnExit, hgyi56_EVS.defaults[categoryData.name].keepCrystalCoatEnabledOnExit, function(state)
-    hgyi56_EVS.settings[categoryData.name].keepCrystalCoatEnabledOnExit = state
+  nativeSettings.addRangeFloat(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-deactivation_distance"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-deactivation_distance-desc"), 5.65, 200.0, 0.01, "%.2f", hgyi56_EVS.settings[categoryData.name].crystalCoatDeactivationDistance, hgyi56_EVS.defaults[categoryData.name].crystalCoatDeactivationDistance, function(value)
+    hgyi56_EVS.settings[categoryData.name].crystalCoatDeactivationDistance = value
   end)
-
-  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_override_sb_primary"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_override_sb-desc"), hgyi56_EVS.settings[categoryData.name].colorPickerOverridePrimarySBEnabled, hgyi56_EVS.defaults[categoryData.name].colorPickerOverridePrimarySBEnabled, function(state)
-    hgyi56_EVS.settings[categoryData.name].colorPickerOverridePrimarySBEnabled = state
-
-    hgyi56_EVS.SetupCategory(categoryData)
-    hgyi56_EVS.setup_crystalcoat_CategorySetters(categoryData)
-  end)
-
-  if hgyi56_EVS.settings[categoryData.name].colorPickerOverridePrimarySBEnabled then
-    nativeSettings.addRangeInt(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_saturation"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_saturation-desc"), 0, 100, 1, hgyi56_EVS.settings[categoryData.name].colorPickerSaturationPrimary, hgyi56_EVS.defaults[categoryData.name].colorPickerSaturationPrimary, function(value)
-      hgyi56_EVS.settings[categoryData.name].colorPickerSaturationPrimary = value
-    end)
-
-    nativeSettings.addRangeInt(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_brightness"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_brightness-desc"), 0, 100, 1, hgyi56_EVS.settings[categoryData.name].colorPickerBrightnessPrimary, hgyi56_EVS.defaults[categoryData.name].colorPickerBrightnessPrimary, function(value)
-      hgyi56_EVS.settings[categoryData.name].colorPickerBrightnessPrimary = value
-    end)
-  end
-
-  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_override_sb_secondary"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_override_sb-desc"), hgyi56_EVS.settings[categoryData.name].colorPickerOverrideSecondarySBEnabled, hgyi56_EVS.defaults[categoryData.name].colorPickerOverrideSecondarySBEnabled, function(state)
-    hgyi56_EVS.settings[categoryData.name].colorPickerOverrideSecondarySBEnabled = state
-
-    hgyi56_EVS.SetupCategory(categoryData)
-    hgyi56_EVS.setup_crystalcoat_CategorySetters(categoryData)
-  end)
-
-  if hgyi56_EVS.settings[categoryData.name].colorPickerOverrideSecondarySBEnabled then
-    nativeSettings.addRangeInt(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_saturation"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_saturation-desc"), 0, 100, 1, hgyi56_EVS.settings[categoryData.name].colorPickerSaturationSecondary, hgyi56_EVS.defaults[categoryData.name].colorPickerSaturationSecondary, function(value)
-      hgyi56_EVS.settings[categoryData.name].colorPickerSaturationSecondary = value
-    end)
-
-    nativeSettings.addRangeInt(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_brightness"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-color_picker_brightness-desc"), 0, 100, 1, hgyi56_EVS.settings[categoryData.name].colorPickerBrightnessSecondary, hgyi56_EVS.defaults[categoryData.name].colorPickerBrightnessSecondary, function(value)
-      hgyi56_EVS.settings[categoryData.name].colorPickerBrightnessSecondary = value
-    end)
-  end
 end
 
 function hgyi56_EVS.setup_crystaldome_CategoryGetters(categoryData)

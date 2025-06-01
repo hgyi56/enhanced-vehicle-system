@@ -140,13 +140,7 @@ local interiorlights_Category = {
 }
 
 local crystalcoat_Category = {
-  keepCrystalCoatEnabledOnExit = false,
-  colorPickerOverridePrimarySBEnabled = false,
-  colorPickerSaturationPrimary = 100,
-  colorPickerBrightnessPrimary = 100,
-  colorPickerOverrideSecondarySBEnabled = false,
-  colorPickerSaturationSecondary = 100,
-  colorPickerBrightnessSecondary = 100
+  crystalCoatDeactivationDistance = 5.65
 }
 
 local crystaldome_Category = {

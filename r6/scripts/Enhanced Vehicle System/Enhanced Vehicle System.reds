@@ -43,12 +43,6 @@ enum ECrystalCoatColorType {
   Lights = 2
 }
 
-enum ECrystalCoatType {
-  None = 0,
-  CC_2_11 = 1,
-  CC_2_12 = 2
-}
-
 enum EEnterBehavior {
   KeepCurrentState = 0,
   PowerOn = 1,
@@ -564,31 +558,7 @@ public class MyModSettings extends ScriptableSystem {
   // CRYSTAL COAT
   /////////////////////////
 
-  public func keepCrystalCoatEnabledOnExit() -> Bool {
-    return false;
-  }
-
-  public func colorPickerOverridePrimarySBEnabled() -> Bool {
-    return false;
-  }
-
-  public func colorPickerSaturationPrimary() -> Int32 {
-    return 0;
-  }
-
-  public func colorPickerBrightnessPrimary() -> Int32 {
-    return 0;
-  }
-
-  public func colorPickerOverrideSecondarySBEnabled() -> Bool {
-    return false;
-  }
-
-  public func colorPickerSaturationSecondary() -> Int32 {
-    return 0;
-  }
-
-  public func colorPickerBrightnessSecondary() -> Int32 {
+  public func crystalCoatDeactivationDistance() -> Float {
     return 0;
   }
 
@@ -1436,33 +1406,6 @@ public class RestoreDashboardOnMountingCallback extends DelayCallback {
   }
 }
 
-// This callback restores the CrystalDome state when mounting for the first time into a unmodded CrystalCoat vehicle that uses a CrystalDome.
-// Because the vanilla behavior is to toggle the entity appearance on first mounting and it resets the CrystalDome to off visually (not logically).
-public class RestoreCrystalDomeOnMountingCallback extends DelayCallback {
-
-  public let vehComp: ref<VehicleComponent>;
-  public let toggle: Bool;
-
-  public func Call() {
-    if !IsDefined(this.vehComp) {
-      return;
-    }
-    
-    if this.toggle {
-      this.vehComp.ToggleCrystalDome(true, true);
-    }
-    else {
-      this.vehComp.ToggleCrystalDome(false, true, true, 0, 0, true);
-
-      let callback: ref<RestoreCrystalDomeOnMountingCallback> = new RestoreCrystalDomeOnMountingCallback();
-      callback.vehComp = this.vehComp;
-      callback.toggle = true;
-      
-      GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(callback, 0.8, true);
-    }
-  }
-}
-
 @addField(VehicleComponentPS)
 public persistent let m_hgyi56_EVS_currentHeadlightsState: vehicleELightMode = vehicleELightMode.Off;
 
@@ -1735,9 +1678,6 @@ public let m_hgyi56_EVS_isHeadlightsCallEnded: Bool = false;
 @addField(VehicleComponent)
 public let m_hgyi56_EVS_mountedSeats: array<MountingSlotId>;
 
-@addField(VehicleComponent)
-public let m_hgyi56_EVS_crystalCoatVersion: ECrystalCoatType;
-
 @addField(VehicleComponentPS)
 // 0 = side banner lights BLUE
 // 1 = Roof lights ON + side banner lights RED
@@ -1904,18 +1844,18 @@ protected cb func hgyi56_EVS_OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystal
         return false;
       }
 
-      let definition: vehicleVisualModdingDefinition;
-      vvcComponent.GetMyPS().GetDataForVehicleWithID(vehicle.GetRecordID(), definition);
+      let definition: VehicleVisualCustomizationTemplate;
+      vvcComponent.GetMyPS().GetAppliedCustomizationDataForVehicle(vehicle.GetRecordID(), definition);
 
       if this.hgyi56_EVS_IsCrystalCoatActive() {
         let evt: ref<NewVehicleVisualCustomizationEvent> = new NewVehicleVisualCustomizationEvent();
-        evt.modSet = definition;
+        evt.template = definition;
         evt.reset = true;
         vehicle.QueueEvent(evt);
       }
-      else if this.GetPS().GetIsVehicleVisualCustomizationDefinitionDefined() {
+      else if VehicleVisualCustomizationTemplate.IsValid(this.GetPS().GetVehicleVisualCustomizationTemplate()) {
         let evt: ref<NewVehicleVisualCustomizationEvent> = new NewVehicleVisualCustomizationEvent();
-        evt.modSet = definition;
+        evt.template = definition;
         evt.reset = false;
         vehicle.QueueEvent(evt);
       }
@@ -4640,20 +4580,20 @@ public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> Col
   // If crystal coat is active and light type is included and definition color is defined
   if this.hgyi56_EVS_ShouldApplyCrystalCoatLightColor(lightType) {
     
-    let ColorSet: vehicleVisualModdingDefinition = this.GetPS().GetVehicleVisualCustomizationDefinition();
+    let colorTemplate: VehicleVisualCustomizationTemplate = this.GetPS().GetVehicleVisualCustomizationTemplate();
     let colorType: ECrystalCoatColorType = this.hgyi56_EVS_GetCrystalCoatColorType(lightType);
 
     switch colorType {
       case ECrystalCoatColorType.Primary:
-        return vvcComp.VehicleVisualCustomizationColorParamsToColor(ColorSet.primaryColorH, true);
+        return new Color(colorTemplate.genericData.primaryColorR, colorTemplate.genericData.primaryColorG, colorTemplate.genericData.primaryColorB, Cast<Uint8>(255));
         break;
         
       case ECrystalCoatColorType.Secondary:
-        return vvcComp.VehicleVisualCustomizationColorParamsToColor(ColorSet.secondaryColorH, true);
+        return new Color(colorTemplate.genericData.secondaryColorR, colorTemplate.genericData.secondaryColorG, colorTemplate.genericData.secondaryColorB, Cast<Uint8>(255));
         break;
 
       case ECrystalCoatColorType.Lights:
-        return vvcComp.VehicleVisualCustomizationColorParamsToColor(ColorSet.lightsColorH, false, 0.50, 1.00);
+        return Color.HSBToColor(colorTemplate.genericData.lightsColorHue, false, 0.50, 1.00);
         break;
     }
   }
@@ -4932,22 +4872,22 @@ public func hgyi56_EVS_GetCrystalCoatLightsIncluded(lightType: vehicleELightType
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetCrystalCoatLightsColorTypeDefined(colorType: ECrystalCoatColorType) -> Bool {
 
-  let ColorSet: vehicleVisualModdingDefinition = this.GetPS().GetVehicleVisualCustomizationDefinition();
+  let colorTemplate: VehicleVisualCustomizationTemplate = this.GetPS().GetVehicleVisualCustomizationTemplate();
 
   switch colorType {
     case ECrystalCoatColorType.Primary:
       // Primary color shall be considered as defined only if the crystal coat is activated
-      return ColorSet.primaryColorDefined && this.hgyi56_EVS_IsCrystalCoatActive();
+      return colorTemplate.genericData.primaryColorDefined && this.hgyi56_EVS_IsCrystalCoatActive();
       break;
       
     case ECrystalCoatColorType.Secondary:
       // Secondary color shall be considered as defined only if the crystal coat is activated
-      return ColorSet.secondaryColorDefined && this.hgyi56_EVS_IsCrystalCoatActive();
+      return colorTemplate.genericData.secondaryColorDefined && this.hgyi56_EVS_IsCrystalCoatActive();
       break;
       
     case ECrystalCoatColorType.Lights:
       // "Lights color" can always be defined with the Cosmetic_Troll feature so it does not imply to activate crystal coat
-      return ColorSet.lightsColorDefined;
+      return colorTemplate.genericData.lightsColorDefined;
       break;
   }
 
@@ -5725,35 +5665,6 @@ public func hgyi56_EVS_OnModSettingsChange() -> Void {
   this.hgyi56_EVS_ApplyInteriorLightsSettingsChange();
 }
 
-@wrapMethod(VehicleComponent)
-private final func OnGameAttach() -> Void {
-  wrappedMethod();
-
-  let vehicle: ref<VehicleObject> = this.GetVehicle();
-  if !IsDefined(vehicle) {
-    return;
-  }
-
-  if this.GetIsVehicleVisualCustomizationEnabled() {
-    vehicle.SyncVehicleVisualCustomizationDefinition();
-
-    VehicleComponent.GetVehicleRecord(vehicle, this.m_hgyi56_EVS_vehicleRecord);
-
-    // Check CrystalCoat version
-    let tags = this.m_hgyi56_EVS_vehicleRecord.Tags();
-    if ArrayContains(tags, n"CrystalCoat_2_12") {
-      this.m_hgyi56_EVS_crystalCoatVersion = ECrystalCoatType.CC_2_12;
-      this.EnableCustomizableAppearance(true);
-    }
-    else if ArrayContains(tags, n"CrystalCoat_2_11") {
-      this.m_hgyi56_EVS_crystalCoatVersion = ECrystalCoatType.CC_2_11;
-    }
-  }
-  else {
-    this.m_hgyi56_EVS_crystalCoatVersion = ECrystalCoatType.None;
-  }
-}
-
 @replaceMethod(VehicleComponent)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   let PSvehicleDooropenRequest: ref<VehicleDoorOpen>;
@@ -6097,6 +6008,7 @@ protected cb func OnSummonStartedEvent(evt: ref<SummonStartedEvent>) -> Bool {
     this.GetPS().SetCrystalDomeState(false); // When summoned the CrystalDome is off until mounting
     let event: ref<PlayerIsAwayFromVehicleEvent> = new PlayerIsAwayFromVehicleEvent();
     event.isVehicleSummoning = true;
+    event.hasBeenOutOfVehicleRange = true; // In case the vehicle is summoned close to the player
     vehicle.QueueEvent(event);
   }
   /////////////////////////////
@@ -6221,6 +6133,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   
   // Get siren state
   let vehicle: ref<VehicleObject> = this.GetVehicle();
+  let gi: GameInstance = GetGameInstance();
 
   let activePassengers: Int32;
   let gi: GameInstance = GetGameInstance();
@@ -6278,7 +6191,7 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
     FastTravelSystem.RemoveFastTravelLock(n"InVehicle", gi);
     this.m_mounted = false;
     this.UnregisterListeners();
-    //this.ToggleSiren(false, false);
+    // this.ToggleSiren(false, false);
     if this.m_broadcasting {
       this.DrivingStimuli(false);
     };
@@ -7106,32 +7019,8 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
 
     if IsDefined(vehicleComp) {
 
-      if vehicleComp.GetIsVehicleVisualCustomizationEnabled()
-      && Equals(vehicleComp.m_hgyi56_EVS_crystalCoatVersion, ECrystalCoatType.None) {
-        let isBasicAppearance = NotEquals(this.GetCurrentAppearanceName(), vehicleComp.m_hgyi56_EVS_vehicleRecord.CustomizableAppearance());
-
-        this.SyncVehicleVisualCustomizationDefinition();
-        this.GetVehicleComponent().EnableCustomizableAppearance(true);
-
-        // Restore UI state if needed
-        if !vehicleComp.GetPS().m_hgyi56_EVS_powerState {
-          let callback: ref<RestoreDashboardOnMountingCallback> = new RestoreDashboardOnMountingCallback();
-          callback.vehComp = vehicleComp;
-          
-          GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(callback, 0.5, true);
-        }
-        
-        // Enable customizable appearance will revert crystal dome visibility even if its state is enabled
-        if isBasicAppearance
-        && vehicleComp.GetPS().m_hgyi56_EVS_hasCrystalDome
-        && vehicleComp.GetPS().GetCrystalDomeState() {
-          let callback: ref<RestoreCrystalDomeOnMountingCallback> = new RestoreCrystalDomeOnMountingCallback();
-          callback.vehComp = vehicleComp;
-          callback.toggle = false;
-          
-          GameInstance.GetDelaySystem(GetGameInstance()).DelayCallback(callback, 0.1, true);
-        }
-      }
+      this.SyncVehicleVisualCustomizationDefinition();
+      // this.GetVehicleComponent().EnableCustomizableAppearance(false);
 
       if vehicleComp.hgyi56_EVS_IsUnsupportedVehicleType() || (vehicleComp.hgyi56_EVS_IsDelamainTaxi() && !this.IsPlayerDriver()) {
         this.SetInteriorUIEnabled(true);
@@ -7158,14 +7047,18 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
   if IsDefined(mountChild) {
 
-    if IsDefined(vehicleComp) && mountChild.IsPlayer() && !vehicleComp.GetPS().m_hgyi56_EVS_vehicleDrivenByV {
-      if !isSilentUnmount && vehicleComp.hgyi56_EVS_IsUnsupportedVehicleType() {
-        this.SetInteriorUIEnabled(false);
+    if mountChild.IsPlayer() {
+      if IsDefined(vehicleComp) && !vehicleComp.GetPS().m_hgyi56_EVS_vehicleDrivenByV {
+        if !isSilentUnmount && vehicleComp.hgyi56_EVS_IsUnsupportedVehicleType() {
+          this.SetInteriorUIEnabled(false);
+        }
+
+        // If the player gets out and has not driven the vehicle, then he is the passenger of a story vehicle. In this case, close his window
+        // Because the player may have open its own window
+        vehicleComp.hgyi56_EVS_CloseWindow(evt.request.lowLevelMountingInfo.slotId);
       }
 
-      // If the player gets out and has not driven the vehicle, then he is the passenger of a story vehicle. In this case, close his window
-      // Because the player may have open its own window
-      vehicleComp.hgyi56_EVS_CloseWindow(evt.request.lowLevelMountingInfo.slotId);
+      GameInstance.GetDelaySystem(this.GetGame()).DelayEvent(this, new CheckVehicleVisialCustomizationDistanceTermination(), 1.00);
     }
 
     // Only disable UI if the driver NPC gets out
@@ -7970,34 +7863,6 @@ protected cb func OnProcessVehicleVisualCustomizationLights(evt: ref<VehicleCust
   }
 }
 
-@wrapMethod(VehicleObject)
-protected cb func OnSwitchVehicleVisualCustomizationStateEvent(evt: ref<SwitchVehicleVisualCustomizationStateEvent>) -> Bool {
-  let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
-
-  if !IsDefined(vehicleComp)
-  || (!MyModSettings.Get(GetGameInstance()).keepCrystalCoatEnabledOnExit() && vehicleComp.hgyi56_EVS_IsCrystalCoatActive()) {
-    return wrappedMethod(evt);
-  }
-}
-
-@replaceMethod(VehicleObject)
-protected cb func OnVehicleFinishedMounting(evt: ref<VehicleFinishedMountingEvent>) -> Bool {
-  let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
-
-  if IsDefined(vehicleComp) && evt.isMounting && IsDefined(evt.character) && evt.character.IsPlayer() {
-    this.m_abandoned = false;
-    if vehicleComp.hgyi56_EVS_IsCrystalCoatActive()
-    && !MyModSettings.Get(GetGameInstance()).keepCrystalCoatEnabledOnExit() {
-      this.ExecuteVisualCustomizationWithDelay(true, false, true, 0.00, true);
-    } else {
-      if this.GetVehiclePS().GetIsVehicleVisualCustomizationDefinitionDefined() && !this.GetVehiclePS().GetIsVehicleVisualCustomizationBlockedByDamage()
-      && !MyModSettings.Get(GetGameInstance()).keepCrystalCoatEnabledOnExit() {
-        this.ExecuteVisualCustomizationWithDelay(true, false, false, 0.80, false);
-      };
-    };
-  };
-}
-
 // Prevent CrystalCoat widgets from being modified
 @replaceMethod(VehicleObject)
 private final func SetInteriorUIEnabled(enabled: Bool) -> Void {
@@ -8018,56 +7883,14 @@ private final func SetInteriorUIEnabled(enabled: Bool) -> Void {
   }
 }
 
-@replaceMethod(VehicleObject)
-protected final func ExecuteVisualCustomizationWithDelay(set: Bool, reset: Bool, instant: Bool, opt delay: Float, opt noVFX: Bool) -> Void {
-  let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
-  let evt: ref<ExecuteVehicleVisualCustomizationEvent> = new ExecuteVehicleVisualCustomizationEvent();
-  evt.set = set;
-  evt.reset = reset;
-  evt.instant = instant;
-  if IsDefined(vehicleComp) && !MyModSettings.Get(GetGameInstance()).keepCrystalCoatEnabledOnExit() && !this.IsPlayerMounted() {
-    return;
-  };
-  if !noVFX {
-    GameObjectEffectHelper.StartEffectEvent(this, n"visual_customization_appearance_distortion");
-  };
-  if delay == 0.00 || instant {
-    this.QueueEvent(evt);
-  } else {
-    GameInstance.GetDelaySystem(this.GetGame()).DelayEvent(this, evt, delay);
-  };
-}
-
-@wrapMethod(VehicleObject)
-protected cb func OnVehicleVisualCustomizationPerformedEvent(evt: ref<VehicleVisualCustomizationPerformedEvent>) -> Bool {
-  let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
-
-  // If crystal coat is disabled then refresh lights
-  if IsDefined(vehicleComp)
-  && !vehicleComp.hgyi56_EVS_IsCrystalCoatActive() {
-    
-    let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
-    player.m_hgyi56_EVS_customLightsAreBeingToggled = true;
-    vehicleComp.hgyi56_EVS_OnModSettingsChange();
-    player.m_hgyi56_EVS_customLightsAreBeingToggled = false;
-  }
-
-  return wrappedMethod(evt);
-}
-
 @replaceMethod(VehicleComponent)
 protected cb func OnExecuteVehicleVisualCustomizationEvent(evt: ref<ExecuteVehicleVisualCustomizationEvent>) -> Bool {
   // set: is true only if the user has used the widget to customize or reset the vehicle
   // reset: is true if the game or the player has decided to reset the vehicle
 
-  // Ignore auto-reset performed by the game
-  if MyModSettings.Get(GetGameInstance()).keepCrystalCoatEnabledOnExit() && !evt.set && evt.reset {
+  if evt.set && !this.CanApplyTemplateOnVehicle(this.GetPS().GetVehicleVisualCustomizationTemplate(), true) {
     return false;
-  }
-
-  if Equals(this.m_hgyi56_EVS_crystalCoatVersion, ECrystalCoatType.CC_2_11) {
-    this.EnableCustomizableAppearance(!evt.reset);
-  }
+  };
   this.ExecuteVehicleVisualCustomization(evt.set, evt.reset, evt.instant);
 
   // Refresh head/tail/blinker lights
@@ -8108,21 +7931,19 @@ protected cb func OnDetach() -> Bool {
 protected cb func OnInitialize() -> Bool {
   let deadzoneConfig: ref<ConfigVarFloat>;
   let initEvent: ref<VehicleColorSelectionInitFinishedEvent>;
-  //let lightsEvent: ref<VehicleLightQuestToggleEvent>;
+  // let lightsEvent: ref<VehicleLightQuestToggleEvent>;
   let uiSystemBB: ref<IBlackboard>;
   this.m_popupData = this.GetRootWidget().GetUserData(n"inkGameNotificationData") as inkGameNotificationData;
   this.m_player = this.GetPlayerControlledObject() as PlayerPuppet;
   this.m_player.RegisterInputListener(this, n"__DEVICE_CHANGED__");
   this.m_gameInstance = this.m_player.GetGame();
   this.m_vehicle = this.m_player.GetMountedVehicle();
-  this.m_vvcComponent = this.m_player.GetVehicleVisualCustomizationComponent();
-  this.m_currentSBSliderPositionA = 0.00;
-  this.m_currentSBSliderPositionB = 0.00;
   uiSystemBB = this.GetBlackboardSystem().Get(GetAllBlackboardDefs().UI_System);
   this.m_isInMenuCallbackID = uiSystemBB.RegisterDelayedListenerBool(GetAllBlackboardDefs().UI_System.IsInMenu, this, n"OnIsInMenuChanged");
   deadzoneConfig = GameInstance.GetSettingsSystem(this.m_player.GetGame()).GetVar(n"/controls", n"Axis_DeadzoneInner") as ConfigVarFloat;
   this.m_axisInputThreshold = deadzoneConfig.GetValue();
   this.RegisterToGlobalInputCallback(n"OnPostOnRelease", this, n"OnGlobalInputReleased");
+  this.RegisterToGlobalInputCallback(n"OnPostOnHold", this, n"OnGlobalInputHold");
   this.RegisterToGlobalInputCallback(n"OnPostOnPress", this, n"OnGlobalPressInput");
   this.RegisterToGlobalInputCallback(n"OnPostOnRelative", this, n"OnMouseInput");
   this.RegisterToGlobalInputCallback(n"OnPostOnAxis", this, n"OnGlobalAxisInput");
@@ -8132,150 +7953,57 @@ protected cb func OnInitialize() -> Bool {
   inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOut", this, n"OnHoverOutColorWheel1");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOut", this, n"OnHoverOutColorWheel2");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOut", this, n"OnHoverOutColorWheelLights");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitSaturationBar, n"OnHoverOver", this, n"OnHoverOverSaturationBar");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitBrightnessBar, n"OnHoverOver", this, n"OnHoverOverBrightnessBar");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitSaturationBar, n"OnPress", this, n"OnSaturationBarPressed");
+  inkWidgetRef.RegisterToCallback(this.m_mouseHitBrightnessBar, n"OnPress", this, n"OnBrightnessBarPressed");
+  this.m_currentTemplatePreview = this.SpawnFromExternal(inkWidgetRef.Get(this.m_currentTemplateParentRef), inkWidgetLibraryResource.GetPath(this.m_templatePreviewLibraryRef.widgetLibrary), this.m_templatePreviewLibraryRef.widgetItem).GetController() as ColorTemplatePreviewDisplayController;
+  this.m_currentTemplatePreview.SetSelected(false);
+  this.m_currentTemplatePreview.SetCanAdd(false);
+  this.m_currentTemplatePreview.SetToggleable(false);
+  if this.m_player.PlayerLastUsedKBM() {
+    inkWidgetRef.SetVisible(this.m_changeTabRightHint, false);
+    inkWidgetRef.SetVisible(this.m_changeTabLeftHint, false);
+  } else {
+    inkWidgetRef.SetVisible(this.m_changeTabRightHint, true);
+    inkWidgetRef.SetVisible(this.m_changeTabLeftHint, true);
+  };
+  inkWidgetRef.SetVisible(this.m_saturationBarHint, false);
+  inkWidgetRef.SetVisible(this.m_brightnessBarHint, false);
   this.SetTimeDilatation(true);
+  this.UpdateVehiclePreview();
   this.UpdateVehicleManufacturer();
+  this.UpdateTwintonePanel();
+  this.ProcessPreviousCustomizationState();
+  this.ProccessSwapColorHintVisibility();
   this.PlayAnimation(this.m_introAnimation);
   this.m_animProxy.RegisterToCallback(inkanimEventType.OnFinish, this, n"OnIntroFinished");
   GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_open");
   initEvent = new VehicleColorSelectionInitFinishedEvent();
-  /*lightsEvent = new VehicleLightQuestToggleEvent();
-  lightsEvent.toggle = true;
-  this.m_vehicle.QueueEvent(lightsEvent);*/
+  // lightsEvent = new VehicleLightQuestToggleEvent();
+  // lightsEvent.toggle = true;
+  // this.m_vehicle.QueueEvent(lightsEvent);
   this.ProcessFakeUpdate(true);
   this.QueueEvent(initEvent);
 }
 
-// Allow display of the [Reset] button for Cosmetic_Troll
-@replaceMethod(vehicleColorSelectorGameController)
-private final func ProcessResetHintVisiblity() -> Void {
-  if (this.m_colorADefined || this.m_colorBDefined || this.m_lightsDefined) {
-    inkWidgetRef.SetVisible(this.m_resetContainerWidget, true);
-  } else {
-    inkWidgetRef.SetVisible(this.m_resetContainerWidget, false);
-  };
-}
-
-// Allow usage of the [Reset] button for Cosmetic_Troll
-@replaceMethod(vehicleColorSelectorGameController)
-protected cb func OnGlobalInputReleased(e: ref<inkPointerEvent>) -> Bool {
-  if e.IsHandled() {
-    return false;
-  };
-  this.ResetSBSlider();
-  if e.IsAction(n"UI_vehicle_customization_select") {
-    e.Handle();
-    this.ProcessPointerClick();
-    GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_onpress");
-    this.PlayRumble(RumbleStrength.SuperLight, RumbleType.Pulse, RumblePosition.Both);
-  } else {
-    if e.IsAction(n"UI_vehicle_customization_confirm") {
-      e.Handle();
-      if this.m_colorADefined || this.m_colorBDefined || this.m_lightsDefined {
-        this.Apply();
-        GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_close");
-        this.PlayRumble(RumbleStrength.Light, RumbleType.Pulse, RumblePosition.Both);
-      };
-    } else {
-      if e.IsAction(n"UI_vehicle_customization_cancel") {
-        e.Handle();
-        this.Cancel();
-        GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_close");
-      } else {
-        if e.IsAction(n"UI_vehicle_customization_mode_next") {
-          e.Handle();
-          if !this.m_unsupportedVehicle {
-            this.SwitchActiveMode(1);
-            GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_onpress");
-          };
-        } else {
-          if e.IsAction(n"UI_vehicle_customization_mode_prev") {
-            e.Handle();
-            if !this.m_unsupportedVehicle {
-              this.SwitchActiveMode(-1);
-              GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_onpress");
-            };
-          } else {
-            if e.IsAction(n"UI_vehicle_customization_slider_left") {
-              e.Handle();
-              if !this.m_player.PlayerLastUsedKBM() {
-                GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_value_up");
-              };
-            } else {
-              if e.IsAction(n"UI_vehicle_customization_slider_right") {
-                e.Handle();
-                if !this.m_player.PlayerLastUsedKBM() {
-                  GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_value_down");
-                };
-              } else {
-                if e.IsAction(n"UI_vehicle_customization_reset") {
-                  if (this.m_colorADefined || this.m_colorBDefined || this.m_lightsDefined) {
-                    e.Handle();
-                    GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_close");
-                    this.Reset();
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
+// Modify or disable CrystalCoat deactivation by distance
+@replaceMethod(VehicleObject)
+protected cb func OnCheckVehicleVisialCustomizationDistanceTermination(evt: ref<CheckVehicleVisialCustomizationDistanceTermination>) -> Bool {
+  let distanceCheckEvent: ref<CheckVehicleVisialCustomizationDistanceTermination>;
+  let switchVisualCustomizationEvent: ref<SwitchVehicleVisualCustomizationStateEvent>;
+  let playerDistance: Float = Vector4.DistanceSquared(this.GetWorldPosition(), GetPlayerObject(this.GetGame()).GetWorldPosition());
+  if playerDistance < PowF(MyModSettings.Get(GetGameInstance()).crystalCoatDeactivationDistance(), 2) {
+    if this.IsPlayerMounted() || !VehicleVisualCustomizationTemplate.IsValid(this.GetVehiclePS().GetVehicleVisualCustomizationTemplate()) || !this.GetVehiclePS().GetIsVehicleVisualCustomizationActive() {
+      return false;
     };
+    this.GetVehiclePS().SetVehicleApperanceCustomizationInDistanceTermination(true);
+    distanceCheckEvent = new CheckVehicleVisialCustomizationDistanceTermination();
+    GameInstance.GetDelaySystem(this.GetGame()).DelayEvent(this, distanceCheckEvent, 0.50);
+  } else {
+    this.GetVehiclePS().SetVehicleApperanceCustomizationInDistanceTermination(false);
+    switchVisualCustomizationEvent = new SwitchVehicleVisualCustomizationStateEvent();
+    switchVisualCustomizationEvent.on = false;
+    this.QueueEvent(switchVisualCustomizationEvent);
   };
-}
-
-@wrapMethod(vehicleColorSelectorGameController)
-private final func ProcessSBValues() -> Void {
-  let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
-  
-  wrappedMethod();
-
-  if IsDefined(vehicleComp) {
-    if Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Primary)
-    && MyModSettings.Get(GetGameInstance()).colorPickerOverridePrimarySBEnabled() {
-      this.m_targetColorASaturation = Cast<Float>(MyModSettings.Get(GetGameInstance()).colorPickerSaturationPrimary()) / 100.0;
-      this.m_targetColorABrightness = Cast<Float>(MyModSettings.Get(GetGameInstance()).colorPickerBrightnessPrimary()) / 100.0;
-    }
-    else if Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Secondary)
-    && MyModSettings.Get(GetGameInstance()).colorPickerOverrideSecondarySBEnabled() {
-      this.m_targetColorBSaturation = Cast<Float>(MyModSettings.Get(GetGameInstance()).colorPickerSaturationSecondary()) / 100.0;
-      this.m_targetColorBBrightness = Cast<Float>(MyModSettings.Get(GetGameInstance()).colorPickerBrightnessSecondary()) / 100.0;
-    }
-  }
-}
-
-@wrapMethod(vehicleColorSelectorGameController)
-private final func UpdateSaturationAndBrightnessSlider(direction: Int32) -> Void {
-  let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
-  
-  let isPrimary: Bool = Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Primary);
-  let shouldShowSBWidget: Bool = (isPrimary && !MyModSettings.Get(GetGameInstance()).colorPickerOverridePrimarySBEnabled()) || (!isPrimary && !MyModSettings.Get(GetGameInstance()).colorPickerOverrideSecondarySBEnabled());
-  
-  if IsDefined(vehicleComp) {
-    if isPrimary && this.m_colorADefined || !isPrimary && this.m_colorBDefined {
-
-      if (isPrimary && !MyModSettings.Get(GetGameInstance()).colorPickerOverridePrimarySBEnabled())
-      || (!isPrimary && !MyModSettings.Get(GetGameInstance()).colorPickerOverrideSecondarySBEnabled()) {
-        this.UpdateSBSliderPosition(direction, this.m_activeMode);
-      }
-      
-      this.ProcessSBValues();
-      this.ShowSBBar(shouldShowSBWidget);
-
-      this.m_brightnessBarContainer.SetVisible(shouldShowSBWidget);
-      
-    } else {
-      inkWidgetRef.SetVisible(this.m_sliderInputHintUp, false);
-      inkWidgetRef.SetVisible(this.m_sliderInputHintDown, false);
-      inkWidgetRef.SetVisible(this.m_brightnessPointer, false);
-      this.ShowSBBar(false);
-    }
-  }
-  else {
-    wrappedMethod(direction);
-  }
-}
-
-@replaceMethod(vehicleVisualCustomizationComponent)
-public final func GetAreColorsUnchanged(newSet: vehicleVisualModdingDefinition, previousSet: vehicleVisualModdingDefinition) -> Bool {
-  return false;
 }
