@@ -5669,18 +5669,6 @@ public func OnModSettingsChange() -> Void {
   this.ApplyInteriorLightsSettingsChange();
 }
 
-@wrapMethod(VehicleComponent)
-private final func OnGameDetach() -> Void {
-  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetVehicle().GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
-
-  // Unregister this vehicle until it is unloaded
-  if ArrayContains(player.m_drivenVehicles, this) {
-    ArrayRemove(player.m_drivenVehicles, this);
-  }
-
-  wrappedMethod();
-}
-
 @replaceMethod(VehicleComponent)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   let PSvehicleDooropenRequest: ref<VehicleDoorOpen>;
