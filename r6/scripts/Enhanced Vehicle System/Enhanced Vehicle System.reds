@@ -46,6 +46,12 @@ enum ECrystalCoatColorType {
   Lights = 2
 }
 
+enum ECrystalCoatType {
+  None = 0,
+  CC_2_11 = 1,
+  CC_2_12 = 2
+}
+
 enum EEnterBehavior {
   KeepCurrentState = 0,
   PowerOn = 1,
@@ -1204,7 +1210,7 @@ public class EVS_SettingsPackage {
   /////////////////////////
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Other settings")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-other_settings-cat")
   @runtimeProperty("ModSettings.category.order", "14")
   @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-other_settings-multitap_window")
   @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-other_settings-multitap_window-desc")
@@ -1214,7 +1220,7 @@ public class EVS_SettingsPackage {
   public let multiTapTimeWindow: Float = 0.25;
 
   @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
-  @runtimeProperty("ModSettings.category", "Other settings")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-other_settings-cat")
   @runtimeProperty("ModSettings.category.order", "14")
   @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-other_settings-utility_lights_hold_time")
   @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-other_settings-utility_lights_hold_time-desc")
@@ -2268,6 +2274,9 @@ public let m_headlightsSynchronizedWithTimeShallEnable: Bool = false;
 
 @addField(VehicleComponent)
 public let m_mountedSeats: array<MountingSlotId>;
+
+@addField(VehicleComponent)
+public let m_crystalCoatVersion: ECrystalCoatType;
 
 @addField(VehicleComponent)
 // 0 = side banner lights BLUE
@@ -5714,6 +5723,40 @@ public func OnModSettingsChange() -> Void {
   this.ApplyInteriorLightsSettingsChange();
 }
 
+@wrapMethod(VehicleComponent)
+private final func OnGameAttach() -> Void {
+  wrappedMethod();
+
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+  if !IsDefined(vehicle) {
+    return;
+  }
+
+  if this.GetIsVehicleVisualCustomizationEnabled() {
+    vehicle.SyncVehicleVisualCustomizationDefinition();
+
+    VehicleComponent.GetVehicleRecord(vehicle, this.m_vehicleRecord);
+
+    // Check CrystalCoat version
+    let tags = this.m_vehicleRecord.Tags();
+    if ArrayContains(tags, n"CrystalCoat_2_12") {
+      this.m_crystalCoatVersion = ECrystalCoatType.CC_2_12;
+    }
+    else {
+      this.m_crystalCoatVersion = ECrystalCoatType.CC_2_11;
+    }
+
+    switch this.m_crystalCoatVersion {
+      case ECrystalCoatType.CC_2_12:
+        this.EnableCustomizableAppearance(true);
+        break;
+    }
+  }
+  else {
+    this.m_crystalCoatVersion = ECrystalCoatType.None;
+  }
+}
+
 @replaceMethod(VehicleComponent)
 protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   let PSvehicleDooropenRequest: ref<VehicleDoorOpen>;
@@ -6886,12 +6929,6 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       if vehicleComp.IsUnsupportedVehicleType() || (vehicleComp.IsDelamainTaxi() && !this.IsPlayerDriver()) {
         this.SetInteriorUIEnabled(true);
       }
-
-      this.SyncVehicleVisualCustomizationDefinition();
-
-      ///////////////////////////
-      //this.GetVehicleComponent().EnableCustomizableAppearance(true);
-      ///////////////////////////
     }
 
     if this.ReevaluateStealing(mountChild, evt.request.lowLevelMountingInfo.slotId.id, evt.request.mountData.mountEventOptions.occupiedByNonFriendly) {
@@ -7618,8 +7655,12 @@ protected cb func OnExecuteVehicleVisualCustomizationEvent(evt: ref<ExecuteVehic
     return false;
   }
 
+  switch this.m_crystalCoatVersion {
+    case ECrystalCoatType.CC_2_11:
+      this.EnableCustomizableAppearance(!evt.reset);
+      break;
+  }
   this.ExecuteVehicleVisualCustomization(evt.set, evt.reset, evt.instant);
-  this.EnableCustomizableAppearance(!evt.reset);
 
   // Refresh head/tail/blinker lights
   this.ApplyHeadlightsModeWithShutOff();
