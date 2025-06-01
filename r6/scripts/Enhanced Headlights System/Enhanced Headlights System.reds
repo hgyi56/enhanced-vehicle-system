@@ -2,7 +2,7 @@
 // // // // // // //
 // This will be the default headlights mode for all vehicles V drives.
 //
-public let m_currentHeadlightsState: vehicleELightMode = vehicleELightMode.On;
+public let m_currentHeadlightsState: vehicleELightMode = vehicleELightMode.Off;
 // // // // // // //
 
 @addField(VehicleComponent)
