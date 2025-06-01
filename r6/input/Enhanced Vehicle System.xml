@@ -163,7 +163,7 @@
         <button id="IK_Pad_DigitDown" />
     </mapping>
 
-    <hold action="CycleLights"          timeout="99.0" /> <!-- Cancel by using a big timeout -->
+    <hold action="CycleLights"          timeout="5.0" /> <!-- Cancel by using a big timeout -->
 	<hold action="VehicleInsideWheel"	timeout="99.0" /> <!-- Cancel by using a big timeout -->
     <hold action="ModdedCycleLights"    timeout="0.25" />
     <hold action="ToggleCustomLights"   timeout="0.25" />

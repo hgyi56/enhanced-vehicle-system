@@ -172,7 +172,8 @@ local spoiler_Category = {
 local police_lights_Category = {
   keepSirenOnWhileOutsidePlayerEnabled = false,
   keepSirenOnWhileOutsideNPCsEnabled = true,
-  policeBikeSirenEnabled = false
+  policeBikeSirenEnabled = false,
+  policeDispatchRadioEnabled = true
 }
 
 local hints_Category = {

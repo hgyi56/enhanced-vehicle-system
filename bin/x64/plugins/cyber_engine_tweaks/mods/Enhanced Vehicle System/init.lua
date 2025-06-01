@@ -1403,6 +1403,10 @@ function hgyi56_EVS.setup_police_lights_CategoryGetters(categoryData)
   Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "policeBikeSirenEnabled", function(self, wrappedMethod)
     return hgyi56_EVS.settings[categoryData.name].policeBikeSirenEnabled
   end)
+
+  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "policeDispatchRadioEnabled", function(self, wrappedMethod)
+    return hgyi56_EVS.settings[categoryData.name].policeDispatchRadioEnabled
+  end)
 end
 
 function hgyi56_EVS.setup_police_lights_CategorySetters(categoryData)
@@ -1418,6 +1422,10 @@ function hgyi56_EVS.setup_police_lights_CategorySetters(categoryData)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-siren_for_bikes"), GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-siren_for_bikes-desc"), hgyi56_EVS.settings[categoryData.name].policeBikeSirenEnabled, hgyi56_EVS.defaults[categoryData.name].policeBikeSirenEnabled, function(state)
     hgyi56_EVS.settings[categoryData.name].policeBikeSirenEnabled = state
+  end)
+
+  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-dispatch_radio"), GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-dispatch_radio-desc"), hgyi56_EVS.settings[categoryData.name].policeDispatchRadioEnabled, hgyi56_EVS.defaults[categoryData.name].policeDispatchRadioEnabled, function(state)
+    hgyi56_EVS.settings[categoryData.name].policeDispatchRadioEnabled = state
   end)
 end
 
@@ -1746,73 +1754,59 @@ end
 
 function hgyi56_EVS.ConvertEnumValuesToString(key, value)
   
-  if key:find("_Color_Mode$") or key:find("_Intensity_Mode$") then
-    value = hgyi56_EVS.ToEnum_EUtilityLightsParameterMode(value)
+  if key == "defaultHeadlightsMode" then
+    value = hgyi56_EVS.ToEnum_EHeadlightsMode(value)
 
-  elseif key:find("_Mode$") then
-    if key:find("^partSet_") then
-      value = hgyi56_EVS.ToEnum_ECrystalCoatModePartSet(value)
-    else
-      value = hgyi56_EVS.ToEnum_ECrystalCoatMode(value)
-    end
+  elseif key == "headlightsSynchronizedWithTimeMode" then
+    value = hgyi56_EVS.ToEnum_EHeadlightsSynchronizedWithTimeMode(value)
 
-  elseif key:find("_LightMode$") then
-    value = hgyi56_EVS.ToEnum_EAmbientLightMode(value)
+  elseif key == "utilityLightsSynchronizedWithTimeVehicleType" then
+    value = hgyi56_EVS.ToEnum_EUtilityLightsSynchronizedWithTimeVehicleType(value)
 
-  elseif key:find("_LightColor$") or key:find("_LightColorCC$") then
-    value = hgyi56_EVS.ToEnum_EAmbientLightColor(value)
-
-  elseif key:find("_Material$") or key:find("_MaterialCC$") then
-    if key:find("^partSet_") then
-      value = hgyi56_EVS.ToEnum_EMeshAppearancePartSet(value)
-    else
-      value = hgyi56_EVS.ToEnum_EMeshAppearance(value)
-    end
-
-  elseif key:find("_MetalFinish$") or key:find("_MetalFinishCC$") then
-    if key:find("^partSet_") then
-      value = hgyi56_EVS.ToEnum_EMetalFinishPartSet(value)
-    else
-      value = hgyi56_EVS.ToEnum_EMetalFinish(value)
-    end
-    
-  elseif key:find("_Color$") or key:find("_ColorCC$") then
-    if key:find("^partSet_") then
-      value = hgyi56_EVS.ToEnum_EMeshColorPartSet(value)
-    else
-      value = hgyi56_EVS.ToEnum_EMeshColor(value)
-    end
-    
-  elseif key:find("_GlassColor$") or key:find("_GlassColorCC$") then
-    value = hgyi56_EVS.ToEnum_EStandardMeshColor(value)
-    
-  elseif key:find("_ConnectToUtilityLights$") then
+  elseif key == "defaultUtilityLightsMode" then
     value = hgyi56_EVS.ToEnum_EUtilityLightsMode(value)
-    
-  elseif key:find("_StitchesColor$") or key:find("_StitchesColorCC$") then
-    if key:find("^partSet_") then
-      value = hgyi56_EVS.ToEnum_EStandardNullableMeshColorPartSet(value)
-    else
-      value = hgyi56_EVS.ToEnum_EStandardNullableMeshColor(value)
-    end
-    
-  elseif key == "colorPickerWidget" then
-    value = hgyi56_EVS.ToEnum_EColorPickerWidget(value)
-    
-  elseif key:find("^hornSound$") then
-    value = hgyi56_EVS.ToEnum_EVehicleHornSound(value)
-    
-  elseif key:find("Sound$") then
-    value = hgyi56_EVS.ToEnum_EVehicleSound(value)
-    
-  elseif key == "crystalDomeType" then
-    value = hgyi56_EVS.ToEnum_ECrystalDomeType(value)
-    
-  elseif key == "wheelModel" then
-    value = hgyi56_EVS.ToEnum_EWheelModel(value)
-    
-  elseif key == "hoodPanelType" then
-    value = hgyi56_EVS.ToEnum_EHoodPanelType(value)
+
+  elseif key == "enterBehavior" then
+    value = hgyi56_EVS.ToEnum_EEnterBehavior(value)
+
+  elseif key == "exitBehavior" then
+    value = hgyi56_EVS.ToEnum_EExitBehavior(value)
+
+  elseif key == "npcHeadlightsAttenuation" then
+    value = hgyi56_EVS.ToEnum_ELightAttenuation(value)
+
+  elseif key == "interiorlightsRoofLightOperatingMode" then
+    value = hgyi56_EVS.ToEnum_ERoofLightOperatingMode(value)
+
+  elseif key == "interiorlightsAutomaticTurnOn" then
+    value = hgyi56_EVS.ToEnum_EInteriorLightsToggleOn(value)
+
+  elseif key == "interiorlightsAutomaticTurnOff" then
+    value = hgyi56_EVS.ToEnum_EInteriorLightsToggleOff(value)
+
+  elseif key == "doorsDriveClosing" then
+    value = hgyi56_EVS.ToEnum_EDoorsDriveClosing(value)
+
+  elseif key == "interiorlightsRoofLightOperatingMode" then
+    value = hgyi56_EVS.ToEnum_ERoofLightOperatingMode(value)
+
+  elseif key:find("_CrystalCoatColorType$") then
+    value = hgyi56_EVS.ToEnum_ECrystalCoatColorType(value)
+
+  elseif key:find("_ColorSequence$") then
+    value = hgyi56_EVS.ToEnum_ELightsColorCycleType(value)
+
+  elseif key:find("_ImpactedVehicles$") then
+    value = hgyi56_EVS.ToEnum_ELightsColorVehicleType(value)
+
+  elseif key:find("_CrystalCoatColorType$") then
+    value = hgyi56_EVS.ToEnum_ECrystalCoatColorType(value)
+
+  elseif key:find("_CrystalCoatColorType$") then
+    value = hgyi56_EVS.ToEnum_ECrystalCoatColorType(value)
+
+  elseif key:find("_CrystalCoatColorType$") then
+    value = hgyi56_EVS.ToEnum_ECrystalCoatColorType(value)
   end
 
   return value
