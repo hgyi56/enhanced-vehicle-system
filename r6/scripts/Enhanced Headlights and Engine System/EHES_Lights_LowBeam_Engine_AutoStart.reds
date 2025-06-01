@@ -16,6 +16,13 @@ public let m_headlightsButtonHeld: Bool = false;
 
 @addField(VehicleComponent)
 // // // // // // //
+// Only affect vehicles that V has driven. Otherwise all loaded vehicles will display the headlights state above.
+//
+public let m_vehicleUsedByV: Bool = false;
+// // // // // // //
+
+@addField(VehicleComponent)
+// // // // // // //
 // This attribute is meant to handle the hold keyboard button event correctly so it fires only once until released.
 //
 public let m_cycleEngineInputHeld: Bool = false;
@@ -96,7 +103,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     // // // // // // //
     // This is the button event that cycles the engine state manually.
     //
-    if Equals(ListenerAction.GetName(action), n"ModdedCycleEngine") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED) && !this.m_cycleEngineInputHeld {
+    if Equals(ListenerAction.GetName(action), n"ModdedCycleEngine") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_HOLD_COMPLETE) && !this.m_cycleEngineInputHeld {
       this.m_cycleEngineInputHeld = true;
 
       vehicle.TurnEngineOn(!vehicle.IsEngineTurnedOn());
@@ -172,6 +179,14 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       this.GetVehicleControllerPS().SetState(vehicleEState.On);
     }
   }
+
+  // // // // // // //
+  // We need to mark every vehicle that V gets into as the driver to apply the headlights rules. The other vehicles won't be affected until V gets in them as the driver.
+  //
+  if mountChild.IsPlayer() && VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id) {
+    this.m_vehicleUsedByV = true;
+  }
+  // // // // // // //
 }
 
 @wrapMethod(VehicleComponent)
@@ -208,20 +223,41 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
     }
     // // // // // // //
 
+    // // // // // // //
+    // Fix the siren state for in case the user has installed Enhanced Police Lights System mod
+    //
     if this.GetPS().GetSirenState() || this.GetPS().GetSirenLightsState() {
       this.GetVehicleController().ToggleLights(true, vehicleELightType.Utility);
       this.GetPS().SetSirenLightsState(true);
     }
+    // // // // // // //
   }
-    
-  if NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState) {
-    this.GetVehicleControllerPS().SetHeadLightMode(this.m_currentHeadlightsState);
+  
+  // // // // // // //
+  // This will set lights of the vehicle when V is out of the car
+  //
+  if this.m_vehicleUsedByV {
+    if NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState) {
+      this.GetVehicleControllerPS().SetHeadLightMode(this.m_currentHeadlightsState);
+    }
+
+    // If the engine is running or vehicle lights are activated then active the interior lights
+    if vehicle.IsEngineTurnedOn() || NotEquals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
+      this.GetVehicleController().ToggleLights(true, vehicleELightType.Interior);
+    }
   }
+  // // // // // // //
 }
 
 @wrapMethod(VehicleObject)
 private final func SetInteriorUIEnabled(enabled: Bool) -> Void {
   wrappedMethod(enabled);
 
-  this.GetVehicleComponent().GetVehicleControllerPS().SetState(vehicleEState.Default);
+  if this.GetVehicleComponent().m_vehicleUsedByV {
+    // // // // // // //
+    // This trick allows us to keep the headlights on even if the engine is off and V is out of the car.
+    //
+    this.GetVehicleComponent().GetVehicleControllerPS().SetState(vehicleEState.Default);
+    // // // // // // //
+  }
 }

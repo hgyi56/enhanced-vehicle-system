@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <bindings>
 
-	<context name="VehicleNoDriveCombat" >
+    <context name="VehicleNoDriveCombat" >
         <include name="CameraMovement" />
         <include name="VisionActions" />
         <include name="UIExploration" />
@@ -22,7 +22,7 @@
         <action name="ZoomOut"              map="ZoomOut_Button"/>
     </context>
 
-	<context name="VehicleDriveBase" >
+    <context name="VehicleDriveBase" >
         <include name="CameraMovement" />
         <include name="VisionActions" />
         <include name="UIExploration" />
@@ -51,7 +51,7 @@
         <action name="EnterCombatMode"      map="SwitchItem_Button" />
     </context>
 
-	<context name="VehicleRemoteControlDrive" >
+    <context name="VehicleRemoteControlDrive" >
         <include name="CameraMovement" />
         <include name="VisionActions" />
         <include name="UIExploration" />
@@ -74,7 +74,7 @@
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
-	<context name="VehiclePassengerRemoteControlDrive" >
+    <context name="VehiclePassengerRemoteControlDrive" >
         <include name="CameraMovement" />
         <include name="UIExploration" />
         <include name="PhotoMode" />
@@ -95,7 +95,7 @@
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
-	<context name="BaseVehicleDriverCombat" >
+    <context name="BaseVehicleDriverCombat" >
         <include name="QuickLoadAndSave" />
         <include name="CameraMovement" /> 
         <include name="UIExploration" />
@@ -127,7 +127,7 @@
         <action name="CameraAim"            map="VehicleDriverCombatRangedADS_Button" />
     </context>
 
-	<context name="SettingsVehicle">
+    <context name="SettingsVehicle">
         <include name="VehicleAuxillary" />
         <include name="InteractionActions" />
         <include name="CameraMovement" />
@@ -157,13 +157,18 @@
         <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
+    <buttonGroup id="IK_Pad_DigitUpRightShoulder" timeWindow="0.08f" >
+        <button id="IK_Pad_DigitUp" />
+        <button id="IK_Pad_RightShoulder" />
+    </buttonGroup>
+
     <mapping name="Vehicle_CycleEngine" type="Button">
-        <button id="IK_L" overridableUI="vehicleCycleEngine"/>
-        <button id="IK_Pad_DigitLeft" />
+        <button id="IK_L" />
+        <button id="IK_Pad_DigitUpRightShoulder" />
     </mapping>
 
-	<hold action="CycleLights"			timeout="99.0" />
-	<hold action="ModdedCycleLights"	timeout="0.25" />
+    <hold action="CycleLights"          timeout="99.0" />
+    <hold action="ModdedCycleLights"    timeout="0.25" />
     <hold action="ModdedCycleEngine"    timeout="0.25" />
 
 </bindings>
