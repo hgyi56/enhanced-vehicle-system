@@ -1,7 +1,7 @@
 module Hgyi56.Enhanced_Vehicle_System
 
-@if(ModuleExists("Hgyi56.Enhanced_Vehicle_System.SettingsPackage"))
-import Hgyi56.Enhanced_Vehicle_System.SettingsPackage.EVS_SettingsPackage
+@if(ModuleExists("Hgyi56.Enhanced_Vehicle_System_SettingsPackage"))
+import Hgyi56.Enhanced_Vehicle_System_SettingsPackage.SettingsPackage
 
 enum EHeadlightsMode {
   Off = 0,
@@ -76,8 +76,8 @@ enum EMomentumType {
   Accelerate = 2
 }
 
-@if(!ModuleExists("Hgyi56.Enhanced_Vehicle_System.SettingsPackage"))
-public class EVS_SettingsPackage {
+@if(!ModuleExists("Hgyi56.Enhanced_Vehicle_System_SettingsPackage"))
+public class SettingsPackage {
 
   /////////////////////////
   // POWER STATE
@@ -1033,6 +1033,64 @@ public class EVS_SettingsPackage {
   @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-keep_enabled-desc")
   public let keepCrystalCoatEnabledOnExit: Bool = false;
 
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-crystalcoat-cat")
+  @runtimeProperty("ModSettings.category.order", "8")
+  @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-crystalcoat-color_picker_override_sb_primary")
+  @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-color_picker_override_sb-desc")
+  public let colorPickerOverridePrimarySBEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-crystalcoat-cat")
+  @runtimeProperty("ModSettings.category.order", "8")
+  @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-crystalcoat-color_picker_saturation")
+  @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-color_picker_saturation-desc")
+  @runtimeProperty("ModSettings.dependency", "colorPickerOverridePrimarySBEnabled")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let colorPickerSaturationPrimary: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-crystalcoat-cat")
+  @runtimeProperty("ModSettings.category.order", "8")
+  @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-crystalcoat-color_picker_brightness")
+  @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-color_picker_brightness-desc")
+  @runtimeProperty("ModSettings.dependency", "colorPickerOverridePrimarySBEnabled")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let colorPickerBrightnessPrimary: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-crystalcoat-cat")
+  @runtimeProperty("ModSettings.category.order", "8")
+  @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-crystalcoat-color_picker_override_sb_secondary")
+  @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-color_picker_override_sb-desc")
+  public let colorPickerOverrideSecondarySBEnabled: Bool = false;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-crystalcoat-cat")
+  @runtimeProperty("ModSettings.category.order", "8")
+  @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-crystalcoat-color_picker_saturation")
+  @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-color_picker_saturation-desc")
+  @runtimeProperty("ModSettings.dependency", "colorPickerOverrideSecondarySBEnabled")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let colorPickerSaturationSecondary: Int32 = 100;
+
+  @runtimeProperty("ModSettings.mod", "Enhanced Vehicle System")
+  @runtimeProperty("ModSettings.category", "hgyi56-EVS-settings-crystalcoat-cat")
+  @runtimeProperty("ModSettings.category.order", "8")
+  @runtimeProperty("ModSettings.displayName", "hgyi56-EVS-settings-crystalcoat-color_picker_brightness")
+  @runtimeProperty("ModSettings.description", "hgyi56-EVS-settings-crystalcoat-color_picker_brightness-desc")
+  @runtimeProperty("ModSettings.dependency", "colorPickerOverrideSecondarySBEnabled")
+  @runtimeProperty("ModSettings.step", "1")
+  @runtimeProperty("ModSettings.min", "0")
+  @runtimeProperty("ModSettings.max", "100")
+  public let colorPickerBrightnessSecondary: Int32 = 100;
+
   /////////////////////////
   // CRYSTAL DOME
   /////////////////////////
@@ -1232,7 +1290,7 @@ public class EVS_SettingsPackage {
 
 public class ModSettings_EVS extends ScriptableSystem {
 
-  public let settings: ref<EVS_SettingsPackage>;
+  public let settings: ref<SettingsPackage>;
 
   public static func Get(gi: GameInstance) -> ref<ModSettings_EVS> {
     return GameInstance.GetScriptableSystemsContainer(gi).Get(n"Hgyi56.Enhanced_Vehicle_System.ModSettings_EVS") as ModSettings_EVS;
@@ -1256,7 +1314,7 @@ public class ModSettings_EVS extends ScriptableSystem {
   }
 
   private func OnAttach() -> Void {
-    this.settings = new EVS_SettingsPackage();
+    this.settings = new SettingsPackage();
 
     ModSettings.RegisterListenerToClass(this.settings);
     ModSettings.RegisterListenerToModifications(this);
@@ -4688,7 +4746,7 @@ public func ApplyLightsParameters(instant: Bool, minimalIntensity: Bool, nullInt
     this.SetLightsIsDefaultIntensity(false, lightType);
     this.GetVehicleController().SetLightStrength(lightType, this.m_minimalIntensity, delay);
   }
-  else if this.GetLightsCustomIntensityEnabled(lightType) && !this.ShouldApplyCrystalCoatLightColor(lightType) {
+  else if this.GetLightsCustomIntensityEnabled(lightType) {
     this.SetLightsIsDefaultIntensity(false, lightType);
     this.GetVehicleController().SetLightStrength(lightType, Cast<Float>(this.GetLightsCustomIntensity(lightType)) / 100.0, delay);
   }
@@ -7707,6 +7765,58 @@ protected cb func OnInitialize() -> Bool {
   this.m_vehicle.QueueEvent(lightsEvent);*/
   this.ProcessFakeUpdate(true);
   this.QueueEvent(initEvent);
+}
+
+@wrapMethod(vehicleColorSelectorGameController)
+private final func ProcessSBValues() -> Void {
+  let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
+  
+  wrappedMethod();
+
+  if IsDefined(vehicleComp) {
+    if Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Primary)
+    && vehicleComp.m_modSettings.settings.colorPickerOverridePrimarySBEnabled {
+      this.m_targetColorASaturation = Cast<Float>(vehicleComp.m_modSettings.settings.colorPickerSaturationPrimary) / 100.0;
+      this.m_targetColorABrightness = Cast<Float>(vehicleComp.m_modSettings.settings.colorPickerBrightnessPrimary) / 100.0;
+    }
+    else if Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Secondary)
+    && vehicleComp.m_modSettings.settings.colorPickerOverrideSecondarySBEnabled {
+      this.m_targetColorBSaturation = Cast<Float>(vehicleComp.m_modSettings.settings.colorPickerSaturationSecondary) / 100.0;
+      this.m_targetColorBBrightness = Cast<Float>(vehicleComp.m_modSettings.settings.colorPickerBrightnessSecondary) / 100.0;
+    }
+  }
+}
+
+@wrapMethod(vehicleColorSelectorGameController)
+private final func UpdateSaturationAndBrightnessSlider(direction: Int32) -> Void {
+  let vehicleComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
+  
+  let isPrimary: Bool = Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Primary);
+  let shouldShowSBWidget: Bool = (isPrimary && !vehicleComp.m_modSettings.settings.colorPickerOverridePrimarySBEnabled) || (!isPrimary && !vehicleComp.m_modSettings.settings.colorPickerOverrideSecondarySBEnabled);
+  
+  if IsDefined(vehicleComp) {
+    if isPrimary && this.m_colorADefined || !isPrimary && this.m_colorBDefined {
+
+      if (isPrimary && !vehicleComp.m_modSettings.settings.colorPickerOverridePrimarySBEnabled)
+      || (!isPrimary && !vehicleComp.m_modSettings.settings.colorPickerOverrideSecondarySBEnabled) {
+        this.UpdateSBSliderPosition(direction, this.m_activeMode);
+      }
+      
+      this.ProcessSBValues();
+      this.ShowSBBar(shouldShowSBWidget);
+
+      this.m_brightnessBarContainer.SetVisible(shouldShowSBWidget);
+      
+    } else {
+      inkWidgetRef.SetVisible(this.m_sliderInputHintUp, false);
+      inkWidgetRef.SetVisible(this.m_sliderInputHintDown, false);
+      inkWidgetRef.SetVisible(this.m_brightnessPointer, false);
+      this.ShowSBBar(false);
+    }
+  }
+  else {
+    wrappedMethod(direction);
+  }
 }
 
 @replaceMethod(vehicleVisualCustomizationComponent)
