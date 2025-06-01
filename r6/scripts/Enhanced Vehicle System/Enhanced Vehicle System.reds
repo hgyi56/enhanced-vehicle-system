@@ -737,12 +737,29 @@ public class EntityWatcher extends ScriptableSystem {
       return;
     }
 
+    let vehPS: ref<VehicleComponentPS> = vehComp.GetPS();
+    if !IsDefined(vehPS) {
+      return;
+    }
+
     let vehCtrlPS: ref<vehicleControllerPS> = vehComp.GetVehicleControllerPS();    
     let player: ref<PlayerPuppet> = GetPlayer(gi);
 
     if !IsDefined(player) || !IsDefined(vehCtrlPS) {
       return;
     }
+    
+    let components: [ref<IComponent>] = vehicle.GetComponents();
+    for comp in components {
+      let lightComp: ref<vehicleLightComponent> = comp as vehicleLightComponent;
+      if IsDefined(lightComp) {
+        // Detect police vehicles
+        if StrContains(ToString(lightComp.loopCurve), "police") {
+          vehPS.m_hgyi56_EVS_isPoliceVehicle = true;
+          break;
+        }
+      }
+    } 
 
     let entityHashId = TDBID.ToNumber(TDBID.Create(ToString(vehicle.GetEntityID())));
 
@@ -1366,6 +1383,9 @@ public let m_hgyi56_EVS_toggleCustomLightsLastPressTime: Float = 0.00;
 public let m_hgyi56_EVS_toggleCustomLightsStep: Int32 = 0;
 
 @addField(PlayerPuppet)
+public let m_hgyi56_EVS_popupVvcUsingMultiTapAction: Bool = false;
+
+@addField(PlayerPuppet)
 private let m_hgyi56_EVS_inputListener: ref<GlobalInputListener>;
 
 @addField(VehicleUIactivateEvent)
@@ -1502,6 +1522,8 @@ protected cb func hgyi56_EVS_OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystal
         vehicle.QueueEvent(evt);
       }
       else {
+        player.m_hgyi56_EVS_popupVvcUsingMultiTapAction = true;
+
         // Display the color picker widget
         let evt: ref<QuickSlotButtonHoldStartEvent> = new QuickSlotButtonHoldStartEvent();
         evt.dPadItemDirection = EDPadSlot.VehicleVisualCustomization;
@@ -1510,6 +1532,8 @@ protected cb func hgyi56_EVS_OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystal
       break;
 
     case 3:
+      player.m_hgyi56_EVS_popupVvcUsingMultiTapAction = true;
+
       // Display the color picker widget
       let evt: ref<QuickSlotButtonHoldStartEvent> = new QuickSlotButtonHoldStartEvent();
       evt.dPadItemDirection = EDPadSlot.VehicleVisualCustomization;
@@ -2591,7 +2615,12 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
   if !IsDefined(vehicle) {
     return false;
   };
-
+  
+  let vehPS: ref<VehicleComponentPS> = vehicle.GetVehiclePS();
+  if !IsDefined(vehPS) {
+    return false;
+  }
+  
   if VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle) {
     // // // // // // //
     // Event that toggles police siren/lights
@@ -3149,7 +3178,8 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     //
     // Double-tap: toggle crystal coat state
     //
-    if Equals(ListenerAction.GetName(action), n"VehicleVisualCustomization") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED) {
+    if Equals(ListenerAction.GetName(action), n"VehicleVisualCustomization") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_PRESSED)
+    && !vehPS.m_hgyi56_EVS_isPoliceVehicle {
 
       if !this.m_hgyi56_EVS_cycleCrystalCoatLongInputTriggered {
         // If the last press time is older than "MyModSettings.GetFloat("other.multiTapTimeWindow")" consider this is a new sequence
@@ -5443,14 +5473,6 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     GameInstance.GetPreventionSpawnSystem(gameInstance).RegisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
     this.CreateMappin();
     this.GetVehicle().GetPreventionSystem().UpdateVehiclePassengerCount(this.GetVehicle().GetEntityID(), this.m_preventionPassengers);
-    
-    ////////////////////////////////////
-    // Police NPC vehicles also needs this
-    isDriverSlot = VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id);
-    if isDriverSlot {
-      this.GetPS().m_hgyi56_EVS_isPoliceVehicle = true;
-    }
-    ////////////////////////////////////
   };
 
 
@@ -5485,11 +5507,6 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       }
 
       VehicleComponent.GetVehicleRecord(vehicle, this.m_hgyi56_EVS_vehicleRecord);
-      
-      if Equals(this.m_hgyi56_EVS_vehicleRecord.Affiliation().Type(), gamedataAffiliation.NCPD)
-      || Equals(this.m_hgyi56_EVS_vehicleRecord.GetID(), t"Vehicle.v_sportbike3_brennan_apollo_police") {
-        this.GetPS().m_hgyi56_EVS_isPoliceVehicle = true;
-      }
 
       this.GetPS().m_hgyi56_EVS_hasCrystalDome = this.m_hgyi56_EVS_vehicleRecord.IsArmoredVehicle();
       
@@ -7695,7 +7712,7 @@ protected cb func OnDetach() -> Bool {
 @replaceMethod(vehicleColorSelectorGameController)
 protected cb func OnInitialize() -> Bool {
   let deadzoneConfig: ref<ConfigVarFloat>;
-  let initEvent: ref<VehicleColorSelectionInitFinishedEvent>;
+  let lightsEvent: ref<VehicleLightQuestToggleEvent>;
   let uiSystemBB: ref<IBlackboard>;
   this.m_popupData = this.GetRootWidget().GetUserData(n"inkGameNotificationData") as inkGameNotificationData;
   this.m_player = this.GetPlayerControlledObject() as PlayerPuppet;
@@ -7743,10 +7760,14 @@ protected cb func OnInitialize() -> Bool {
   this.PlayAnimation(this.m_introAnimation);
   this.m_animProxy.RegisterToCallback(inkanimEventType.OnFinish, this, n"OnIntroFinished");
   GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_open");
-  initEvent = new VehicleColorSelectionInitFinishedEvent();
+  lightsEvent = new VehicleLightQuestToggleEvent();
+  lightsEvent.toggle = true;
+  this.m_vehicle.QueueEvent(lightsEvent);
 
   ///////////////////////////////////////////
-  if !this.m_player.PlayerLastUsedKBM() {
+  // Only for gamepad if the user did not use mutli tap action
+  if !this.m_player.PlayerLastUsedKBM()
+  && !this.m_player.m_hgyi56_EVS_popupVvcUsingMultiTapAction {
     let vehComp: ref<VehicleComponent> = this.m_vehicle.GetVehicleComponent();
     if IsDefined(vehComp) {
       let vehPS: ref<VehicleComponentPS> = vehComp.GetPS();
@@ -7768,10 +7789,11 @@ protected cb func OnInitialize() -> Bool {
       }
     }
   }
+  this.m_player.m_hgyi56_EVS_popupVvcUsingMultiTapAction = false;
   ///////////////////////////////////////////
-  
+
   this.ProcessFakeUpdate(true);
-  this.QueueEvent(initEvent);
+  this.UpdateNavigationState();
 }
 
 // Modify or disable CrystalCoat deactivation by distance
