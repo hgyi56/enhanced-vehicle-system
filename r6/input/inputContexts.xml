@@ -1262,6 +1262,7 @@
 	<hold action="WeaponWheel"					timeout="0.3" />
 	<hold action="VehicleHornHold"				timeout="0.25" />
 	<hold action="IconicCyberware"				timeout="0.2" />
+	<hold action="CycleLights" 					timeout="99.0" />
 	<hold action="ModdedCycleLights"			timeout="0.25" />
 	<hold action="VehicleInverseCameraToggle"		timeout="0.01" />
 	<hold action="VisionHold" 					timeout="0.1" />
