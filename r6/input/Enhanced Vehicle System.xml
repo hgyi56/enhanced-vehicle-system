@@ -1,26 +1,12 @@
 <?xml version="1.0"?>
 <bindings>
 
-    <context name="VisionActions" >
+    <context name="VisionActions" append="true">
         <action name="ToggleCustomLights"   map="Vehicle_ToggleCustomLights" />
-		<action name="VisionToggle"			map="Vision_Toggle_Button" />
-		<action name="VisionHold"			map="Vision_Hold_Button" />
-		<action name="QuickMelee"			map="QuickMelee_Button_Alternative" />
-		<action name="Ping"					map="Vision_Hold_Button" />
-		<action name="DescriptionChange" 	map="ToggleQHackDescription" priority="-1" />
 	</context>
     
-    <context name="VehicleOnlyForward" >
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="Items" />
-        <include name="VehicleAuxillary" />
-
-        <action name="IconicCyberware"      map="IconicCyberware_Button" />
-        <action name="Exit"                 map="ExitVehicle_Button" />
+    <context name="VehicleOnlyForward" append="true">
+        <action name="HeadlightsCall"       map="Vehicle_HeadlightsCall" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
@@ -28,83 +14,21 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
-        <action name="Accelerate"           map="Acceleration_Axis" />
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="TagButton"            map="Tag_Button" />
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
-        <action name="VehicleInverseCameraToggle"   map="VehicleInverseCameraToggle_Button"/>
-        <action name="VehicleCameraReset"   map="VehicleCameraReset_Button"/>
-        <action name="ZoomIn"               map="ZoomIn_Button"/>
-        <action name="ZoomOut"              map="ZoomOut_Button"/>
-        <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
-    <context name="VehiclePassenger" >
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="Items" />
-        <include name="QuestPauseActions" />
-
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Exit"                 map="ExitVehicle_Button" />
-        <action name="TagButton"            map="Tag_Button" /> <!-- HACK FOR VS -->
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
-        <action name="ZoomIn"               map="ZoomIn_Button"/>
-        <action name="ZoomOut"              map="ZoomOut_Button"/>
-        <action name="CameraAim"            map="Hit2_Button" />
-        <action name="Zoom"                 map="MouseWheel" />
-        <action name="UETExit"              map="UETExit_Button" />     
-        <action name="UETChangePose"        map="UETChangePose_Button" />       
-        <action name="UETWindow"            map="UETWindow_Button" />
+    <context name="VehiclePassenger" append="true">
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
     </context>
 
     <!-- VEHICLE COMBAT - used when player is mounted as passenger and has weapon equipped -->
-    <context name="VehicleCombat" >
-        <include name="Camera" />
-        <include name="Items" />
-        <include name="UIExploration" />
-        <include name="Abilities" />
-        <include name="VisionActions" />
-        <include name="Combat" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Exit"                 map="ExitVehicle_Button" />
-        <action name="StrafeX"              map="LeftX_Axis_Vehicle" />
-        <action name="StrafeY"              map="LeftY_Axis_Vehicle" />
-        <action name="ZoomIn"               map="ZoomIn_Button"/>
-        <action name="ZoomOut"              map="ZoomOut_Button"/>
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
+    <context name="VehicleCombat" append="true">
         <action name="CycleDoor"            map="Vehicle_CycleDoor" />
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
     </context>
 
-    <context name="VehicleDriveBase" >
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="VehicleAuxillary" />
-
-        <action name="IconicCyberware"      map="IconicCyberware_Button" />
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Accelerate"           map="Acceleration_Axis" />
-        <action name="Decelerate"           map="Deceleration_Axis" />
-        <action name="TurnX"                map="LeftX_Axis_Vehicle" />
-        <action name="LeanFB"               map="LeftY_Axis_Vehicle" />
-        <action name="RockFB"               map="LeftY_Axis_Vehicle_RockFB" />
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
-        <action name="VehicleInverseCameraToggle"   map="VehicleInverseCameraToggle_Button"/>
-        <action name="VehicleCameraReset"   map="VehicleCameraReset_Button"/>
-        <action name="Exit"                 map="ExitVehicle_Button" />
-        <action name="QuickExit"            map="QuickExit_Button"  />
+    <context name="VehicleDriveBase" append="true">
+        <action name="HeadlightsCall"       map="Vehicle_HeadlightsCall" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
@@ -112,30 +36,10 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
-        <action name="Handbrake"            map="Vehicle_Handbrake" />
-        <action name="ZoomIn"               map="ZoomIn_Button"/>
-        <action name="ZoomOut"              map="ZoomOut_Button"/>
-        <action name="VehicleHorn"          map="Vehicle_Horn" />
-        <action name="EnterCombatMode"      map="SwitchItem_Button" />
     </context>
 
-    <context name="VehicleRemoteControlDrive" >
-        <include name="CameraMovement" />
-        <include name="VisionActions" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="VehicleAuxillary" />
-
-        <action name="IconicCyberware"      map="IconicCyberware_Button" />
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Accelerate"           map="Acceleration_Axis" />
-        <action name="Decelerate"           map="Deceleration_Axis" />
-        <action name="TurnX"                map="LeftX_Axis_Vehicle" />
-        <action name="LeanFB"               map="LeftY_Axis_Vehicle" />
-        <action name="RockFB"               map="LeftY_Axis_Vehicle_RockFB" />
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
-        <action name="Exit"                 map="ExitVehicle_Button" />
+    <context name="VehicleRemoteControlDrive" append="true">
+        <action name="HeadlightsCall"       map="Vehicle_HeadlightsCall" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
@@ -143,25 +47,10 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
-        <action name="Handbrake"            map="Vehicle_Handbrake" />
-        <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
-    <context name="VehiclePassengerRemoteControlDrive" >
-        <include name="CameraMovement" />
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="VehicleAuxillary" />
-
-        <action name="IconicCyberware"      map="IconicCyberware_Button" />
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Accelerate"           map="Acceleration_Axis" />
-        <action name="Decelerate"           map="Deceleration_Axis" />
-        <action name="TurnX"                map="LeftX_Axis_Vehicle" />
-        <action name="LeanFB"               map="LeftY_Axis_Vehicle" />
-        <action name="RockFB"               map="LeftY_Axis_Vehicle_RockFB" />
-        <action name="Exit"             map="ExitVehicle_Button" />
+    <context name="VehiclePassengerRemoteControlDrive" append="true">
+        <action name="HeadlightsCall"       map="Vehicle_HeadlightsCall" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
@@ -169,32 +58,10 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
-        <action name="Handbrake"            map="Vehicle_Handbrake" />
-        <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
-    <context name="BaseVehicleDriverCombat" >
-        <include name="QuickLoadAndSave" />
-        <include name="CameraMovement" /> 
-        <include name="UIExploration" />
-        <include name="PhotoMode" />
-        <include name="DriverCombatVisionActions" />
-
-        <action name="IconicCyberware"      map="IconicCyberware_Button" />
-        <action name="ExitCombatMode"       map="ExitVehicle_Button" />
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Accelerate"           map="Acceleration_Axis" />
-        <action name="Decelerate"           map="Deceleration_Axis" />
-        <action name="TurnX"                map="LeftX_Axis_Vehicle" />
-        <action name="LeanFB"               map="LeftY_Axis_Vehicle" />
-        <action name="RockFB"               map="LeftY_Axis_Vehicle_RockFB" />
-        <action name="VehicleInverseCameraToggle"   map="VehicleInverseCameraToggle_Button"/>
-        <action name="VehicleCameraReset"           map="VehicleCameraReset_Button"/>
-        <action name="Handbrake"            map="Vehicle_Handbrake" />
-        <action name="Reload"               map="Reload_Button" />
-        <action name="Exit"                 map="ExitVehicle_Button" />
-        <action name="QuickExit"            map="QuickExit_Button"  />
+    <context name="BaseVehicleDriverCombat" append="true">
+        <action name="HeadlightsCall"       map="Vehicle_HeadlightsCall" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
@@ -202,33 +69,10 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
-        <action name="VehicleHorn"          map="Vehicle_Horn" />
-        <action name="VehicleSiren"         map="Vehicle_Siren" />
-        <action name="MeleeAttack"          map="VehicleDriverCombatRangedAttack_Button" />
-        <action name="MeleeBlock"           map="VehicleDriverCombatRangedADS_Button" />
-
-        <action name="CameraAim"            map="VehicleDriverCombatRangedADS_Button" />
     </context>
 
-    <context name="SettingsVehicle">
-        <include name="VehicleAuxillary" />
-        <include name="InteractionActions" />
-        <include name="CameraMovement" />
-        <include name="VisionActions" />    
-        <include name="PhotoMode" />
-        <include name="QuickLoadAndSave" />
-        <include name="Items" />
-        <include name="VehicleAuxillary" /> 
-        <action name="UseConsumable"        map="UseConsumable_Button" />
-        <action name="Accelerate"           map="Acceleration_Axis" />
-        <action name="Decelerate"           map="Deceleration_Axis" />
-        <action name="TurnX"                map="LeftX_Axis_Vehicle" />
-        <action name="LeanFB"               map="LeftY_Axis_Vehicle" />
-        <action name="RockFB"               map="LeftY_Axis_Vehicle_RockFB" />
-        <action name="ToggleVehCamera"      map="VehicleCameraToggle" />
-        <action name="VehicleInverseCameraToggle"   map="VehicleInverseCameraToggle_Button"/>
-        <action name="VehicleCameraReset"   map="VehicleCameraReset_Button"/>
-        <action name="Exit"                 map="ExitVehicle_Button" />
+    <context name="SettingsVehicle" append="true">
+        <action name="HeadlightsCall"       map="Vehicle_HeadlightsCall" />
         <action name="ModdedCycleLights"    map="Vehicle_CycleLights" />
         <action name="CycleEngineStep1"     map="Vehicle_CycleEngine" />
         <action name="CycleEngineStep2"     map="Vehicle_CycleEngine" />
@@ -236,13 +80,6 @@
         <action name="CycleWindow"          map="Vehicle_CycleWindow" />
         <action name="CycleDome"            map="Vehicle_CycleDome" />
         <action name="CycleSpoiler"         map="Vehicle_CycleSpoiler" />
-        <action name="Handbrake"            map="Vehicle_Handbrake" />
-        <action name="ZoomIn"               map="ZoomIn_Button"/>
-        <action name="ZoomOut"              map="ZoomOut_Button"/>
-        <action name="ShootPrimary"         map="Vehicle_Shoot_Primary" />
-        <action name="ShootSecondary"       map="Vehicle_Shoot_Secondary" />
-        <action name="ShootTertiary"        map="Vehicle_Shoot_Tertiary" />
-        <action name="VehicleHorn"          map="Vehicle_Horn" />
     </context>
 
     <!-- DOORS -->
@@ -321,8 +158,13 @@
         <button id="IK_Pad_DigitDownLeftShoulder" />
     </mapping>
 
-    <hold action="CycleLights"          timeout="99.0" />
-	<hold action="VehicleInsideWheel"	timeout="99.0" />
+    <mapping name="Vehicle_HeadlightsCall" type="Button">
+        <button id="IK_A" />
+        <button id="IK_Pad_DigitDown" />
+    </mapping>
+
+    <hold action="CycleLights"          timeout="99.0" /> <!-- Cancel by using a big timeout -->
+	<hold action="VehicleInsideWheel"	timeout="99.0" /> <!-- Cancel by using a big timeout -->
     <hold action="ModdedCycleLights"    timeout="0.25" />
     <hold action="ToggleCustomLights"   timeout="0.25" />
     <hold action="CycleEngineStep1"     timeout="0.25" />
