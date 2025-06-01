@@ -136,26 +136,7 @@ public class MyModSettings extends ScriptableSystem {
     return self;
   }
 
-  public static func GetSetting(name: String) -> ref<IScriptable> {
-    let settings: ref<MyModSettings> = MyModSettings.Get();
-    if !IsDefined(settings) {
-      FTLog("ERROR: GetSetting -> settings is null");
-      return null;
-    }
-
-    let key: Uint64 = Key.Build(name);
-
-    if settings.map.KeyExist(key) {
-      return settings.map.Get(key);
-    }
-    else {
-      FTLog(s"ERROR: GetVariant -> setting '\(name)' does not exist");
-    }
-
-    return null;
-  }
-
-  public static func GetVariant(name: String) -> Variant {
+  public static func GetVariant(name: String, opt vehicle: ref<VehicleObject>) -> Variant {
     let variant: Variant;
     let settings: ref<MyModSettings> = MyModSettings.Get();
     if !IsDefined(settings) {
@@ -163,7 +144,40 @@ public class MyModSettings extends ScriptableSystem {
       return variant;
     }
 
-    let key: Uint64 = Key.Build(name);
+    let key: Uint64;
+
+    // Check if a profile is enabled for the current vehicle
+    let isProfileKeyValid: Bool = false;
+
+    if IsDefined(vehicle) {
+      let vehRecordName: String = TDBID.ToStringDEBUG(vehicle.GetRecordID());
+      
+      let stringPrefix: String = StrBeforeLast(name, ".");
+      if Equals(stringPrefix, "") {
+        stringPrefix = StrBeforeLast(name, "_");
+      }
+
+      key = Key.Build(s"\(vehRecordName).\(stringPrefix).customProfileEnabled");
+      
+      let wrapper: ref<VariantWrapper> = settings.map.Get(key) as VariantWrapper;
+      if IsDefined(wrapper) {
+        variant = wrapper.GetValue();
+        let customProfileEnabled: Bool = FromVariant<Bool>(variant);
+        
+        if customProfileEnabled {
+          key = Key.Build(s"\(vehRecordName).\(name)");            
+
+          if settings.map.KeyExist(key) {
+            isProfileKeyValid = true;
+          }
+        }
+      }
+    }
+    ////
+
+    if !isProfileKeyValid {
+      key = Key.Build(name); // Use global key
+    }
 
     if settings.map.KeyExist(key) {
       let wrapper: ref<VariantWrapper> = settings.map.Get(key) as VariantWrapper;
@@ -206,29 +220,21 @@ public class MyModSettings extends ScriptableSystem {
     wrapper.SetValue(variant);
   }
 
-  public static func GetBool(name: String) -> Bool {
-    return FromVariant<Bool>(MyModSettings.GetVariant(name));
+  public static func GetBool(name: String, opt vehicle: ref<VehicleObject>) -> Bool {
+    return FromVariant<Bool>(MyModSettings.GetVariant(name, vehicle));
   }
 
-  public static func GetInt(name: String) -> Int32 {
-    return FromVariant<Int32>(MyModSettings.GetVariant(name));
+  public static func GetInt(name: String, opt vehicle: ref<VehicleObject>) -> Int32 {
+    return FromVariant<Int32>(MyModSettings.GetVariant(name, vehicle));
   }
 
-  public static func GetFloat(name: String) -> Float {
-    return FromVariant<Float>(MyModSettings.GetVariant(name));
+  public static func GetFloat(name: String, opt vehicle: ref<VehicleObject>) -> Float {
+    return FromVariant<Float>(MyModSettings.GetVariant(name, vehicle));
   }
 
   public static func SetFloat(name: String, value: Float) {
     let variant: Variant = ToVariant(value);
     MyModSettings.SetVariant(name, variant);
-  }
-
-  public static func GetUint8(name: String) -> Uint8 {
-    return Cast<Uint8>(MyModSettings.GetInt(name));
-  }
-
-  public static func GetString(name: String) -> String {
-    return FromVariant<String>(MyModSettings.GetVariant(name));
   }
 
   public static func Exist(name: String) -> Bool {
@@ -308,10 +314,6 @@ public class MyModSettings extends ScriptableSystem {
         vehicleAudio.radioPlaysWhenEngineStartsProbability = MyModSettings.GetBool("police_lights.policeDispatchRadioEnabled") ? 1.0 : 0.0;
       }
     }
-  }
-
-  public static func Get() -> ref<MyModSettings> {
-    return GameInstance.GetScriptableSystemsContainer(GetGameInstance()).Get(NameOf(MyModSettings)) as MyModSettings;
   }
 }
 
@@ -840,13 +842,13 @@ public class EntityWatcher extends ScriptableSystem {
       if IsDefined(lightComp) {
         let params: ref<LightComponentParameters> = vehicle.m_hgyi56_EVS_lightComponentsParameters.Get(TDBID.ToNumber(TDBID.Create(ToString(lightComp.name)))) as LightComponentParameters;
         
-        if Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode")), ERoofLightOperatingMode.Temporary) {
+        if Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode", vehicle)), ERoofLightOperatingMode.Temporary) {
           lightComp.turnOnCurve = n"interior_light_on";
           lightComp.turnOffCurve = n"interior_light_off";
           lightComp.turnOnTime = params.turnOnTime;
           lightComp.turnOffTime = params.turnOffTime;
         }
-        else if Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode")), ERoofLightOperatingMode.Fixed) {
+        else if Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode", vehicle)), ERoofLightOperatingMode.Fixed) {
           lightComp.turnOnCurve = n"portal_on";
           lightComp.turnOffCurve = n"None";
           lightComp.turnOnTime = 0.8;
@@ -1494,7 +1496,7 @@ protected cb func hgyi56_EVS_OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystal
         return true;
       }
 
-      if !this.GetIsVehicleVisualCustomizationEnabled() && !MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled") {
+      if !this.GetIsVehicleVisualCustomizationEnabled() && !MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled", vehicle) {
         this.VisualCustomizationBlockedNotification("LocKey#96137");
         return true;
       }
@@ -2392,14 +2394,14 @@ protected cb func hgyi56_EVS_OnGameTimeElapsedEvent(evt: ref<GameTimeElapsedEven
     return false;
   }
   
-  if !this.GetPS().m_hgyi56_EVS_powerState || !this.GetPS().m_hgyi56_EVS_vehicleDrivenByV || !MyModSettings.GetBool("headlights.headlightsSynchronizedWithTimeEnabled") {
+  if !this.GetPS().m_hgyi56_EVS_powerState || !this.GetPS().m_hgyi56_EVS_vehicleDrivenByV || !MyModSettings.GetBool("headlights.headlightsSynchronizedWithTimeEnabled", vehicle) {
     return false;
   }
 
   let historyTime: GameTime = GameInstance.GetTimeSystem(gi).GetGameTime();
 
-  let turnOnTime: GameTime = GameTime.MakeGameTime(0, MyModSettings.GetInt("headlights.headlightsTurnOnHour"), MyModSettings.GetInt("headlights.headlightsTurnOnMinute"), 0);
-  let turnOffTime: GameTime = GameTime.MakeGameTime(0, MyModSettings.GetInt("headlights.headlightsTurnOffHour"), MyModSettings.GetInt("headlights.headlightsTurnOffMinute"), 0);
+  let turnOnTime: GameTime = GameTime.MakeGameTime(0, MyModSettings.GetInt("headlights.headlightsTurnOnHour", vehicle), MyModSettings.GetInt("headlights.headlightsTurnOnMinute", vehicle), 0);
+  let turnOffTime: GameTime = GameTime.MakeGameTime(0, MyModSettings.GetInt("headlights.headlightsTurnOffHour", vehicle), MyModSettings.GetInt("headlights.headlightsTurnOffMinute", vehicle), 0);
 
   let now: GameTime = GameTime.MakeGameTime(0, GameTime.Hours(historyTime), GameTime.Minutes(historyTime), GameTime.Seconds(historyTime));
   
@@ -2673,7 +2675,7 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
         if !this.m_hgyi56_EVS_cycleLightsLongInputTriggered && holdTime >= MyModSettings.GetFloat("other.cycleUtilityLightsHoldTime") && this.m_useAuxiliary && !this.GetPS().m_hgyi56_EVS_isPoliceVehicle {
 
           // If the headlights shutoff is active and the player toggles headlights then simply disable the headlights shutoff
-          if this.GetPS().m_hgyi56_EVS_temporaryHeadlightsShutOff && MyModSettings.GetBool("utilitylights.utilityLightsSynchronizedWithHeadlightsShutoff") {
+          if this.GetPS().m_hgyi56_EVS_temporaryHeadlightsShutOff && MyModSettings.GetBool("utilitylights.utilityLightsSynchronizedWithHeadlightsShutoff", vehicle) {
             this.hgyi56_EVS_ToggleHeadlightsShutoff(false);
           }
           else {
@@ -3170,8 +3172,8 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
 
     let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
-    let preventEngineShutdown: Bool = vehicle.IsEngineTurnedOn() && player.IsInCombat() && MyModSettings.GetBool("power_state.preventPowerOffDuringCombat");
-    let preventPowerShutdown: Bool = this.GetPS().m_hgyi56_EVS_powerState && player.IsInCombat() && MyModSettings.GetBool("power_state.preventPowerOffDuringCombat");
+    let preventEngineShutdown: Bool = vehicle.IsEngineTurnedOn() && player.IsInCombat() && MyModSettings.GetBool("power_state.preventPowerOffDuringCombat", vehicle);
+    let preventPowerShutdown: Bool = this.GetPS().m_hgyi56_EVS_powerState && player.IsInCombat() && MyModSettings.GetBool("power_state.preventPowerOffDuringCombat", vehicle);
 
     // // // // // // //
     // Event that toggles crystal coat
@@ -3335,7 +3337,7 @@ protected final func hgyi56_EVS_UpdateHeadlightsWithTimeSync() {
   if this.m_hgyi56_EVS_headlightsSynchronizedWithTimeShallEnable {
 
     // If utility lights are included
-    switch IntEnum<EUtilityLightsSynchronizedWithTimeVehicleType>(MyModSettings.GetInt("headlights.utilityLightsSynchronizedWithTimeVehicleType")) {
+    switch IntEnum<EUtilityLightsSynchronizedWithTimeVehicleType>(MyModSettings.GetInt("headlights.utilityLightsSynchronizedWithTimeVehicleType", vehicle)) {
 
       case EUtilityLightsSynchronizedWithTimeVehicleType.No:
         // Do nothing
@@ -3356,7 +3358,7 @@ protected final func hgyi56_EVS_UpdateHeadlightsWithTimeSync() {
 
     // Only update headlights state if they are not already turned on no matter the current mode
     if Equals(this.GetPS().m_hgyi56_EVS_currentHeadlightsState, vehicleELightMode.Off) {
-      switch IntEnum<EHeadlightsSynchronizedWithTimeMode>(MyModSettings.GetInt("headlights.headlightsSynchronizedWithTimeMode")) {
+      switch IntEnum<EHeadlightsSynchronizedWithTimeMode>(MyModSettings.GetInt("headlights.headlightsSynchronizedWithTimeMode", vehicle)) {
 
         case EHeadlightsSynchronizedWithTimeMode.LowBeam:
           this.GetPS().m_hgyi56_EVS_currentHeadlightsState = vehicleELightMode.On;
@@ -3375,7 +3377,7 @@ protected final func hgyi56_EVS_UpdateHeadlightsWithTimeSync() {
     // FTLog(s"Set headlights mode by time sync -> \(this.GetPS().m_hgyi56_EVS_currentHeadlightsState)");
 
     // If utility lights are included
-    switch IntEnum<EUtilityLightsSynchronizedWithTimeVehicleType>(MyModSettings.GetInt("headlights.utilityLightsSynchronizedWithTimeVehicleType")) {
+    switch IntEnum<EUtilityLightsSynchronizedWithTimeVehicleType>(MyModSettings.GetInt("headlights.utilityLightsSynchronizedWithTimeVehicleType", vehicle)) {
 
       case EUtilityLightsSynchronizedWithTimeVehicleType.No:
         // Do nothing
@@ -3428,7 +3430,7 @@ protected final func hgyi56_EVS_EnsureIsActive_RoofLight() {
   if this.GetPS().m_hgyi56_EVS_roofLightState {
     vehCtrl.ToggleLights(this.GetPS().m_hgyi56_EVS_roofLightState, IntEnum<vehicleELightType>(EnumValueFromName(n"vehicleELightType", n"hgyi56_RoofLining")));
     
-    if Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode")), ERoofLightOperatingMode.Temporary) {
+    if Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode", vehicle)), ERoofLightOperatingMode.Temporary) {
       let callback: ref<RoofLightRearmCallback> = new RoofLightRearmCallback();
       callback.vehComp = this;
       callback.identifier = this.m_hgyi56_EVS_roofLight_CycleIdentifier;
@@ -3508,7 +3510,7 @@ protected final func hgyi56_EVS_MyToggleCrystalDome(toggle: Bool) {
     return;
   }
 
-  if player.IsInCombat() && !toggle && MyModSettings.GetBool("crystaldome.preventCrystalDomeOffDuringCombat") {
+  if player.IsInCombat() && !toggle && MyModSettings.GetBool("crystaldome.preventCrystalDomeOffDuringCombat", vehicle) {
     return;
   }
 
@@ -3555,15 +3557,15 @@ protected final func hgyi56_EVS_TogglePowerState(toggle: Bool) {
     this.hgyi56_EVS_ToggleDashboard(toggle);
 
     // Ambient lights
-    if toggle && Equals(IntEnum<EInteriorLightsToggleOn>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOn")), EInteriorLightsToggleOn.OnPowerOn) {
+    if toggle && Equals(IntEnum<EInteriorLightsToggleOn>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOn", vehicle)), EInteriorLightsToggleOn.OnPowerOn) {
       this.hgyi56_EVS_ToggleInteriorLights(toggle);
     }
-    else if !toggle && Equals(IntEnum<EInteriorLightsToggleOff>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOff")), EInteriorLightsToggleOff.OnPowerOff) {
+    else if !toggle && Equals(IntEnum<EInteriorLightsToggleOff>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOff", vehicle)), EInteriorLightsToggleOff.OnPowerOff) {
       this.hgyi56_EVS_ToggleInteriorLights(toggle);
     }
 
     // Roof light
-    if toggle && MyModSettings.GetBool("rooflight.interiorlightsRoofLightTurnOnWithPowerState") {
+    if toggle && MyModSettings.GetBool("rooflight.interiorlightsRoofLightTurnOnWithPowerState", vehicle) {
       this.hgyi56_EVS_ToggleRoofLight(toggle, true);
     }
 
@@ -3571,7 +3573,7 @@ protected final func hgyi56_EVS_TogglePowerState(toggle: Bool) {
 
     this.m_hgyi56_EVS_headlightsTimerIdentifier += 1;
 
-    if MyModSettings.GetBool("headlights.headlightsSynchronizedWithTimeEnabled") {
+    if MyModSettings.GetBool("headlights.headlightsSynchronizedWithTimeEnabled", vehicle) {
       let event: ref<GameTimeElapsedEvent> = new GameTimeElapsedEvent();
       event.identifier = this.m_hgyi56_EVS_headlightsTimerIdentifier;
 
@@ -3584,13 +3586,13 @@ protected final func hgyi56_EVS_TogglePowerState(toggle: Bool) {
     this.hgyi56_EVS_ApplyHeadlightsModeWithShutOff();
     this.hgyi56_EVS_ApplyUtilityLightsWithShutOff();
 
-    if MyModSettings.GetBool("crystaldome.crystalDomeSynchronizedWithPowerState") {
-      if toggle || !MyModSettings.GetBool("crystaldome.crystalDomeKeepOnUntilExit") {
+    if MyModSettings.GetBool("crystaldome.crystalDomeSynchronizedWithPowerState", vehicle) {
+      if toggle || !MyModSettings.GetBool("crystaldome.crystalDomeKeepOnUntilExit", vehicle) {
         this.hgyi56_EVS_MyToggleCrystalDome(toggle);
       }
     }
 
-    if MyModSettings.GetBool("spoiler.spoilerSynchronizedWithPowerState") {
+    if MyModSettings.GetBool("spoiler.spoilerSynchronizedWithPowerState", vehicle) {
       this.hgyi56_EVS_ToggleSpoiler(toggle);
     }
 
@@ -3682,7 +3684,7 @@ protected final func hgyi56_EVS_ApplyUtilityLightsWithShutOff() {
     this.hgyi56_EVS_EnsureIsDisabled_UtilityLights();
   }
   else { // Shut off
-    if MyModSettings.GetBool("utilitylights.utilityLightsSynchronizedWithHeadlightsShutoff") {
+    if MyModSettings.GetBool("utilitylights.utilityLightsSynchronizedWithHeadlightsShutoff", vehicle) {
       this.hgyi56_EVS_UpdateActiveEffectIdentifier(vehicleELightType.Utility);
       vehCtrl.ToggleLights(false, vehicleELightType.Utility);
       // FTLog(s"Set utility lights with shutoff -> false");
@@ -4165,7 +4167,7 @@ public func hgyi56_EVS_ShouldApplyCrystalCoatLightColor(lightType: vehicleELight
       && this.GetPS().GetIsVehicleVisualCustomizationActive()
       && !this.GetPS().GetIsVehicleVisualCustomizationBlockedByDamage()
       && (this.GetIsVehicleVisualCustomizationEnabled()
-          || (MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled")
+          || (MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled", this.GetVehicle())
                 && ((Equals(lightType, vehicleELightType.Utility) && isBike) || Equals(lightType, vehicleELightType.Head))));
 }
 
@@ -4258,39 +4260,39 @@ public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> HSB
 
   switch lightType {
     case vehicleELightType.Utility:
-      customHue = Cast(MyModSettings.GetInt("utilitylights_LightColorHue"));
-      customSaturation = Cast(MyModSettings.GetInt("utilitylights_LightColorSaturation"));
-      customBrightness = Cast(MyModSettings.GetInt("utilitylights_LightColorBrightness"));
+      customHue = Cast(MyModSettings.GetInt("utilitylights_LightColorHue", vehicle));
+      customSaturation = Cast(MyModSettings.GetInt("utilitylights_LightColorSaturation", vehicle));
+      customBrightness = Cast(MyModSettings.GetInt("utilitylights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Head:
-      customHue = Cast(MyModSettings.GetInt("headlights_LightColorHue"));
-      customSaturation = Cast(MyModSettings.GetInt("headlights_LightColorSaturation"));
-      customBrightness = Cast(MyModSettings.GetInt("headlights_LightColorBrightness"));
+      customHue = Cast(MyModSettings.GetInt("headlights_LightColorHue", vehicle));
+      customSaturation = Cast(MyModSettings.GetInt("headlights_LightColorSaturation", vehicle));
+      customBrightness = Cast(MyModSettings.GetInt("headlights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      customHue = Cast(MyModSettings.GetInt("taillights_LightColorHue"));
-      customSaturation = Cast(MyModSettings.GetInt("taillights_LightColorSaturation"));
-      customBrightness = Cast(MyModSettings.GetInt("taillights_LightColorBrightness"));
+      customHue = Cast(MyModSettings.GetInt("taillights_LightColorHue", vehicle));
+      customSaturation = Cast(MyModSettings.GetInt("taillights_LightColorSaturation", vehicle));
+      customBrightness = Cast(MyModSettings.GetInt("taillights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      customHue = Cast(MyModSettings.GetInt("blinkerlights_LightColorHue"));
-      customSaturation = Cast(MyModSettings.GetInt("blinkerlights_LightColorSaturation"));
-      customBrightness = Cast(MyModSettings.GetInt("blinkerlights_LightColorBrightness"));
+      customHue = Cast(MyModSettings.GetInt("blinkerlights_LightColorHue", vehicle));
+      customSaturation = Cast(MyModSettings.GetInt("blinkerlights_LightColorSaturation", vehicle));
+      customBrightness = Cast(MyModSettings.GetInt("blinkerlights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      customHue = Cast(MyModSettings.GetInt("reverselights_LightColorHue"));
-      customSaturation = Cast(MyModSettings.GetInt("reverselights_LightColorSaturation"));
-      customBrightness = Cast(MyModSettings.GetInt("reverselights_LightColorBrightness"));
+      customHue = Cast(MyModSettings.GetInt("reverselights_LightColorHue", vehicle));
+      customSaturation = Cast(MyModSettings.GetInt("reverselights_LightColorSaturation", vehicle));
+      customBrightness = Cast(MyModSettings.GetInt("reverselights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      customHue = Cast(MyModSettings.GetInt("interiorlights_LightColorHue"));
-      customSaturation = Cast(MyModSettings.GetInt("interiorlights_LightColorSaturation"));
-      customBrightness = Cast(MyModSettings.GetInt("interiorlights_LightColorBrightness"));
+      customHue = Cast(MyModSettings.GetInt("interiorlights_LightColorHue", vehicle));
+      customSaturation = Cast(MyModSettings.GetInt("interiorlights_LightColorSaturation", vehicle));
+      customBrightness = Cast(MyModSettings.GetInt("interiorlights_LightColorBrightness", vehicle));
       break;
   }
   
@@ -4305,30 +4307,31 @@ public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> HSB
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsCustomColorSaturation(lightType: vehicleELightType) -> Float {
   let customSaturation: Float;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      customSaturation = Cast(MyModSettings.GetInt("utilitylights_LightColorSaturation"));
+      customSaturation = Cast(MyModSettings.GetInt("utilitylights_LightColorSaturation", vehicle));
       break;
       
     case vehicleELightType.Head:
-      customSaturation = Cast(MyModSettings.GetInt("headlights_LightColorSaturation"));
+      customSaturation = Cast(MyModSettings.GetInt("headlights_LightColorSaturation", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      customSaturation = Cast(MyModSettings.GetInt("taillights_LightColorSaturation"));
+      customSaturation = Cast(MyModSettings.GetInt("taillights_LightColorSaturation", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      customSaturation = Cast(MyModSettings.GetInt("blinkerlights_LightColorSaturation"));
+      customSaturation = Cast(MyModSettings.GetInt("blinkerlights_LightColorSaturation", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      customSaturation = Cast(MyModSettings.GetInt("reverselights_LightColorSaturation"));
+      customSaturation = Cast(MyModSettings.GetInt("reverselights_LightColorSaturation", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      customSaturation = Cast(MyModSettings.GetInt("interiorlights_LightColorSaturation"));
+      customSaturation = Cast(MyModSettings.GetInt("interiorlights_LightColorSaturation", vehicle));
       break;
   }
   
@@ -4338,30 +4341,31 @@ public func hgyi56_EVS_GetLightsCustomColorSaturation(lightType: vehicleELightTy
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsCustomColorBrightness(lightType: vehicleELightType) -> Float {
   let customBrightness: Float;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      customBrightness = Cast(MyModSettings.GetInt("utilitylights_LightColorBrightness"));
+      customBrightness = Cast(MyModSettings.GetInt("utilitylights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Head:
-      customBrightness = Cast(MyModSettings.GetInt("headlights_LightColorBrightness"));
+      customBrightness = Cast(MyModSettings.GetInt("headlights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      customBrightness = Cast(MyModSettings.GetInt("taillights_LightColorBrightness"));
+      customBrightness = Cast(MyModSettings.GetInt("taillights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      customBrightness = Cast(MyModSettings.GetInt("blinkerlights_LightColorBrightness"));
+      customBrightness = Cast(MyModSettings.GetInt("blinkerlights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      customBrightness = Cast(MyModSettings.GetInt("reverselights_LightColorBrightness"));
+      customBrightness = Cast(MyModSettings.GetInt("reverselights_LightColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      customBrightness = Cast(MyModSettings.GetInt("interiorlights_LightColorBrightness"));
+      customBrightness = Cast(MyModSettings.GetInt("interiorlights_LightColorBrightness", vehicle));
       break;
   }
   
@@ -4381,39 +4385,39 @@ public func hgyi56_EVS_GetLightsCycleColor(lightType: vehicleELightType) -> HSBC
 
   switch lightType {
     case vehicleELightType.Utility:
-      cycleHue = Cast(MyModSettings.GetInt("utilitylights_CycleColorHue"));
-      cycleSaturation = Cast(MyModSettings.GetInt("utilitylights_CycleColorSaturation"));
-      cycleBrightness = Cast(MyModSettings.GetInt("utilitylights_CycleColorBrightness"));
+      cycleHue = Cast(MyModSettings.GetInt("utilitylights_CycleColorHue", vehicle));
+      cycleSaturation = Cast(MyModSettings.GetInt("utilitylights_CycleColorSaturation", vehicle));
+      cycleBrightness = Cast(MyModSettings.GetInt("utilitylights_CycleColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Head:
-      cycleHue = Cast(MyModSettings.GetInt("headlights_CycleColorHue"));
-      cycleSaturation = Cast(MyModSettings.GetInt("headlights_CycleColorSaturation"));
-      cycleBrightness = Cast(MyModSettings.GetInt("headlights_CycleColorBrightness"));
+      cycleHue = Cast(MyModSettings.GetInt("headlights_CycleColorHue", vehicle));
+      cycleSaturation = Cast(MyModSettings.GetInt("headlights_CycleColorSaturation", vehicle));
+      cycleBrightness = Cast(MyModSettings.GetInt("headlights_CycleColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      cycleHue = Cast(MyModSettings.GetInt("taillights_CycleColorHue"));
-      cycleSaturation = Cast(MyModSettings.GetInt("taillights_CycleColorSaturation"));
-      cycleBrightness = Cast(MyModSettings.GetInt("taillights_CycleColorBrightness"));
+      cycleHue = Cast(MyModSettings.GetInt("taillights_CycleColorHue", vehicle));
+      cycleSaturation = Cast(MyModSettings.GetInt("taillights_CycleColorSaturation", vehicle));
+      cycleBrightness = Cast(MyModSettings.GetInt("taillights_CycleColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      cycleHue = Cast(MyModSettings.GetInt("blinkerlights_CycleColorHue"));
-      cycleSaturation = Cast(MyModSettings.GetInt("blinkerlights_CycleColorSaturation"));
-      cycleBrightness = Cast(MyModSettings.GetInt("blinkerlights_CycleColorBrightness"));
+      cycleHue = Cast(MyModSettings.GetInt("blinkerlights_CycleColorHue", vehicle));
+      cycleSaturation = Cast(MyModSettings.GetInt("blinkerlights_CycleColorSaturation", vehicle));
+      cycleBrightness = Cast(MyModSettings.GetInt("blinkerlights_CycleColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      cycleHue = Cast(MyModSettings.GetInt("reverselights_CycleColorHue"));
-      cycleSaturation = Cast(MyModSettings.GetInt("reverselights_CycleColorSaturation"));
-      cycleBrightness = Cast(MyModSettings.GetInt("reverselights_CycleColorBrightness"));
+      cycleHue = Cast(MyModSettings.GetInt("reverselights_CycleColorHue", vehicle));
+      cycleSaturation = Cast(MyModSettings.GetInt("reverselights_CycleColorSaturation", vehicle));
+      cycleBrightness = Cast(MyModSettings.GetInt("reverselights_CycleColorBrightness", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      cycleHue = Cast(MyModSettings.GetInt("interiorlights_CycleColorHue"));
-      cycleSaturation = Cast(MyModSettings.GetInt("interiorlights_CycleColorSaturation"));
-      cycleBrightness = Cast(MyModSettings.GetInt("interiorlights_CycleColorBrightness"));
+      cycleHue = Cast(MyModSettings.GetInt("interiorlights_CycleColorHue", vehicle));
+      cycleSaturation = Cast(MyModSettings.GetInt("interiorlights_CycleColorSaturation", vehicle));
+      cycleBrightness = Cast(MyModSettings.GetInt("interiorlights_CycleColorBrightness", vehicle));
       break;
   }
 
@@ -4428,30 +4432,31 @@ public func hgyi56_EVS_GetLightsCycleColor(lightType: vehicleELightType) -> HSBC
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsAutoResetColorEnabled(lightType: vehicleELightType) -> Bool {
   let value: Bool;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      value = MyModSettings.GetBool("utilitylights_AutoResetLightColorEnabled");
+      value = MyModSettings.GetBool("utilitylights_AutoResetLightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Head:
-      value = MyModSettings.GetBool("headlights_AutoResetLightColorEnabled");
+      value = MyModSettings.GetBool("headlights_AutoResetLightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Brake:
-      value = MyModSettings.GetBool("taillights_AutoResetLightColorEnabled");
+      value = MyModSettings.GetBool("taillights_AutoResetLightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Blinkers:
-      value = MyModSettings.GetBool("blinkerlights_AutoResetLightColorEnabled");
+      value = MyModSettings.GetBool("blinkerlights_AutoResetLightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Reverse:
-      value = MyModSettings.GetBool("reverselights_AutoResetLightColorEnabled");
+      value = MyModSettings.GetBool("reverselights_AutoResetLightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Interior:
-      value = MyModSettings.GetBool("interiorlights_AutoResetLightColorEnabled");
+      value = MyModSettings.GetBool("interiorlights_AutoResetLightColorEnabled", vehicle);
       break;
   }
   
@@ -4543,30 +4548,31 @@ public func hgyi56_EVS_GetBlackColor() -> HSBColor {
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsSequenceSpeed(lightType: vehicleELightType) -> Float {
   let sequenceSpeed: Float;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      sequenceSpeed = MyModSettings.GetFloat("utilitylights_SequenceLatency");
+      sequenceSpeed = MyModSettings.GetFloat("utilitylights_SequenceLatency", vehicle);
       break;
       
     case vehicleELightType.Head:
-      sequenceSpeed = MyModSettings.GetFloat("headlights_SequenceLatency");
+      sequenceSpeed = MyModSettings.GetFloat("headlights_SequenceLatency", vehicle);
       break;
       
     case vehicleELightType.Brake:
-      sequenceSpeed = MyModSettings.GetFloat("taillights_SequenceLatency");
+      sequenceSpeed = MyModSettings.GetFloat("taillights_SequenceLatency", vehicle);
       break;
       
     case vehicleELightType.Blinkers:
-      sequenceSpeed = MyModSettings.GetFloat("blinkerlights_SequenceLatency");
+      sequenceSpeed = MyModSettings.GetFloat("blinkerlights_SequenceLatency", vehicle);
       break;
       
     case vehicleELightType.Reverse:
-      sequenceSpeed = MyModSettings.GetFloat("reverselights_SequenceLatency");
+      sequenceSpeed = MyModSettings.GetFloat("reverselights_SequenceLatency", vehicle);
       break;
       
     case vehicleELightType.Interior:
-      sequenceSpeed = MyModSettings.GetFloat("interiorlights_SequenceLatency");
+      sequenceSpeed = MyModSettings.GetFloat("interiorlights_SequenceLatency", vehicle);
       break;
   }
 
@@ -4644,29 +4650,31 @@ public func hgyi56_EVS_SetLightsSequenceSpeed(value: Float, lightType: vehicleEL
 
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetCrystalCoatLightsIncluded(lightType: vehicleELightType) -> Bool {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+
   switch lightType {
     case vehicleELightType.Utility:
-      return MyModSettings.GetBool("utilitylights_CrystalCoatInclude");
+      return MyModSettings.GetBool("utilitylights_CrystalCoatInclude", vehicle);
       break;
       
     case vehicleELightType.Head:
-      return MyModSettings.GetBool("headlights_CrystalCoatInclude");
+      return MyModSettings.GetBool("headlights_CrystalCoatInclude", vehicle);
       break;
       
     case vehicleELightType.Brake:
-      return MyModSettings.GetBool("taillights_CrystalCoatInclude");
+      return MyModSettings.GetBool("taillights_CrystalCoatInclude", vehicle);
       break;
       
     case vehicleELightType.Blinkers:
-      return MyModSettings.GetBool("blinkerlights_CrystalCoatInclude");
+      return MyModSettings.GetBool("blinkerlights_CrystalCoatInclude", vehicle);
       break;
       
     case vehicleELightType.Reverse:
-      return MyModSettings.GetBool("reverselights_CrystalCoatInclude");
+      return MyModSettings.GetBool("reverselights_CrystalCoatInclude", vehicle);
       break;
       
     case vehicleELightType.Interior:
-      return MyModSettings.GetBool("interiorlights_CrystalCoatInclude");
+      return MyModSettings.GetBool("interiorlights_CrystalCoatInclude", vehicle);
       break;
   }
 
@@ -4698,6 +4706,8 @@ public func hgyi56_EVS_GetCrystalCoatLightsColorTypeDefined(colorType: ECrystalC
 
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetCrystalCoatColorType(lightType: vehicleELightType) -> ECrystalCoatColorType {
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
+
   switch lightType {
     case vehicleELightType.Utility:
       let isBike: Bool = IsDefined(this.GetVehicle() as BikeObject);
@@ -4706,27 +4716,27 @@ public func hgyi56_EVS_GetCrystalCoatColorType(lightType: vehicleELightType) -> 
         return ECrystalCoatColorType.Lights;
       }
 
-      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("utilitylights_CrystalCoatColorType"));
+      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("utilitylights_CrystalCoatColorType", vehicle));
       break;
       
     case vehicleELightType.Head:
-      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("headlights_CrystalCoatColorType"));
+      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("headlights_CrystalCoatColorType", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("taillights_CrystalCoatColorType"));
+      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("taillights_CrystalCoatColorType", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("blinkerlights_CrystalCoatColorType"));
+      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("blinkerlights_CrystalCoatColorType", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("reverselights_CrystalCoatColorType"));
+      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("reverselights_CrystalCoatColorType", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("interiorlights_CrystalCoatColorType"));
+      return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("interiorlights_CrystalCoatColorType", vehicle));
       break;
   }
 }
@@ -4734,30 +4744,31 @@ public func hgyi56_EVS_GetCrystalCoatColorType(lightType: vehicleELightType) -> 
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsCustomColorEnabled(lightType: vehicleELightType) -> Bool {
   let enabled: Bool;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      enabled = MyModSettings.GetBool("utilitylights_LightColorEnabled");
+      enabled = MyModSettings.GetBool("utilitylights_LightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Head:
-      enabled = MyModSettings.GetBool("headlights_LightColorEnabled");
+      enabled = MyModSettings.GetBool("headlights_LightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Brake:
-      enabled = MyModSettings.GetBool("taillights_LightColorEnabled");
+      enabled = MyModSettings.GetBool("taillights_LightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Blinkers:
-      enabled = MyModSettings.GetBool("blinkerlights_LightColorEnabled");
+      enabled = MyModSettings.GetBool("blinkerlights_LightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Reverse:
-      enabled = MyModSettings.GetBool("reverselights_LightColorEnabled");
+      enabled = MyModSettings.GetBool("reverselights_LightColorEnabled", vehicle);
       break;
       
     case vehicleELightType.Interior:
-      enabled = MyModSettings.GetBool("interiorlights_LightColorEnabled");
+      enabled = MyModSettings.GetBool("interiorlights_LightColorEnabled", vehicle);
       break;
   }
 
@@ -4767,30 +4778,31 @@ public func hgyi56_EVS_GetLightsCustomColorEnabled(lightType: vehicleELightType)
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsColorVehicleType(lightType: vehicleELightType) -> ELightsColorVehicleType {
   let vehicleType: ELightsColorVehicleType;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("utilitylights_ImpactedVehicles"));
+      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("utilitylights_ImpactedVehicles", vehicle));
       break;
       
     case vehicleELightType.Head:
-      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("headlights_ImpactedVehicles"));
+      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("headlights_ImpactedVehicles", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("taillights_ImpactedVehicles"));
+      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("taillights_ImpactedVehicles", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("blinkerlights_ImpactedVehicles"));
+      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("blinkerlights_ImpactedVehicles", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("reverselights_ImpactedVehicles"));
+      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("reverselights_ImpactedVehicles", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("interiorlights_ImpactedVehicles"));
+      vehicleType = IntEnum<ELightsColorVehicleType>(MyModSettings.GetInt("interiorlights_ImpactedVehicles", vehicle));
       break;
   }
 
@@ -4800,30 +4812,31 @@ public func hgyi56_EVS_GetLightsColorVehicleType(lightType: vehicleELightType) -
 @addMethod(VehicleComponent)
 public func hgyi56_EVS_GetLightsColorSequence(lightType: vehicleELightType) -> ELightsColorCycleType {
   let cycleType : ELightsColorCycleType;
+  let vehicle: ref<VehicleObject> = this.GetVehicle();
 
   switch lightType {
     case vehicleELightType.Utility:
-      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("utilitylights_ColorSequence"));
+      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("utilitylights_ColorSequence", vehicle));
       break;
       
     case vehicleELightType.Head:
-      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("headlights_ColorSequence"));
+      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("headlights_ColorSequence", vehicle));
       break;
       
     case vehicleELightType.Brake:
-      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("taillights_ColorSequence"));
+      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("taillights_ColorSequence", vehicle));
       break;
       
     case vehicleELightType.Blinkers:
-      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("blinkerlights_ColorSequence"));
+      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("blinkerlights_ColorSequence", vehicle));
       break;
       
     case vehicleELightType.Reverse:
-      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("reverselights_ColorSequence"));
+      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("reverselights_ColorSequence", vehicle));
       break;
       
     case vehicleELightType.Interior:
-      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("interiorlights_ColorSequence"));
+      cycleType = IntEnum<ELightsColorCycleType>(MyModSettings.GetInt("interiorlights_ColorSequence", vehicle));
       break;
   }
 
@@ -5266,7 +5279,7 @@ public func hgyi56_EVS_ApplyHeadlightsTimeSyncSettingsChange() -> Void {
     return;
   }
 
-  if MyModSettings.GetBool("headlights.headlightsSynchronizedWithTimeEnabled") {
+  if MyModSettings.GetBool("headlights.headlightsSynchronizedWithTimeEnabled", vehicle) {
     let event: ref<GameTimeElapsedEvent> = new GameTimeElapsedEvent();
     event.identifier = this.m_hgyi56_EVS_headlightsTimerIdentifier;
 
@@ -5365,7 +5378,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       PreventionSystem.SetPlayerMounted(gameInstance, true);
       PreventionSystemHackerLoop.UpdatePlayerVehicle(gameInstance, this.GetVehicle());
 
-      if MyModSettings.GetBool("police_lights.policeDispatchRadioEnabled") {
+      if MyModSettings.GetBool("police_lights.policeDispatchRadioEnabled", this.GetVehicle()) {
         PoliceRadioScriptSystem.UpdatePoliceRadioOnVehicleEntrance(gameInstance);
       }
     };
@@ -5604,9 +5617,9 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     if !this.GetPS().m_hgyi56_EVS_vehicleDrivenByV {
       // FTLog(s"m_hgyi56_EVS_vehicleDrivenByV -> true");
 
-      this.GetPS().m_hgyi56_EVS_currentHeadlightsState = IntEnum<vehicleELightMode>(EnumInt(IntEnum<EHeadlightsMode>(MyModSettings.GetInt("headlights.defaultHeadlightsMode"))));
+      this.GetPS().m_hgyi56_EVS_currentHeadlightsState = IntEnum<vehicleELightMode>(EnumInt(IntEnum<EHeadlightsMode>(MyModSettings.GetInt("headlights.defaultHeadlightsMode", vehicle))));
 
-      switch IntEnum<EHeadlightsMode>(MyModSettings.GetInt("utilitylights.defaultUtilityLightsMode")) {
+      switch IntEnum<EHeadlightsMode>(MyModSettings.GetInt("utilitylights.defaultUtilityLightsMode", vehicle)) {
         case EUtilityLightsMode.MotorcyclesActive:
           if vehicle == (vehicle as BikeObject) {
             this.GetPS().m_hgyi56_EVS_auxiliaryState = true;
@@ -5726,7 +5739,7 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
         // Prevents the vehicle from shutting down because of the game
         this.hgyi56_EVS_Ensure_VehicleState(vehicleEState.Default);
 
-        switch IntEnum<EExitBehavior>(MyModSettings.GetInt("power_state.exitBehavior")) {
+        switch IntEnum<EExitBehavior>(MyModSettings.GetInt("power_state.exitBehavior", vehicle)) {
           case EExitBehavior.PowerOff:
             this.hgyi56_EVS_TogglePowerState(false);
             this.hgyi56_EVS_ToggleEngineState(false);
@@ -5747,14 +5760,14 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
 
         // Ambient lights
         if !this.GetPS().m_hgyi56_EVS_powerState
-        && Equals(IntEnum<EInteriorLightsToggleOff>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOff")), EInteriorLightsToggleOff.OnExit) {
+        && Equals(IntEnum<EInteriorLightsToggleOff>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOff", vehicle)), EInteriorLightsToggleOff.OnExit) {
           this.hgyi56_EVS_ToggleInteriorLights(false);
         }
 
         // Roof light
         // Prevent the roof light from staying enabled forever if the player gets out with power off and all doors are closed
         if !this.GetPS().m_hgyi56_EVS_powerState
-        && Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode")), ERoofLightOperatingMode.Fixed)
+        && Equals(IntEnum<ERoofLightOperatingMode>(MyModSettings.GetInt("rooflight.interiorlightsRoofLightOperatingMode", vehicle)), ERoofLightOperatingMode.Fixed)
         && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_left), VehicleDoorState.Closed)
         && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_front_right), VehicleDoorState.Closed)
         && Equals(this.GetPS().GetDoorState(EVehicleDoor.seat_back_left), VehicleDoorState.Closed)
@@ -5769,8 +5782,8 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
         }
 
         if this.GetPS().GetCrystalDomeState()
-        && MyModSettings.GetBool("crystaldome.crystalDomeSynchronizedWithPowerState")
-        && MyModSettings.GetBool("crystaldome.crystalDomeKeepOnUntilExit")
+        && MyModSettings.GetBool("crystaldome.crystalDomeSynchronizedWithPowerState", vehicle)
+        && MyModSettings.GetBool("crystaldome.crystalDomeKeepOnUntilExit", vehicle)
         && !this.GetPS().m_hgyi56_EVS_powerState
         && this.GetPS().m_hgyi56_EVS_poweredOnAtLeastOnceSinceLastEnter {
           this.hgyi56_EVS_MyToggleCrystalDome(false);
@@ -5785,7 +5798,7 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
         
         // Ambient lights
         if !this.GetPS().m_hgyi56_EVS_powerState
-        && Equals(IntEnum<EInteriorLightsToggleOn>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOn")), EInteriorLightsToggleOn.OnEnter) {
+        && Equals(IntEnum<EInteriorLightsToggleOn>(MyModSettings.GetInt("interiorlights.interiorlightsAutomaticTurnOn", vehicle)), EInteriorLightsToggleOn.OnEnter) {
           this.hgyi56_EVS_ToggleInteriorLights(true);
         }
       }
@@ -5936,17 +5949,17 @@ protected cb func OnVehicleFinishedMountingEvent(evt: ref<VehicleFinishedMountin
 
       if player.IsInCombat() {
 
-        if MyModSettings.GetBool("power_state.autoStartEngineDuringCombat") {
+        if MyModSettings.GetBool("power_state.autoStartEngineDuringCombat", vehicle) {
           this.hgyi56_EVS_TogglePowerState(true);
           this.hgyi56_EVS_ToggleEngineState(true);
         }
 
-        if MyModSettings.GetBool("crystaldome.autoEnableCrystalDomeDuringCombat") {
+        if MyModSettings.GetBool("crystaldome.autoEnableCrystalDomeDuringCombat", vehicle) {
           this.hgyi56_EVS_MyToggleCrystalDome(true);
         }
       }
       
-      switch IntEnum<EEnterBehavior>(MyModSettings.GetInt("power_state.enterBehavior")) {
+      switch IntEnum<EEnterBehavior>(MyModSettings.GetInt("power_state.enterBehavior", vehicle)) {
         case EEnterBehavior.StartEngine:
           this.hgyi56_EVS_TogglePowerState(true);
           this.hgyi56_EVS_ToggleEngineState(true);
@@ -6038,8 +6051,8 @@ protected final func hgyi56_EVS_AllowCloseDoorsWithSpeed(speed: Float) -> Bool {
   }
   
   // Close doors when moving if necessary
-  if Equals(IntEnum<EDoorsDriveClosing>(MyModSettings.GetInt("doors.doorsDriveClosing")), EDoorsDriveClosing.CustomSpeed)
-  || (Equals(IntEnum<EDoorsDriveClosing>(MyModSettings.GetInt("doors.doorsDriveClosing")), EDoorsDriveClosing.OnStartMoving) && this.m_hgyi56_EVS_AutoCloseDoors_OnStartMoving_State) {
+  if Equals(IntEnum<EDoorsDriveClosing>(MyModSettings.GetInt("doors.doorsDriveClosing", vehicle)), EDoorsDriveClosing.CustomSpeed)
+  || (Equals(IntEnum<EDoorsDriveClosing>(MyModSettings.GetInt("doors.doorsDriveClosing", vehicle)), EDoorsDriveClosing.OnStartMoving) && this.m_hgyi56_EVS_AutoCloseDoors_OnStartMoving_State) {
     return true;
   }
 
@@ -6063,7 +6076,7 @@ protected final func hgyi56_EVS_AllowSpoilerToggleWithSpeed(speed: Float, deploy
   let absSpeed: Float = AbsF(speed); // Game speed unit
   let speedWindow: Float = this.hgyi56_EVS_ToGameSpeed(5.0); // Kmh or Mph -> Game speed unit
   
-  let targetSpeed: Float = this.hgyi56_EVS_ToGameSpeed(deploy ? MyModSettings.GetFloat("spoiler.spoilerDeploySpeed") : MyModSettings.GetFloat("spoiler.spoilerRetractSpeed")); // Kmh or Mph -> Game speed unit
+  let targetSpeed: Float = this.hgyi56_EVS_ToGameSpeed(deploy ? MyModSettings.GetFloat("spoiler.spoilerDeploySpeed", vehicle) : MyModSettings.GetFloat("spoiler.spoilerRetractSpeed", vehicle)); // Kmh or Mph -> Game speed unit
   
   if deploy {
     if absSpeed >= targetSpeed && absSpeed < targetSpeed + speedWindow && Equals(this.m_hgyi56_EVS_vehicleMomentumType, EMomentumType.Accelerate) {
@@ -6190,12 +6203,12 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
 
   if this.m_hasSpoiler {
     // Only deploy spoiler with speed if user settings allow it
-    if !this.m_spoilerDeployed && MyModSettings.GetBool("spoiler.spoilerDeploySpeedEnabled") && this.hgyi56_EVS_AllowSpoilerToggleWithSpeed(speed, true) {
+    if !this.m_spoilerDeployed && MyModSettings.GetBool("spoiler.spoilerDeploySpeedEnabled", vehicle) && this.hgyi56_EVS_AllowSpoilerToggleWithSpeed(speed, true) {
 
       this.hgyi56_EVS_ToggleSpoiler(!this.m_spoilerDeployed);
     }
     // Only retract spoiler with speed if user settings allow it
-    else if this.m_spoilerDeployed && MyModSettings.GetBool("spoiler.spoilerRetractSpeedEnabled") && this.hgyi56_EVS_AllowSpoilerToggleWithSpeed(speed, false) {
+    else if this.m_spoilerDeployed && MyModSettings.GetBool("spoiler.spoilerRetractSpeedEnabled", vehicle) && this.hgyi56_EVS_AllowSpoilerToggleWithSpeed(speed, false) {
 
       this.hgyi56_EVS_ToggleSpoiler(!this.m_spoilerDeployed);
     };
@@ -6210,8 +6223,8 @@ protected final func OnVehicleSpeedChange(speed: Float) -> Void {
     // Get default closing speed for this vehicle, and if necessary use the user settings
     let doorsDriveClosingSpeed: Float = vehDataPackage.SpeedToClose();
 
-    if Equals(IntEnum<EDoorsDriveClosing>(MyModSettings.GetInt("doors.doorsDriveClosing")), EDoorsDriveClosing.CustomSpeed) {
-      doorsDriveClosingSpeed = this.hgyi56_EVS_ToGameSpeed(MyModSettings.GetFloat("doors.doorsDriveClosingSpeed"));
+    if Equals(IntEnum<EDoorsDriveClosing>(MyModSettings.GetInt("doors.doorsDriveClosing", vehicle)), EDoorsDriveClosing.CustomSpeed) {
+      doorsDriveClosingSpeed = this.hgyi56_EVS_ToGameSpeed(MyModSettings.GetFloat("doors.doorsDriveClosingSpeed", vehicle));
     }
     ////////////////////
 
@@ -6372,7 +6385,7 @@ public final func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> EntityNotifica
   let playerIsMounted = VehicleComponent.IsMountedToProvidedVehicle(gi, player.GetEntityID(), vehicle);
 
   // Roof light
-  if MyModSettings.GetBool("rooflight.interiorlightsRoofLightTurnOnWithDoors")
+  if MyModSettings.GetBool("rooflight.interiorlightsRoofLightTurnOnWithDoors", vehicle)
   && (Equals(doorEnum, EVehicleDoor.seat_front_left) || Equals(doorEnum, EVehicleDoor.seat_front_right) || Equals(doorEnum, EVehicleDoor.seat_back_left) || Equals(doorEnum, EVehicleDoor.seat_back_right))
   && Equals(this.GetDoorState(doorEnum), VehicleDoorState.Closed)
   && playerIsMounted {
@@ -7162,12 +7175,12 @@ protected cb func OnCombatStateChanged(newState: Int32) -> Bool {
   && !vehComp.hgyi56_EVS_IsUnsupportedVehicleType() {
     if inCombat {
 
-      if MyModSettings.GetBool("power_state.autoStartEngineDuringCombat") && !vehicle.IsEngineTurnedOn() {
+      if MyModSettings.GetBool("power_state.autoStartEngineDuringCombat", vehicle) && !vehicle.IsEngineTurnedOn() {
         vehComp.hgyi56_EVS_TogglePowerState(true);
         vehComp.hgyi56_EVS_ToggleEngineState(true);
       }
 
-      if MyModSettings.GetBool("crystaldome.autoEnableCrystalDomeDuringCombat") && !vehComp.GetPS().GetCrystalDomeState() {
+      if MyModSettings.GetBool("crystaldome.autoEnableCrystalDomeDuringCombat", vehicle) && !vehComp.GetPS().GetCrystalDomeState() {
         vehComp.hgyi56_EVS_MyToggleCrystalDome(true);
       }
     }
@@ -7604,7 +7617,7 @@ protected cb func OnVehicleFinishedMounting(evt: ref<VehicleFinishedMountingEven
     }
     else {
       if VehicleVisualCustomizationTemplate.IsValid(this.GetVehiclePS().GetVehicleVisualCustomizationTemplate()) && !this.GetVehiclePS().GetIsVehicleVisualCustomizationBlockedByDamage() && !this.GetVehiclePS().GetIsVehicleApperanceCustomizationInDistanceTermination() {
-        if MyModSettings.GetBool("crystalcoat.crystalCoatAutoEnable") {
+        if MyModSettings.GetBool("crystalcoat.crystalCoatAutoEnable", this) {
           this.ExecuteVisualCustomizationWithDelay(true, false, false, 0.80);
         }
       }
@@ -7802,7 +7815,7 @@ protected cb func OnCheckVehicleVisialCustomizationDistanceTermination(evt: ref<
   let distanceCheckEvent: ref<CheckVehicleVisialCustomizationDistanceTermination>;
   let switchVisualCustomizationEvent: ref<SwitchVehicleVisualCustomizationStateEvent>;
   let playerDistance: Float = Vector4.DistanceSquared(this.GetWorldPosition(), GetPlayerObject(this.GetGame()).GetWorldPosition());
-  if playerDistance < PowF(MyModSettings.GetFloat("crystalcoat.crystalCoatDeactivationDistance"), 2) {
+  if playerDistance < PowF(MyModSettings.GetFloat("crystalcoat.crystalCoatDeactivationDistance", this), 2) {
     if this.IsPlayerMounted() || !VehicleVisualCustomizationTemplate.IsValid(this.GetVehiclePS().GetVehicleVisualCustomizationTemplate()) || !this.GetVehiclePS().GetIsVehicleVisualCustomizationActive() {
       return false;
     };
@@ -7872,7 +7885,7 @@ protected final const func EnterCondition(const stateContext: ref<StateContext>,
     } else {
       //////////////////////////////////
       // COSMETIC_TROLL
-      if MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled") {
+      if MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled", player.GetMountedVehicle()) {
         return true;
       }
       else {
