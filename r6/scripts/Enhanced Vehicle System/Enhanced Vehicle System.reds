@@ -2088,6 +2088,46 @@ public class Utils {
   }
 }
 
+public class EntityWatcher extends ScriptableSystem {
+
+  public static func Get(gi: GameInstance) -> ref<EntityWatcher> {
+    let ref = GameInstance.GetScriptableSystemsContainer(gi).Get(n"Hgyi56.Enhanced_Vehicle_System.EntityWatcher") as EntityWatcher;
+
+    return ref;
+  }
+
+  private func OnAttach() {
+    GameInstance.GetCallbackSystem().RegisterCallback(n"Entity/Assemble", this, n"OnEntityAssemble");
+  }
+  
+  private func ApplyHeadlightBehavior(vehicle: wref<VehicleObject>) {
+    if !IsDefined(vehicle) {
+      return;
+    }
+
+    let components: array<ref<IComponent>> = vehicle.GetComponents();
+
+    for comp in components {
+      if IsDefined(comp) {
+        let lightComp = comp as vehicleLightComponent;
+
+        if IsDefined(lightComp) {
+          if Equals(lightComp.lightType, vehicleELightType.Head) {
+            lightComp.attenuation = rendLightAttenuation.LA_Linear; // Allow light beam to stay on after getting out
+            lightComp.radius = 20.0; // Allow objects shadow on wall after getting out
+          }
+        }
+      }
+    }
+  }
+
+  private cb func OnEntityAssemble(event: ref<EntityLifecycleEvent>) {
+    let vehicle: wref<VehicleObject> = event.GetEntity() as VehicleObject;
+
+    this.ApplyHeadlightBehavior(vehicle);
+  }
+}
+
 @addField(VehicleComponent)
 public let m_currentHeadlightsState: vehicleELightMode = vehicleELightMode.Off;
 
@@ -2455,6 +2495,11 @@ public class PlayerIsAwayFromVehicleEvent extends Event {
 }
 
 @addMethod(VehicleComponent)
+public func IsCrystalCoatActive() -> Bool {
+  return this.GetPS().GetIsVehicleVisualCustomizationActive() && !this.GetPS().GetIsVehicleVisualCustomizationBlockedByDamage();
+}
+
+@addMethod(VehicleComponent)
 protected cb func OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystalCoatEvent>) -> Bool {
   if evt.tapCount != this.m_cycleCrystalCoatStep {
     return false;
@@ -2471,7 +2516,7 @@ protected cb func OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystalCoatEvent>)
       let definition: vehicleVisualModdingDefinition;
       vvcComponent.GetMyPS().GetDataForVehicleWithID(vehicle.GetRecordID(), definition);
 
-      if this.GetPS().GetIsVehicleVisualCustomizationActive() {
+      if this.IsCrystalCoatActive() {
         let evt: ref<NewVehicleVisualCustomizationEvent> = new NewVehicleVisualCustomizationEvent();
         evt.modSet = definition;
         evt.reset = true;
@@ -4052,7 +4097,7 @@ protected final func ApplyHeadlightsModeWithShutOff() {
 
   if !this.m_temporaryHeadlightsShutOff
   && (NotEquals(this.GetVehicleControllerPS().GetHeadLightMode(), this.m_currentHeadlightsState)
-      || (this.GetPS().GetIsVehicleVisualCustomizationActive() && NotEquals(this.m_currentHeadlightsState, vehicleELightMode.Off))) {
+      || (this.IsCrystalCoatActive() && NotEquals(this.m_currentHeadlightsState, vehicleELightMode.Off))) {
     if Equals(this.m_currentHeadlightsState, vehicleELightMode.Off) {
       this.UpdateActiveEffectIdentifier(vehicleELightType.Head);
       this.UpdateActiveEffectIdentifier(vehicleELightType.Brake);
@@ -5052,12 +5097,12 @@ public func GetCrystalCoatLightsColorTypeDefined(colorType: ECrystalCoatColorTyp
   switch colorType {
     case ECrystalCoatColorType.Primary:
       // Primary color shall be considered as defined only if the crystal coat is activated
-      return ColorSet.primaryColorDefined && this.GetPS().GetIsVehicleVisualCustomizationActive();
+      return ColorSet.primaryColorDefined && this.IsCrystalCoatActive();
       break;
       
     case ECrystalCoatColorType.Secondary:
       // Secondary color shall be considered as defined only if the crystal coat is activated
-      return ColorSet.secondaryColorDefined && this.GetPS().GetIsVehicleVisualCustomizationActive();
+      return ColorSet.secondaryColorDefined && this.IsCrystalCoatActive();
       break;
       
     case ECrystalCoatColorType.Lights:
@@ -7643,7 +7688,7 @@ protected cb func OnSwitchVehicleVisualCustomizationStateEvent(evt: ref<SwitchVe
   let vehicleComp: ref<VehicleComponent> = this.GetVehicleComponent();
 
   if !IsDefined(vehicleComp)
-  || (!vehicleComp.m_modSettings.settings.keepCrystalCoatEnabledOnExit && this.GetVehiclePS().GetIsVehicleVisualCustomizationActive()) {
+  || (!vehicleComp.m_modSettings.settings.keepCrystalCoatEnabledOnExit && vehicleComp.IsCrystalCoatActive()) {
     return wrappedMethod(evt);
   }
 }
@@ -7654,7 +7699,7 @@ protected cb func OnVehicleFinishedMounting(evt: ref<VehicleFinishedMountingEven
 
   if IsDefined(vehicleComp) && evt.isMounting && IsDefined(evt.character) && evt.character.IsPlayer() {
     this.m_abandoned = false;
-    if this.GetVehiclePS().GetIsVehicleVisualCustomizationActive() && !this.GetVehiclePS().GetIsVehicleVisualCustomizationBlockedByDamage()
+    if vehicleComp.IsCrystalCoatActive()
     && !vehicleComp.m_modSettings.settings.keepCrystalCoatEnabledOnExit {
       this.ExecuteVisualCustomizationWithDelay(true, false, true, 0.00, true);
     } else {
@@ -7692,7 +7737,7 @@ protected cb func OnVehicleVisualCustomizationPerformedEvent(evt: ref<VehicleVis
 
   // If crystal coat is disabled then refresh lights
   if IsDefined(vehicleComp)
-  && !vehicleComp.GetPS().GetIsVehicleVisualCustomizationActive() {
+  && !vehicleComp.IsCrystalCoatActive() {
     
     let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(this.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
     player.m_customLightsAreBeingToggled = true;
