@@ -848,7 +848,7 @@ function setup_utilitylights_CategorySetters(categoryData)
     settings[categoryData.name].utilityLightsSynchronizedWithHeadlightsShutoff = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.utilityLightsSynchronizedWithHeadlightsShutoff"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.utilityLightsSynchronizedWithHeadlightsShutoff"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSelectorString(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-default_mode"), GetLocalizedTextByKey("hgyi56-EVS-settings-utilitylights-default_mode-desc"), EUtilityLightsMode_values, ToNumber_EUtilityLightsMode(settings[categoryData.name].defaultUtilityLightsMode), ToNumber_EUtilityLightsMode(defaults[categoryData.name].defaultUtilityLightsMode), function(value)
@@ -877,14 +877,14 @@ function setup_rooflight_CategorySetters(categoryData)
     settings[categoryData.name].interiorlightsRoofLightTurnOnWithPowerState = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.interiorlightsRoofLightTurnOnWithPowerState"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.interiorlightsRoofLightTurnOnWithPowerState"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-interiorlights-enable_with_doors"), "", settings[categoryData.name].interiorlightsRoofLightTurnOnWithDoors, defaults[categoryData.name].interiorlightsRoofLightTurnOnWithDoors, function(state)
     settings[categoryData.name].interiorlightsRoofLightTurnOnWithDoors = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.interiorlightsRoofLightTurnOnWithDoors"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.interiorlightsRoofLightTurnOnWithDoors"):format(categoryData.name), state)
   end)
 end
 
@@ -1091,14 +1091,14 @@ function setup_crystalcoat_CategorySetters(categoryData)
     settings[categoryData.name].crystalCoatAutoEnable = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.crystalCoatAutoEnable"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.crystalCoatAutoEnable"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-cosmetic_troll_enabled"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-cosmetic_troll_enabled-desc"), settings[categoryData.name].cosmeticTrollEnabled, defaults[categoryData.name].cosmeticTrollEnabled, function(state)
     settings[categoryData.name].cosmeticTrollEnabled = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.cosmeticTrollEnabled"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.cosmeticTrollEnabled"):format(categoryData.name), state)
   end)
 end
 
@@ -1108,7 +1108,7 @@ function setup_crystaldome_CategorySetters(categoryData)
   -- Forced values
   if not settings[categoryData.name].crystalDomeSynchronizedWithPowerState then
     settings[categoryData.name].crystalDomeKeepOnUntilExit = false;
-    Populate_Variant_IntoSettingsMap(("%.crystalDomeKeepOnUntilExit"):format(categoryData.name), settings[categoryData.name].crystalDomeKeepOnUntilExit)
+    Populate_Variant_IntoSettingsMap(("%s.crystalDomeKeepOnUntilExit"):format(categoryData.name), settings[categoryData.name].crystalDomeKeepOnUntilExit)
   end
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystaldome-sync_with_power"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystaldome-sync_with_power-desc"), settings[categoryData.name].crystalDomeSynchronizedWithPowerState, defaults[categoryData.name].crystalDomeSynchronizedWithPowerState, function(state)
@@ -1118,7 +1118,7 @@ function setup_crystaldome_CategorySetters(categoryData)
     setup_crystaldome_CategorySetters(categoryData)
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.crystalDomeSynchronizedWithPowerState"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.crystalDomeSynchronizedWithPowerState"):format(categoryData.name), state)
   end)
 
   if settings[categoryData.name].crystalDomeSynchronizedWithPowerState then
@@ -1126,7 +1126,7 @@ function setup_crystaldome_CategorySetters(categoryData)
       settings[categoryData.name].crystalDomeKeepOnUntilExit = state
 
       settingsModified = true
-      Populate_Variant_IntoSettingsMap(("%.crystalDomeKeepOnUntilExit"):format(categoryData.name), state)
+      Populate_Variant_IntoSettingsMap(("%s.crystalDomeKeepOnUntilExit"):format(categoryData.name), state)
     end)
   end
 
@@ -1134,14 +1134,14 @@ function setup_crystaldome_CategorySetters(categoryData)
     settings[categoryData.name].preventCrystalDomeOffDuringCombat = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.preventCrystalDomeOffDuringCombat"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.preventCrystalDomeOffDuringCombat"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystaldome-autostart"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystaldome-autostart-desc"), settings[categoryData.name].autoEnableCrystalDomeDuringCombat, defaults[categoryData.name].autoEnableCrystalDomeDuringCombat, function(state)
     settings[categoryData.name].autoEnableCrystalDomeDuringCombat = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.autoEnableCrystalDomeDuringCombat"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.autoEnableCrystalDomeDuringCombat"):format(categoryData.name), state)
   end)
 end
 
@@ -1178,8 +1178,8 @@ function setup_spoiler_CategorySetters(categoryData)
   if settings[categoryData.name].spoilerSynchronizedWithPowerState then
     settings[categoryData.name].spoilerDeploySpeedEnabled = false
     settings[categoryData.name].spoilerRetractSpeedEnabled = false
-    Populate_Variant_IntoSettingsMap(("%.spoilerDeploySpeedEnabled"):format(categoryData.name), settings[categoryData.name].spoilerDeploySpeedEnabled)
-    Populate_Variant_IntoSettingsMap(("%.spoilerRetractSpeedEnabled"):format(categoryData.name), settings[categoryData.name].spoilerRetractSpeedEnabled)
+    Populate_Variant_IntoSettingsMap(("%s.spoilerDeploySpeedEnabled"):format(categoryData.name), settings[categoryData.name].spoilerDeploySpeedEnabled)
+    Populate_Variant_IntoSettingsMap(("%s.spoilerRetractSpeedEnabled"):format(categoryData.name), settings[categoryData.name].spoilerRetractSpeedEnabled)
   end
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-spoiler-sync_with_power"), GetLocalizedTextByKey("hgyi56-EVS-settings-spoiler-sync_with_power-desc"), settings[categoryData.name].spoilerSynchronizedWithPowerState, defaults[categoryData.name].spoilerSynchronizedWithPowerState, function(state)
@@ -1189,7 +1189,7 @@ function setup_spoiler_CategorySetters(categoryData)
     setup_spoiler_CategorySetters(categoryData)
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.spoilerSynchronizedWithPowerState"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.spoilerSynchronizedWithPowerState"):format(categoryData.name), state)
   end)
 
   if not settings[categoryData.name].spoilerSynchronizedWithPowerState then
@@ -1200,7 +1200,7 @@ function setup_spoiler_CategorySetters(categoryData)
       setup_spoiler_CategorySetters(categoryData)
 
       settingsModified = true
-      Populate_Variant_IntoSettingsMap(("%.spoilerDeploySpeedEnabled"):format(categoryData.name), state)
+      Populate_Variant_IntoSettingsMap(("%s.spoilerDeploySpeedEnabled"):format(categoryData.name), state)
     end)
   end
 
@@ -1221,7 +1221,7 @@ function setup_spoiler_CategorySetters(categoryData)
       setup_spoiler_CategorySetters(categoryData)
 
       settingsModified = true
-      Populate_Variant_IntoSettingsMap(("%.spoilerRetractSpeedEnabled"):format(categoryData.name), state)
+      Populate_Variant_IntoSettingsMap(("%s.spoilerRetractSpeedEnabled"):format(categoryData.name), state)
     end)
   end
 
@@ -1242,28 +1242,28 @@ function setup_police_lights_CategorySetters(categoryData)
     settings[categoryData.name].keepSirenOnWhileOutsidePlayerEnabled = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.keepSirenOnWhileOutsidePlayerEnabled"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.keepSirenOnWhileOutsidePlayerEnabled"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-keep_siren_npc"), GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-keep_siren_npc-desc"), settings[categoryData.name].keepSirenOnWhileOutsideNPCsEnabled, defaults[categoryData.name].keepSirenOnWhileOutsideNPCsEnabled, function(state)
     settings[categoryData.name].keepSirenOnWhileOutsideNPCsEnabled = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.keepSirenOnWhileOutsideNPCsEnabled"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.keepSirenOnWhileOutsideNPCsEnabled"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-siren_for_bikes"), GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-siren_for_bikes-desc"), settings[categoryData.name].policeBikeSirenEnabled, defaults[categoryData.name].policeBikeSirenEnabled, function(state)
     settings[categoryData.name].policeBikeSirenEnabled = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.policeBikeSirenEnabled"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.policeBikeSirenEnabled"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-dispatch_radio"), GetLocalizedTextByKey("hgyi56-EVS-settings-police_lights-dispatch_radio-desc"), settings[categoryData.name].policeDispatchRadioEnabled, defaults[categoryData.name].policeDispatchRadioEnabled, function(state)
     settings[categoryData.name].policeDispatchRadioEnabled = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.policeDispatchRadioEnabled"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.policeDispatchRadioEnabled"):format(categoryData.name), state)
   end)
 end
 
@@ -1274,49 +1274,49 @@ function setup_hints_CategorySetters(categoryData)
     settings[categoryData.name].displayPowerEngineInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displayPowerEngineInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displayPowerEngineInputHint"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-input_hints-doors"), "", settings[categoryData.name].displayDoorsInputHint, defaults[categoryData.name].displayDoorsInputHint, function(state)
     settings[categoryData.name].displayDoorsInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displayDoorsInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displayDoorsInputHint"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-input_hints-hood_trunk_spoiler"), "", settings[categoryData.name].displaySpoilerInputHint, defaults[categoryData.name].displaySpoilerInputHint, function(state)
     settings[categoryData.name].displaySpoilerInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displaySpoilerInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displaySpoilerInputHint"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-input_hints-windows"), "", settings[categoryData.name].displayWindowsInputHint, defaults[categoryData.name].displayWindowsInputHint, function(state)
     settings[categoryData.name].displayWindowsInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displayWindowsInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displayWindowsInputHint"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-input_hints-crystal_dome"), "", settings[categoryData.name].displayCrystalDomeInputHint, defaults[categoryData.name].displayCrystalDomeInputHint, function(state)
     settings[categoryData.name].displayCrystalDomeInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displayCrystalDomeInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displayCrystalDomeInputHint"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-input_hints-headlights_call"), "", settings[categoryData.name].displayHeadlightsCallInputHint, defaults[categoryData.name].displayHeadlightsCallInputHint, function(state)
     settings[categoryData.name].displayHeadlightsCallInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displayHeadlightsCallInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displayHeadlightsCallInputHint"):format(categoryData.name), state)
   end)
 
   nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-input_hints-toggle_settings"), "", settings[categoryData.name].displayToggleLightSettingsInputHint, defaults[categoryData.name].displayToggleLightSettingsInputHint, function(state)
     settings[categoryData.name].displayToggleLightSettingsInputHint = state
 
     settingsModified = true
-    Populate_Variant_IntoSettingsMap(("%.displayToggleLightSettingsInputHint"):format(categoryData.name), state)
+    Populate_Variant_IntoSettingsMap(("%s.displayToggleLightSettingsInputHint"):format(categoryData.name), state)
   end)
 end
 

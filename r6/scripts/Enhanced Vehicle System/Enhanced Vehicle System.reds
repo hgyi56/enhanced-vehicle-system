@@ -4141,7 +4141,7 @@ public func hgyi56_EVS_ResetLightsDefaultColor(instant: Bool, lightType: vehicle
   let delay: Float = instant ? 0.00 : this.hgyi56_EVS_GetLightsSequenceSpeed(lightType);
 
   if this.hgyi56_EVS_IsColorDefined(defaultColorRgb) {
-    FTLog(s"reset to default color -> \(lightType) | rgb \(defaultColorRgb) | hsb \(defaultColor) | isBrightnessForced = \(isBrightnessForced) | forcedBrightness = \(forcedBrightness)");
+    // FTLog(s"reset to default color -> \(lightType) | rgb \(defaultColorRgb) | hsb \(defaultColor) | isBrightnessForced = \(isBrightnessForced) | forcedBrightness = \(forcedBrightness)");
     this.hgyi56_EVS_SetColorForLightComps(lightType, defaultColorRgb, delay);
   }
   else {
