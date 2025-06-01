@@ -1177,6 +1177,14 @@ function hgyi56_EVS.setup_crystalcoat_CategoryGetters(categoryData)
   Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "crystalCoatDeactivationDistance", function(self, wrappedMethod)
     return hgyi56_EVS.settings[categoryData.name].crystalCoatDeactivationDistance
   end)
+  
+  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "crystalCoatAutoEnable", function(self, wrappedMethod)
+    return hgyi56_EVS.settings[categoryData.name].crystalCoatAutoEnable
+  end)
+  
+  Override("Hgyi56.Enhanced_Vehicle_System.MyModSettings", "cosmeticTrollEnabled", function(self, wrappedMethod)
+    return hgyi56_EVS.settings[categoryData.name].cosmeticTrollEnabled
+  end)
 end
 
 function hgyi56_EVS.setup_crystalcoat_CategorySetters(categoryData)
@@ -1184,6 +1192,14 @@ function hgyi56_EVS.setup_crystalcoat_CategorySetters(categoryData)
 
   nativeSettings.addRangeFloat(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-deactivation_distance"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-deactivation_distance-desc"), 5.65, 200.0, 0.01, "%.2f", hgyi56_EVS.settings[categoryData.name].crystalCoatDeactivationDistance, hgyi56_EVS.defaults[categoryData.name].crystalCoatDeactivationDistance, function(value)
     hgyi56_EVS.settings[categoryData.name].crystalCoatDeactivationDistance = value
+  end)
+
+  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-auto_enable"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-auto_enable-desc"), hgyi56_EVS.settings[categoryData.name].crystalCoatAutoEnable, hgyi56_EVS.defaults[categoryData.name].crystalCoatAutoEnable, function(state)
+    hgyi56_EVS.settings[categoryData.name].crystalCoatAutoEnable = state
+  end)
+
+  nativeSettings.addSwitch(categoryData.path, GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-cosmetic_troll_enabled"), GetLocalizedTextByKey("hgyi56-EVS-settings-crystalcoat-cosmetic_troll_enabled-desc"), hgyi56_EVS.settings[categoryData.name].cosmeticTrollEnabled, hgyi56_EVS.defaults[categoryData.name].cosmeticTrollEnabled, function(state)
+    hgyi56_EVS.settings[categoryData.name].cosmeticTrollEnabled = state
   end)
 end
 

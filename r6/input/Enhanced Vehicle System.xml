@@ -159,7 +159,7 @@
     </mapping>
 
     <mapping name="Vehicle_HeadlightsCall" type="Button">
-        <button id="IK_A" />
+        <button id="IK_T" />
         <button id="IK_Pad_DigitDown" />
     </mapping>
 

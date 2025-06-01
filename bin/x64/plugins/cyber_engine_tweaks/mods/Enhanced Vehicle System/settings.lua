@@ -140,7 +140,9 @@ local interiorlights_Category = {
 }
 
 local crystalcoat_Category = {
-  crystalCoatDeactivationDistance = 5.65
+  crystalCoatDeactivationDistance = 5.65,
+  crystalCoatAutoEnable = true,
+  cosmeticTrollEnabled = true
 }
 
 local crystaldome_Category = {
