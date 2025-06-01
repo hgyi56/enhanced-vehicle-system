@@ -3971,14 +3971,6 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
     }
     // // // // // // //
 
-    // // // // // // //
-    // Use camera movements to update headlights. Not a perfect solution but it works pretty well !
-    //
-    if vehicle.IsPlayerDriver() && (Equals(ListenerAction.GetName(action), n"CameraMouseX") || Equals(ListenerAction.GetName(action), n"CameraMouseY") || Equals(ListenerAction.GetName(action), n"CameraX") || Equals(ListenerAction.GetName(action), n"CameraY")) && !this.m_temporaryHeadlightsShutOff {
-      this.ApplyHeadlightsMode();
-    }
-    // // // // // // //
-
     let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(gi).GetLocalPlayerMainGameObject() as PlayerPuppet;
 
     let preventEngineShutdown: Bool = vehicle.IsEngineTurnedOn() && player.IsInCombat() && this.m_modSettings.settings.preventPowerOffDuringCombat;
@@ -6958,8 +6950,6 @@ protected cb func OnVehicleChaseTargetEvent(evt: ref<VehicleChaseTargetEvent>) -
 // Only to disable some base game behavior. Do not add anything else in the method
 @replaceMethod(VehicleComponent)
 protected cb func OnChangeState(evt: ref<vehicleChangeStateEvent>) -> Bool {
-  let vehicle: ref<VehicleObject> = this.GetVehicle();
-
   let defaultState: ref<VehicleDefaultState_Record>;
   let evnt: ref<VehicleLightQuestToggleEvent>;
   let i: Int32;
@@ -7010,10 +7000,17 @@ protected cb func OnChangeState(evt: ref<vehicleChangeStateEvent>) -> Bool {
     };
     this.GetPS().SetIsDefaultLightToggleSet(true);
   };
+}
 
-  if vehicle.IsPlayerDriver() && !this.IsUnsupportedVehicleType() {
-    // Update headlights here so it will minimize the auto-HighBeam state
-    this.ApplyHeadlightsModeWithShutOff();
+@addMethod(VehicleObject)
+protected cb func hgyi56_EVS_OnChangeHeadLightModeEvent(evt: ref<vehicleChangeHeadLightModeEvent>) {
+  let vehComp = this.GetVehicleComponent();
+  if !IsDefined(vehComp) {
+    return;
+  }
+
+  if this.IsPlayerDriver() && !vehComp.m_temporaryHeadlightsShutOff && !vehComp.IsUnsupportedVehicleType() {
+    vehComp.ApplyHeadlightsMode();
   }
 }
 
@@ -7709,6 +7706,26 @@ protected cb func OnVehicleFinishedMounting(evt: ref<VehicleFinishedMountingEven
       };
     };
   };
+}
+
+// Prevent CrystalCoat widgets from being modified
+@replaceMethod(VehicleObject)
+private final func SetInteriorUIEnabled(enabled: Bool) -> Void {
+  let uiComponents: array<ref<worlduiWidgetComponent>> = this.GetUIComponents();
+
+  if ArraySize(uiComponents) > 0 {
+
+    for widget in uiComponents {
+      if IsDefined(widget)
+      && NotEquals(widget.IsEnabled(), enabled)
+      && !StrBeginsWith(ToString(widget.name), "visual_customization_") {
+        widget.Toggle(enabled);
+      }
+    }
+
+    this.GetBlackboard().SetBool(GetAllBlackboardDefs().Vehicle.IsUIActive, enabled);
+    this.GetBlackboard().FireCallbacks();
+  }
 }
 
 @replaceMethod(VehicleObject)
