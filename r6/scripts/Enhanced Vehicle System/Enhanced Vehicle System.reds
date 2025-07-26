@@ -7726,12 +7726,18 @@ protected cb func OnDetach() -> Bool {
 protected cb func OnInitialize() -> Bool {
   let deadzoneConfig: ref<ConfigVarFloat>;
   let lightsEvent: ref<VehicleLightQuestToggleEvent>;
+  let record: wref<Vehicle_Record>;
   let uiSystemBB: ref<IBlackboard>;
+  this.SetInputEnabled(false);
   this.m_popupData = this.GetRootWidget().GetUserData(n"inkGameNotificationData") as inkGameNotificationData;
   this.m_player = this.GetPlayerControlledObject() as PlayerPuppet;
   this.m_player.RegisterInputListener(this, n"__DEVICE_CHANGED__");
   this.m_gameInstance = this.m_player.GetGame();
   this.m_vehicle = this.m_player.GetMountedVehicle();
+  record = this.m_vehicle.GetRecord();
+  this.m_lightsEditingEnabled = record.CustomizeLights();
+  this.m_hasCustomRims = record.CustomizeCarRims();
+  this.m_hasUniquePaintjobs = record.HasUniqueCustomization();
   uiSystemBB = this.GetBlackboardSystem().Get(GetAllBlackboardDefs().UI_System);
   this.m_isInMenuCallbackID = uiSystemBB.RegisterDelayedListenerBool(GetAllBlackboardDefs().UI_System.IsInMenu, this, n"OnIsInMenuChanged");
   deadzoneConfig = GameInstance.GetSettingsSystem(this.m_player.GetGame()).GetVar(n"/controls", n"Axis_DeadzoneInner") as ConfigVarFloat;
@@ -7743,10 +7749,14 @@ protected cb func OnInitialize() -> Bool {
   this.RegisterToGlobalInputCallback(n"OnPostOnAxis", this, n"OnGlobalAxisInput");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOver", this, n"OnHoverOverColorWheel1");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOver", this, n"OnHoverOverColorWheel2");
-  inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOver", this, n"OnHoverOverColorWheelLights");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitColor1Ref, n"OnHoverOut", this, n"OnHoverOutColorWheel1");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitColor2Ref, n"OnHoverOut", this, n"OnHoverOutColorWheel2");
-  inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOut", this, n"OnHoverOutColorWheelLights");
+  if this.m_lightsEditingEnabled {
+    inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOver", this, n"OnHoverOverColorWheelLights");
+    inkWidgetRef.RegisterToCallback(this.m_mouseHitLightsRef, n"OnHoverOut", this, n"OnHoverOutColorWheelLights");
+  };
+  inkWidgetRef.SetVisible(this.m_uniqueColorPanel, this.m_hasUniquePaintjobs);
+  inkWidgetRef.SetVisible(this.m_uniqueColorErrorPanel, !this.m_hasUniquePaintjobs);
   inkWidgetRef.RegisterToCallback(this.m_mouseHitSaturationBar, n"OnHoverOver", this, n"OnHoverOverSaturationBar");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitBrightnessBar, n"OnHoverOver", this, n"OnHoverOverBrightnessBar");
   inkWidgetRef.RegisterToCallback(this.m_mouseHitSaturationBar, n"OnPress", this, n"OnSaturationBarPressed");
@@ -7764,6 +7774,7 @@ protected cb func OnInitialize() -> Bool {
   };
   inkWidgetRef.SetVisible(this.m_saturationBarHint, false);
   inkWidgetRef.SetVisible(this.m_brightnessBarHint, false);
+  this.InitializeMQ058();
   this.SetTimeDilatation(true);
   this.UpdateVehiclePreview();
   this.UpdateVehicleManufacturer();
@@ -7773,9 +7784,17 @@ protected cb func OnInitialize() -> Bool {
   this.PlayAnimation(this.m_introAnimation);
   this.m_animProxy.RegisterToCallback(inkanimEventType.OnFinish, this, n"OnIntroFinished");
   GameInstance.GetAudioSystem(this.m_gameInstance).Play(n"ui_menu_open");
-  lightsEvent = new VehicleLightQuestToggleEvent();
-  lightsEvent.toggle = true;
-  this.m_vehicle.QueueEvent(lightsEvent);
+  if this.m_lightsEditingEnabled {
+    inkWidgetRef.SetVisible(this.m_colorWheelColorLightsCircle, true);
+    inkWidgetRef.SetVisible(this.m_colorWheelColorLightsFixedCircleContainer, false);
+    lightsEvent = new VehicleLightQuestToggleEvent();
+    lightsEvent.toggle = true;
+    this.m_vehicle.QueueEvent(lightsEvent);
+  } else {
+    inkWidgetRef.SetVisible(this.m_colorWheelColorLightsCircle, false);
+    inkWidgetRef.SetVisible(this.m_colorWheelColorLightsFixedCircleContainer, true);
+    this.SetHeadlightsFixedColor(record);
+  };
 
   ///////////////////////////////////////////
   // Only for gamepad if the user did not use mutli tap action
