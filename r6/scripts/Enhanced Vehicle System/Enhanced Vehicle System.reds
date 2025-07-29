@@ -1496,8 +1496,13 @@ protected cb func hgyi56_EVS_OnMultiTapCrystalCoatEvent(evt: ref<MultiTapCrystal
         return true;
       }
 
-      if !this.GetIsVehicleVisualCustomizationEnabled() && !MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled", vehicle) {
+      if !this.GetIsVehicleVisualCustomizationEnabled() {
         this.VisualCustomizationBlockedNotification("LocKey#96137");
+        return true;
+      }
+
+      if !this.GetVisualCustomizationUpToDate() {
+        this.VisualCustomizationBlockedNotification("LocKey#97102", SimpleMessageType.TwintoneNegative);
         return true;
       }
       break;
@@ -2594,14 +2599,16 @@ protected cb func OnAction(action: ListenerAction, consumer: ListenerActionConsu
       };
     };
   };
-  if (Equals(ListenerAction.GetName(action), n"VehicleHornHold") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_HOLD_COMPLETE) || Equals(ListenerAction.GetName(action), n"VehicleHorn") && ListenerAction.IsButtonJustPressed(action)) && !this.m_hornOn {
-    this.ToggleVehicleHorn(true);
-    vehicle.GetStimBroadcasterComponent().TriggerSingleBroadcast(vehicle, gamedataStimType.VehicleHorn);
-    this.m_hornOn = true;
-  };
-  if (Equals(ListenerAction.GetName(action), n"VehicleHornHold") || Equals(ListenerAction.GetName(action), n"VehicleHorn")) && this.m_hornOn && ListenerAction.IsButtonJustReleased(action) {
-    this.ToggleVehicleHorn(false);
-    this.m_hornOn = false;
+  if this.GetPS().IsHornEnabled() {
+    if (Equals(ListenerAction.GetName(action), n"VehicleHornHold") && Equals(ListenerAction.GetType(action), gameinputActionType.BUTTON_HOLD_COMPLETE) || Equals(ListenerAction.GetName(action), n"VehicleHorn") && ListenerAction.IsButtonJustPressed(action)) && !this.m_hornOn {
+      this.ToggleVehicleHorn(true);
+      vehicle.GetStimBroadcasterComponent().TriggerSingleBroadcast(vehicle, gamedataStimType.VehicleHorn);
+      this.m_hornOn = true;
+    };
+    if (Equals(ListenerAction.GetName(action), n"VehicleHornHold") || Equals(ListenerAction.GetName(action), n"VehicleHorn")) && this.m_hornOn && ListenerAction.IsButtonJustReleased(action) {
+      this.ToggleVehicleHorn(false);
+      this.m_hornOn = false;
+    };
   };
 
   
@@ -4166,9 +4173,7 @@ public func hgyi56_EVS_ShouldApplyCrystalCoatLightColor(lightType: vehicleELight
       && this.hgyi56_EVS_GetCrystalCoatLightsColorTypeDefined(colorType)
       && this.GetPS().GetIsVehicleVisualCustomizationActive()
       && !this.GetPS().GetIsVehicleVisualCustomizationBlockedByDamage()
-      && (this.GetIsVehicleVisualCustomizationEnabled()
-          || (MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled", this.GetVehicle())
-                && ((Equals(lightType, vehicleELightType.Utility) && isBike) || Equals(lightType, vehicleELightType.Head))));
+      && this.GetIsVehicleVisualCustomizationEnabled();
 }
 
 @addMethod(VehicleComponent)
@@ -4247,12 +4252,6 @@ public func hgyi56_EVS_GetLightsCustomColor(lightType: vehicleELightType) -> HSB
         break;
 
       case ECrystalCoatColorType.Lights:
-        let isBike: Bool = IsDefined(this.GetVehicle() as BikeObject);
-        // When a motorbike does not support CrystalCoat and uses the Cosmetic_Troll it should always use the CC lights color adapted with saturation for its utility lights
-        if isBike && !this.GetIsVehicleVisualCustomizationEnabled() && Equals(lightType, vehicleELightType.Utility) {
-          return new HSBColor(colorTemplate.genericData.lightsColorHue, 1.00, 1.00);
-        }
-
         return new HSBColor(colorTemplate.genericData.lightsColorHue, 0.50, 1.00);
         break;
     }
@@ -4710,12 +4709,6 @@ public func hgyi56_EVS_GetCrystalCoatColorType(lightType: vehicleELightType) -> 
 
   switch lightType {
     case vehicleELightType.Utility:
-      let isBike: Bool = IsDefined(this.GetVehicle() as BikeObject);
-      // When a motorbike does not support CrystalCoat and uses the Cosmetic_Troll it should always use the CC lights color adapted with saturation
-      if isBike && !this.GetIsVehicleVisualCustomizationEnabled() {
-        return ECrystalCoatColorType.Lights;
-      }
-
       return IntEnum<ECrystalCoatColorType>(MyModSettings.GetInt("utilitylights_CrystalCoatColorType", vehicle));
       break;
       
@@ -5361,7 +5354,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
   let vehicleDataPackage: wref<VehicleDataPackage_Record>;
   let vehicleRecord: ref<Vehicle_Record>;
   let shouldAutoClose: Bool = true;
-  let gameInstance: GameInstance = GetGameInstance();
+  let gameInstance: GameInstance = this.GetVehicle().GetGame();
   let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
   VehicleComponent.GetVehicleDataPackage(gameInstance, this.GetVehicle(), vehicleDataPackage);
   if mountChild.IsPlayer() {
@@ -5381,6 +5374,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       if MyModSettings.GetBool("police_lights.policeDispatchRadioEnabled", this.GetVehicle()) {
         PoliceRadioScriptSystem.UpdatePoliceRadioOnVehicleEntrance(gameInstance);
       }
+      this.SendAIEvent(n"DriverReady");
     };
     this.m_mountedPlayer.GetPlayerStateMachineBlackboard().SetBool(GetAllBlackboardDefs().PlayerStateMachine.MountedToVehicleInDriverSeat, isDriverSlot);
     VehicleComponent.GetVehicleRecord(gameInstance, this.m_mountedPlayer, vehicleRecord);
@@ -5424,7 +5418,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
       };
       this.SetSteeringLimitAnimFeature(1);
     };
-    GameInstance.GetStatPoolsSystem(GetGameInstance()).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, this.m_healthDecayThreshold, this.GetVehicle());
+    GameInstance.GetStatPoolsSystem(this.GetVehicle().GetGame()).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, this.m_healthDecayThreshold, this.GetVehicle());
   };
   if !mountChild.IsPlayer() {
     if evt.request.mountData.isInstant {
@@ -5492,7 +5486,7 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
 
 
 
-  
+
   if this.hgyi56_EVS_IsUnsupportedVehicleType() {
     return false;
   }
@@ -5810,14 +5804,15 @@ protected cb func OnVehicleStartedMountingEvent(evt: ref<VehicleStartedMountingE
 
 @replaceMethod(VehicleComponent)
 protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
-  
+
   // Get siren state
   let vehicle: ref<VehicleObject> = this.GetVehicle();
   let gi: GameInstance = GetGameInstance();
 
   let activePassengers: Int32;
-  let gi: GameInstance = GetGameInstance();
-  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gi, evt.request.lowLevelMountingInfo.childId) as GameObject;
+  let isDriverSlot: Bool;
+  let gameInstance: GameInstance = this.GetVehicle().GetGame();
+  let mountChild: ref<GameObject> = GameInstance.FindEntityByID(gameInstance, evt.request.lowLevelMountingInfo.childId) as GameObject;
   let mountChildIsPrevention: Bool = IsDefined(mountChild) && mountChild.IsPrevention();
   VehicleComponent.SetAnimsetOverrideForPassenger(mountChild, evt.request.lowLevelMountingInfo.parentId, evt.request.lowLevelMountingInfo.slotId.id, 0.00);
 
@@ -5861,14 +5856,18 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
   }
 
   if IsDefined(mountChild) && mountChild.IsPlayer() {
-    PreventionSystem.SetPlayerMounted(gi, false);
+    PreventionSystem.SetPlayerMounted(gameInstance, false);
     PlayerPuppet.ReevaluateAllBreathingEffects(mountChild as PlayerPuppet);
     this.ToggleScanningComponent(true);
     if this.GetVehicle().ShouldRegisterToHUD() {
       this.RegisterToHUDManager(true);
     };
     this.UnregisterInputListener();
-    FastTravelSystem.RemoveFastTravelLock(n"InVehicle", gi);
+    FastTravelSystem.RemoveFastTravelLock(n"InVehicle", gameInstance);
+    isDriverSlot = VehicleComponent.IsDriverSlot(evt.request.lowLevelMountingInfo.slotId.id);
+    if isDriverSlot {
+      this.SendAIEvent(n"NoDriver");
+    };
     this.m_mounted = false;
     this.UnregisterListeners();
     // this.ToggleSiren(false, false);
@@ -5876,24 +5875,24 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
       this.DrivingStimuli(false);
     };
     if Equals(evt.request.lowLevelMountingInfo.slotId.id, n"seat_front_left") {
-      PreventionSystemHackerLoop.UpdatePlayerVehicle(gi, null);
+      PreventionSystemHackerLoop.UpdatePlayerVehicle(gameInstance, null);
 
       if !this.GetPS().m_hgyi56_EVS_vehicleDrivenByV || this.hgyi56_EVS_IsUnsupportedVehicleType() {
         this.ToggleCrystalDome(false, true, false, 0.00, 0.00, true);
       }
-      
+
       this.SetSteeringLimitAnimFeature(0);
       this.m_ignoreAutoDoorClose = false;
     };
     this.DoPanzerCleanup();
     this.m_mountedPlayer = null;
     this.CleanUpRace();
-    GameInstance.GetStatPoolsSystem(gi).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, 0.00, this.GetVehicle());
-    GameInstance.GetAudioSystem(gi).RemoveTriggerEffect(n"te_vehicle_car_disabled");
+    GameInstance.GetStatPoolsSystem(this.GetVehicle().GetGame()).RequestSettingStatPoolValueCustomLimit(Cast<StatsObjectID>(this.GetVehicle().GetEntityID()), gamedataStatPoolType.Health, 0.00, this.GetVehicle());
+    GameInstance.GetAudioSystem(this.GetVehicle().GetGame()).RemoveTriggerEffect(n"te_vehicle_car_disabled");
   };
   if IsDefined(mountChild) {
     if mountChildIsPrevention {
-      GameInstance.GetPreventionSpawnSystem(gi).UnregisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
+      GameInstance.GetPreventionSpawnSystem(gameInstance).UnregisterEntityDeathCallback(this, "OnPreventionPassengerDeath", mountChild.GetEntityID());
       if mountChild.IsActive() {
         this.m_preventionPassengers = Max(0, this.m_preventionPassengers - 1);
       };
@@ -7847,399 +7846,6 @@ protected cb func OnCheckVehicleVisialCustomizationDistanceTermination(evt: ref<
     switchVisualCustomizationEvent.on = false;
     this.QueueEvent(switchVisualCustomizationEvent);
   };
-}
-
-@replaceMethod(VehicleVisualCustomizationDecisions)
-protected final const func EnterCondition(const stateContext: ref<StateContext>, const scriptInterface: ref<StateGameScriptInterface>) -> Bool {
-  let errorMessage: String;
-  let isNotFastForward: Bool;
-  let isNotFastForwardAvailable: Bool;
-  let isNotInCombat: Bool;
-  let isNotInDriverCombat: Bool;
-  let isNotInPhoneCall: Bool;
-  let isNotInVehicleScene: Bool;
-  let isNotModBlockedByDamage: Bool;
-  let isNotModInCooldown: Bool;
-  let isNotQuestBlocked: Bool;
-  let isNotRemoteControlling: Bool;
-  let isNotVisualCustomizationTeaser: Bool;
-  let isVehicleCustomizationEnabled: Bool;
-  let notificationEvent: ref<UIInGameNotificationEvent>;
-  let playerStateMachineBlackboard: ref<IBlackboard>;
-  let player: ref<PlayerPuppet> = scriptInterface.executionOwner as PlayerPuppet;
-  if !IsDefined(player) {
-    return false;
-  };
-  if scriptInterface.IsActionJustHeld(n"VehicleVisualCustomization") {
-    playerStateMachineBlackboard = GameInstance.GetBlackboardSystem(player.GetGame()).GetLocalInstanced(GameInstance.GetPlayerSystem(player.GetGame()).GetLocalPlayerControlledGameObject().GetEntityID(), GetAllBlackboardDefs().PlayerStateMachine);
-    isNotInDriverCombat = !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.DriverCombat");
-    isNotInVehicleScene = !StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"VehicleScene");
-    isNotQuestBlocked = GameInstance.GetQuestsSystem(player.GetGame()).GetFact(n"unlock_car_hud_dpad") != 0;
-    isNotModInCooldown = !StatusEffectSystem.ObjectHasStatusEffect(player, t"BaseStatusEffect.VehicleVisualModCooldown");
-    isNotInPhoneCall = !StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"PhoneCall") && !StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"PhoneNoTexting") && !StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"PhoneNoCalling");
-    isNotModBlockedByDamage = !player.GetMountedVehicle().GetVehiclePS().GetIsVehicleVisualCustomizationBlockedByDamage();
-    isNotInCombat = !player.IsInCombat();
-    isNotVisualCustomizationTeaser = !player.GetMountedVehicle().GetVehicleComponent().GetIsVehicleVisualCustomizationTeaser();
-    isNotFastForwardAvailable = !StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"FastForwardHintActive");
-    isNotFastForward = !StatusEffectSystem.ObjectHasStatusEffectWithTag(player, n"FastForward");
-    isNotRemoteControlling = playerStateMachineBlackboard.GetBool(GetAllBlackboardDefs().PlayerStateMachine.IsControllingDevice);
-    isVehicleCustomizationEnabled = player.GetMountedVehicle().GetVehicleComponent().GetIsVehicleVisualCustomizationEnabled();
-    if isNotInVehicleScene && isNotQuestBlocked && isNotModInCooldown && isNotModBlockedByDamage && isNotFastForwardAvailable && isNotFastForward && isNotVisualCustomizationTeaser && isNotInDriverCombat && isNotInPhoneCall && !isNotRemoteControlling && isNotInCombat && isVehicleCustomizationEnabled {
-      return true;
-    };
-    if isVehicleCustomizationEnabled {
-      if player.GetMountedVehicle().GetVehicleComponent().GetIsVehicleVisualCustomizationTeaser() {
-        errorMessage = GetLocalizedText("LocKey#96055") + ": " + GetLocalizedText("LocKey#52901") + " >> " + GetLocalizedText("LocKey#28266");
-        player.GetMountedVehicle().GetVehicleComponent().VisualCustomizationBlockedNotification(errorMessage);
-      } else {
-        if isNotModBlockedByDamage {
-          notificationEvent = new UIInGameNotificationEvent();
-          notificationEvent.m_title = GetLocalizedText("LocKey#96051");
-          notificationEvent.m_notificationType = UIInGameNotificationType.ActionRestriction;
-          scriptInterface.GetUISystem().QueueEvent(notificationEvent);
-        } else {
-          player.GetMountedVehicle().GetVehicleComponent().VisualCustomizationBlockedNotification(GetLocalizedText("LocKey#96051"), SimpleMessageType.Negative);
-        };
-      };
-    } else {
-      //////////////////////////////////
-      // COSMETIC_TROLL
-      if MyModSettings.GetBool("crystalcoat.cosmeticTrollEnabled", player.GetMountedVehicle()) {
-        return true;
-      }
-      else {
-        errorMessage = "LocKey#96137";
-        player.GetMountedVehicle().GetVehicleComponent().VisualCustomizationBlockedNotification(errorMessage);
-      }
-      //////////////////////////////////
-    };
-    this.EnableOnEnterCondition(false);
-    return false;
-  };
-  return false;
-}
-
-@replaceMethod(vehicleColorSelectorGameController)
-private final func SwitchActiveMode(opt direction: Int32, opt switchTo: vehicleColorSelectorActiveMode) -> Void {
-  if (this.m_unsupportedVehicle && NotEquals(switchTo, vehicleColorSelectorActiveMode.Lights)) || !this.m_inputEnabled {
-    return;
-  };
-  
-  this.m_previousMode = this.m_activeMode;
-  switch switchTo {
-    case vehicleColorSelectorActiveMode.Primary:
-      this.m_activeMode = vehicleColorSelectorActiveMode.Primary;
-      break;
-    case vehicleColorSelectorActiveMode.Secondary:
-      this.m_activeMode = vehicleColorSelectorActiveMode.Secondary;
-      break;
-    case vehicleColorSelectorActiveMode.Lights:
-      this.m_activeMode = vehicleColorSelectorActiveMode.Lights;
-      break;
-    default:
-      this.m_activeMode = this.GetNextValidMode(this.m_activeMode, direction);
-  };
-  if Equals(this.m_previousMode, this.m_activeMode) {
-    return;
-  };
-  if !this.m_player.PlayerLastUsedKBM() {
-    switch this.m_activeMode {
-      case vehicleColorSelectorActiveMode.Primary:
-        this.m_currentAngle = this.CalculateNewColorAngle(this.m_targetColorAngleA);
-        break;
-      case vehicleColorSelectorActiveMode.Secondary:
-        this.m_currentAngle = this.CalculateNewColorAngle(this.m_targetColorAngleB);
-        break;
-      case vehicleColorSelectorActiveMode.Lights:
-        this.m_currentAngle = this.CalculateNewColorAngle(this.m_targetColorAngleLights);
-    };
-  };
-  this.m_stickersPage.SetVisible(false);
-  inkWidgetRef.SetVisible(this.m_colorPaletteRef, true);
-  if Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Lights) {
-    inkWidgetRef.SetOpacity(this.m_titleTextMain, 1.00);
-    inkTextRef.SetText(this.m_titleTextMain, GetLocalizedText("LocKey#96054"));
-    inkWidgetRef.SetOpacity(this.m_titleTextNumber, 0.00);
-  } else {
-    inkWidgetRef.SetOpacity(this.m_titleTextMain, 1.00);
-    inkTextRef.SetText(this.m_titleTextMain, GetLocalizedText("LocKey#95816"));
-    inkTextRef.SetText(this.m_titleTextNumber, IntToString(EnumInt(this.m_activeMode)));
-    inkWidgetRef.SetOpacity(this.m_titleTextNumber, 1.00);
-  };
-  this.UpdateSBBarsForActiveColor();
-  this.UpdateWidgetsForNewMode(this.m_activeMode, this.m_previousMode);
-}
-
-@replaceMethod(vehicleColorSelectorGameController)
-private final func ProcessApplyHintVisiblity() -> Void {
-  let isValid: Bool = (this.m_unsupportedVehicle && this.m_currentTemplate.genericData.lightsColorDefined) || this.m_vehicle.GetVehicleComponent().CanApplyTemplateOnVehicle(this.m_currentTemplate, true);
-  inkWidgetRef.SetOpacity(this.m_applyContainerWidget, isValid ? 1.00 : 0.25);
-}
-
-@replaceMethod(vehicleColorSelectorGameController)
-private final func Apply() -> Bool {
-  if (!this.m_inputEnabled || !this.m_vehicle.GetVehicleComponent().CanApplyTemplateOnVehicle(this.m_currentTemplate, true)
-  && !(this.m_unsupportedVehicle && this.m_currentTemplate.genericData.lightsColorDefined)) {
-    return false;
-  };
-  this.m_inputEnabled = false;
-  this.m_CloseReason = vehicleColorSelectorMenuCloseReason.Apply;
-  if Equals(this.m_activeMode, vehicleColorSelectorActiveMode.Lights) {
-    this.PlayLightsFocusAnimation(false);
-  };
-  this.PlayAnimation(this.m_applyAnimation);
-  this.m_animProxy.RegisterToCallback(inkanimEventType.OnFinish, this, n"OnFinalAnimationFinished");
-  return true;
-}
-
-@replaceMethod(vehicleColorSelectorGameController)
-private final func ProcessPreviousCustomizationState() -> Void {
-  let template: VehicleVisualCustomizationTemplate = this.m_vehicle.GetVehiclePS().GetVehicleVisualCustomizationTemplate();
-  if this.m_vehicle.GetVehicleComponent().GetIsVehicleVisualCustomizationEnabled()
-  || template.genericData.lightsColorDefined {
-    if !VehicleVisualCustomizationTemplate.IsValid(template) {
-      template = this.m_player.GetVehicleVisualCustomizationComponent().RetrieveVisualCustomizationForVehicle(this.m_vehicle.GetRecordID());
-    };
-    if VehicleVisualCustomizationTemplate.IsValid(template) {
-      this.LoadTemplateData(template);
-    } else {
-      this.m_targetColorAngleA = 0.00;
-      this.m_targetColorASaturation = 1.00;
-      this.m_targetColorABrightness = 1.00;
-      this.m_targetColorAngleB = 0.00;
-      this.m_targetColorBSaturation = 1.00;
-      this.m_targetColorBBrightness = 1.00;
-    };
-  };
-}
-
-@replaceMethod(vehicleColorSelectorGameController)
-private final func UpdateVehiclePreview() -> Void {
-  let recordID: TweakDBID = this.m_vehicle.GetRecordID();
-  let record: ref<Vehicle_Record>;
-  let previewRecord: ref<VehicleVisualCustomizationPreviewSetup_Record>;
-  let menuType: CName;
-
-  if this.m_vehicle.GetVehicleComponent().GetIsVehicleVisualCustomizationEnabled() {
-    record = TweakDBInterface.GetVehicleRecord(recordID);
-    menuType = record.CustomizationMenuType();
-    previewRecord = record.CustomizationPreview();
-  }
-
-  switch menuType {
-    case n"Rayfield":
-      inkTextRef.SetLocalizedTextScript(this.m_windowTitle, "LocKey#96050");
-      break;
-    case n"Partner":
-      inkTextRef.SetLocalizedTextScript(this.m_windowTitle, "LocKey#96138");
-      break;
-    default:
-      inkTextRef.SetLocalizedTextScript(this.m_windowTitle, "LocKey#96050");
-      this.PlayLibraryAnimation(n"MenuStyleCracked");
-      this.PlayCarGlitchEffect();
-  };
-  if IsDefined(previewRecord) {
-    if this.m_vehicle == (this.m_vehicle as BikeObject) {
-      inkWidgetRef.SetScale(this.m_vehiclePreviewScalingCanvas, new Vector2(1.20, 1.20));
-      InkImageUtils.RequestSetImage(this, this.m_vehiclePreviewLightsBike, previewRecord.LightsImage().GetID());
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewLightsCar, false);
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewLightsBike, true);
-      inkWidgetRef.SetVisible(this.m_lightsPreviewBeamA, false);
-      inkWidgetRef.SetVisible(this.m_lightsPreviewBeamB, false);
-    } else {
-      inkWidgetRef.SetScale(this.m_vehiclePreviewScalingCanvas, new Vector2(0.85, 0.85));
-      InkImageUtils.RequestSetImage(this, this.m_vehiclePreviewLightsCar, previewRecord.LightsImage().GetID());
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewLightsCar, true);
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewLightsBike, false);
-      if previewRecord.PreviewLeftLight() {
-        inkWidgetRef.SetVisible(this.m_lightsPreviewBeamA, true);
-        inkWidgetRef.SetMargin(this.m_lightsPreviewBeamA, 0.00, previewRecord.LeftLightMarginTop(), previewRecord.LeftLightMarginRight(), 0.00);
-      } else {
-        inkWidgetRef.SetVisible(this.m_lightsPreviewBeamA, false);
-      };
-      if previewRecord.PreviewRightLight() {
-        inkWidgetRef.SetVisible(this.m_lightsPreviewBeamB, true);
-        inkWidgetRef.SetMargin(this.m_lightsPreviewBeamB, 0.00, previewRecord.RightLightMarginTop(), previewRecord.RightLightMarginRight(), 0.00);
-      } else {
-        inkWidgetRef.SetVisible(this.m_lightsPreviewBeamB, false);
-      };
-    };
-    if IsDefined(previewRecord.PrimaryImage()) {
-      InkImageUtils.RequestSetImage(this, this.m_vehiclePreviewColorA, previewRecord.PrimaryImage().GetID());
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewColorA, true);
-    } else {
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewColorA, false);
-    };
-    if IsDefined(previewRecord.SecondaryImage()) {
-      InkImageUtils.RequestSetImage(this, this.m_vehiclePreviewColorB, previewRecord.SecondaryImage().GetID());
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewColorB, true);
-    } else {
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewColorB, false);
-    };
-    if IsDefined(previewRecord.BackgroundImage()) {
-      InkImageUtils.RequestSetImage(this, this.m_vehiclePreviewBackground, previewRecord.BackgroundImage().GetID());
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewBackground, true);
-    } else {
-      inkWidgetRef.SetVisible(this.m_vehiclePreviewBackground, false);
-    };
-  }
-}
-
-@replaceMethod(vehicleColorSelectorGameController)
-private final func UpdateLightsPreviewWidgets(opt reset: Bool) -> Void {
-  let color: Color;
-  if reset {
-    color = new Color(Cast<Uint8>(255), Cast<Uint8>(255), Cast<Uint8>(255), Cast<Uint8>(255));
-  } else {
-    color = this.m_cachedNewColorLights;
-  };
-  inkWidgetRef.SetTintColor(this.m_lightsPreviewBeamA, Color.ToSRGB(color));
-  inkWidgetRef.SetTintColor(this.m_lightsPreviewBeamB, Color.ToSRGB(color));
-  if this.m_vehicle == (this.m_vehicle as BikeObject) {
-    inkWidgetRef.SetTintColor(this.m_vehiclePreviewLightsBike, Color.ToSRGB(color));
-  } else {
-    inkWidgetRef.SetTintColor(this.m_vehiclePreviewLightsCar, Color.ToSRGB(color));
-
-    let lightFront: ref<inkWidget> = (this.GetRootWidget() as inkCompoundWidget).GetWidgetByPathName(n"container/CenterGroup/CarScaler/Car/LightPreviewBeams/CarColorPrintLightsFront1") as inkImage;
-    if IsDefined(lightFront) {
-      lightFront.SetTintColor(Color.ToSRGB(color));
-    }
-
-    lightFront = (this.GetRootWidget() as inkCompoundWidget).GetWidgetByPathName(n"container/CenterGroup/CarScaler/Car/LightPreviewBeams/CarColorPrintLightsFront2") as inkImage;
-    if IsDefined(lightFront) {
-      lightFront.SetTintColor(Color.ToSRGB(color));
-    }
-  };
-}
-
-@wrapMethod(vehicleColorSelectorGameController)
-private final func SendCustomizationToVehicle() -> Void {
-  if this.m_unsupportedVehicle {
-    this.m_currentTemplate.genericData.primaryColorDefined = false;
-    this.m_currentTemplate.genericData.secondaryColorDefined = false;
-  }
-
-  wrappedMethod();
-}
-
-@wrapMethod(vehicleColorSelectorGameController)
-private final func SelectActivePanel(nextPanel: vehicleColorSelectorActiveTab) -> Void {
-  if this.m_unsupportedVehicle {
-    return;
-  }
-  
-  wrappedMethod(nextPanel);
-}
-
-@replaceMethod(VehicleComponent)
-public final func CanApplyTemplateOnVehicle(template: VehicleVisualCustomizationTemplate, opt ignoreAlreadyApplied: Bool) -> Bool {
-  let m_vehicle: ref<VehicleObject> = this.GetVehicle();
-  if !VehicleVisualCustomizationTemplate.IsValid(template) || (!m_vehicle.GetVehicleComponent().GetIsVehicleVisualCustomizationEnabled() && !template.genericData.lightsColorDefined) {
-    return false;
-  };
-  if m_vehicle.GetVehiclePS().GetIsVehicleVisualCustomizationBlockedByDamage() || m_vehicle.GetVehicleComponent().GetIsVehicleVisualCustomizationTeaser() {
-    return false;
-  };
-  if !ignoreAlreadyApplied && VehicleVisualCustomizationTemplate.Equals(m_vehicle.GetVehiclePS().GetVehicleVisualCustomizationTemplate(), template) {
-    return false;
-  };
-  if Equals(VehicleVisualCustomizationTemplate.GetType(template), VehicleVisualCustomizationType.Generic) {
-    return true;
-  };
-  return Equals(template.uniqueData.twintoneModelName, m_vehicle.GetRecord().TwintoneModelName());
-}
-
-@wrapMethod(PopupsManager)
-private final func SpawnVehicleVisualCustomizationSelectorPopup() -> Void {
-  let player: ref<PlayerPuppet> = this.GetPlayerControlledObject() as PlayerPuppet;
-  let vehicle: ref<VehicleObject> = player.GetMountedVehicle();
-
-  if IsDefined(vehicle) {
-    let vehComp: ref<VehicleComponent> = vehicle.GetVehicleComponent();
-
-    if IsDefined(vehComp)
-    && !vehComp.GetIsVehicleVisualCustomizationEnabled() {
-      let data: ref<inkGameNotificationData> = new inkGameNotificationData();
-      
-      if vehicle == (vehicle as BikeObject) {
-        data.notificationName = n"hgyi56_yl6c583ams5840dz\\widget\\cosmetic_troll_mbike.inkwidget";
-      }
-      else {
-        data.notificationName = n"hgyi56_yl6c583ams5840dz\\widget\\cosmetic_troll_car.inkwidget";
-      }
-
-      data.queueName = n"VehicleVisualCustomization";
-      data.isBlocking = true;
-      data.useCursor = true;
-      this.m_vehicleVisualCustomizationSelectorToken = this.ShowGameNotification(data);
-      this.m_vehicleVisualCustomizationSelectorToken.RegisterListener(this, n"OnVehicleVisualCustomizationCloseRequest");
-      this.m_blackboard.SetBool(this.m_bbDefinition.Popup_CarColorPicker_IsShown, true);
-    }
-    else {
-      wrappedMethod();
-    }
-  }
-  else {
-    wrappedMethod();
-  }
-}
-
-@replaceMethod(VehicleObject)
-protected cb func OnNewVehicleVisualCustomizationEvent(evt: ref<NewVehicleVisualCustomizationEvent>) -> Bool {
-  let componentEvent: ref<StoreVisualCustomizationDataForIDEvent>;
-  let storageComponent: ref<vehicleVisualCustomizationComponent>;
-  let template: VehicleVisualCustomizationTemplate;
-  let vehComponent: ref<VehicleComponent> = this.GetVehicleComponent();
-  let PS: ref<VehicleComponentPS> = this.GetVehiclePS();
-  if !IsDefined(vehComponent) || !IsDefined(PS) {
-    return false;
-  };
-  if !evt.reset && !vehComponent.CanApplyTemplateOnVehicle(evt.template) {
-    StatusEffectHelper.ApplyStatusEffect(GetPlayer(this.GetGame()), t"BaseStatusEffect.VehicleVisualModCooldownInstant");
-    return false;
-  };
-  PS = this.GetVehiclePS();
-  template = evt.template;
-  let oldTemplate = PS.GetVehicleVisualCustomizationTemplate();
-  PS.SetVehicleVisualCustomizationTemplate(template);      
-  if !evt.reset {
-    if !VehicleVisualCustomizationTemplate.Equals(template, oldTemplate) && VehicleVisualCustomizationTemplate.IsValid(template) {
-      this.ExecuteVisualCustomizationWithDelay(true, false, false, 0.80);
-    } else {
-      GameInstance.GetDelaySystem(this.GetGame()).DelayEvent(this, new VehicleCustomizationLightsEvent(), 0.50);
-      StatusEffectHelper.ApplyStatusEffect(GetPlayer(this.GetGame()), t"BaseStatusEffect.VehicleVisualModCooldownInstant");
-    };
-  } else {
-    if VehicleVisualCustomizationTemplate.IsValid(oldTemplate) {
-      this.ExecuteVisualCustomizationWithDelay(false, true, false, 0.80);
-    } else {
-      GameInstance.GetDelaySystem(this.GetGame()).DelayEvent(this, new VehicleCustomizationLightsEvent(), 0.50);
-      StatusEffectHelper.ApplyStatusEffect(GetPlayer(this.GetGame()), t"BaseStatusEffect.VehicleVisualModCooldownInstant");
-      this.GetVehiclePS().SetVehicleVisualCustomizationActive(true);
-    };
-  };
-  if NotEquals(template, oldTemplate) {
-    vehComponent.ProcessHeatLevelOnVisualCustomization(oldTemplate, template);
-  };
-  storageComponent = GetMainPlayer(this.GetGame()).GetVehicleVisualCustomizationComponent();
-  if IsDefined(storageComponent) {
-    componentEvent = new StoreVisualCustomizationDataForIDEvent();
-    componentEvent.template = template;
-    componentEvent.vehicleID = this.GetRecordID();
-    storageComponent.QueueEntityEvent(componentEvent);
-  };
-}
-
-@replaceMethod(VehicleObject)
-private final func SyncVehicleVisualCustomizationDefinition() -> Void {
-  let template: VehicleVisualCustomizationTemplate;
-  let PS: ref<VehicleComponentPS> = this.GetVehiclePS();
-  let component: ref<vehicleVisualCustomizationComponent> = GetPlayer(this.GetGame()).GetVehicleVisualCustomizationComponent();
-  
-  if IsDefined(component) {
-    template = component.RetrieveVisualCustomizationForVehicle(this.GetRecordID());
-    PS.SetVehicleVisualCustomizationTemplate(template);
-  }
 }
 
 @replaceMethod(vehicleColorInkController)
