@@ -5929,6 +5929,22 @@ protected cb func OnUnmountingEvent(evt: ref<UnmountingEvent>) -> Bool {
 
     ArrayClear(this.m_hgyi56_EVS_mountedSeats);
   }
+
+  //////////////////////////////////
+  // Autodrive fix after exit
+  if IsDefined(mountChild) && mountChild.IsPlayer() && this.GetPS().m_hgyi56_EVS_vehicleDrivenByV
+  && Equals(evt.request.lowLevelMountingInfo.slotId, VehicleComponent.GetDriverSlotID()) {
+    // Only when leaving the driver seat because leaving through the passenger seat is too late and won't work otherwise
+
+    let aiEvent = new AIEvent();
+    aiEvent.name = n"NoDriver";
+    vehicle.QueueEvent(aiEvent);
+
+    aiEvent = new AIEvent();
+    aiEvent.name = n"DriverReady";
+    vehicle.QueueEvent(aiEvent);
+  }
+  //////////////////////////////////
 }
 
 @wrapMethod(VehicleComponent)
