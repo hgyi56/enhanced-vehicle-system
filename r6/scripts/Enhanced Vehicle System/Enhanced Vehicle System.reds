@@ -5670,8 +5670,10 @@ protected cb func OnSummonStartedEvent(evt: ref<SummonStartedEvent>) -> Bool {
   VehicleComponent.GetVehicleRecord(vehicle, record);
 
   // We must toggle the power otherwise the UI won't be started before entering the vehicle
-  this.hgyi56_EVS_TogglePowerState(true);
-  this.hgyi56_EVS_ToggleEngineState(true);
+  if NotEquals(evt.state, vehicleSummonState.AlreadySummoned) {
+    this.hgyi56_EVS_TogglePowerState(true);
+    this.hgyi56_EVS_ToggleEngineState(true);
+  }
   
   /////////////////////////////
   // When summoning a vehicle with CrystalDome and external mesh we must pre-activate the CrystalDome and display external mesh when the vehicle is being summoned
@@ -6408,6 +6410,44 @@ public final func OnVehicleDoorOpen(evt: ref<VehicleDoorOpen>) -> EntityNotifica
   }
 
   return wrappedMethod(evt);
+}
+
+// Fix driver window from always closing on vehicle exit since game v2.3
+@replaceMethod(VehicleComponentPS)
+protected final func OnVehicleQuestChangeWindowStateEvent(evt: ref<vehicleChangeWindowStateEvent>) -> EntityNotificationType {
+  ////////
+  let vehicleObj: ref<VehicleObject> = this.GetOwnerEntity();
+  let vehComp: ref<VehicleComponent> = vehicleObj.GetVehicleComponent();
+  let player: ref<PlayerPuppet> = GameInstance.GetPlayerSystem(vehicleObj.GetGame()).GetLocalPlayerMainGameObject() as PlayerPuppet;
+  ////////
+  
+  let windowCloseEvent: ref<VehicleWindowClose>;
+  let windowOpenEvent: ref<VehicleWindowOpen>;
+  let desiredState: EQuestVehicleWindowState = evt.state;
+  switch desiredState {
+    case EQuestVehicleWindowState.OpenAll:
+      this.OpenAllVehWindows();
+      break;
+    case EQuestVehicleWindowState.CloseAll:
+      this.CloseAllVehWindows();
+      break;
+    case EQuestVehicleWindowState.ForceOpen:
+      windowOpenEvent = new VehicleWindowOpen();
+      windowOpenEvent.slotID = EnumValueToName(n"EVehicleDoor", Cast<Int64>(EnumInt(evt.door)));
+      this.QueuePSEvent(this, windowOpenEvent);
+      break;
+    case EQuestVehicleWindowState.ForceClose:
+
+      ////////
+      if !this.m_hgyi56_EVS_vehicleDrivenByV || vehComp.hgyi56_EVS_IsUnsupportedVehicleType() || !player.hgyi56_EVS_IsFullGameplay() {
+        windowCloseEvent = new VehicleWindowClose();
+        windowCloseEvent.slotID = EnumValueToName(n"EVehicleDoor", Cast<Int64>(EnumInt(evt.door)));
+        this.QueuePSEvent(this, windowCloseEvent);
+      }
+      ////////
+      break;
+  };
+  return EntityNotificationType.DoNotNotifyEntity;
 }
 
 @replaceMethod(VehicleComponent)
