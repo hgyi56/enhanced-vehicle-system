@@ -955,8 +955,13 @@ public class RestoreVehicleStateCallback extends DelayCallback {
     if !IsDefined(vehicle) {
       return;
     }
+    
+    let vehPS: ref<VehicleComponentPS> = this.vehComp.GetPS();
+    if !IsDefined(vehPS) {
+      return;
+    }
 
-    this.vehComp.hgyi56_EVS_ToggleDashboard(this.vehComp.GetPS().m_hgyi56_EVS_powerState);
+    this.vehComp.hgyi56_EVS_ToggleDashboard(vehPS.m_hgyi56_EVS_powerState);
 
     this.vehComp.hgyi56_EVS_EnsureIsActive_InteriorLights();
     this.vehComp.hgyi56_EVS_EnsureIsDisabled_InteriorLights();
@@ -969,9 +974,9 @@ public class RestoreVehicleStateCallback extends DelayCallback {
 
     this.vehComp.hgyi56_EVS_ApplyHeadlightsModeWithShutOff();
 
-    this.vehComp.hgyi56_EVS_ToggleSpoiler(this.vehComp.GetPS().m_hgyi56_EVS_spoilerState);
+    this.vehComp.hgyi56_EVS_ToggleSpoiler(vehPS.m_hgyi56_EVS_spoilerState);
 
-    if this.vehComp.GetPS().GetCrystalDomeState() {
+    if vehPS.GetCrystalDomeState() {
       // Some CrystalDome vehicles like the Outlaw "Weiler" have a wrong configuration for compoennt "fx_crystal_dome" so the "crystal_dome_instant_on" effect does not work
       this.vehComp.ToggleCrystalDome(true, true, false, 0, 0, false);
 
@@ -986,15 +991,15 @@ public class RestoreVehicleStateCallback extends DelayCallback {
     // // // // // // //
     // Police lights and siren
     //
-    if this.vehComp.m_useAuxiliary && this.vehComp.GetPS().m_hgyi56_EVS_isPoliceVehicle {
-      switch this.vehComp.GetPS().m_hgyi56_EVS_threeStatesSiren {
+    if this.vehComp.m_useAuxiliary && vehPS.m_hgyi56_EVS_isPoliceVehicle {
+      switch vehPS.m_hgyi56_EVS_threeStatesSiren {
         case 0:
           // All OFF (internal game siren state is OFF)
           this.vehComp.GetVehicleController().ToggleLights(false, vehicleELightType.Utility);
           this.vehComp.StartEffectEvent(vehicle, n"police_sign_default", true);
-          this.vehComp.GetPS().SetSirenLightsState(false);
-          this.vehComp.GetPS().SetSirenState(false);
-          this.vehComp.GetPS().SetSirenSoundsState(false);
+          vehPS.SetSirenLightsState(false);
+          vehPS.SetSirenState(false);
+          vehPS.SetSirenSoundsState(false);
           vehicle.ToggleSiren(false);
           break;
 
@@ -1002,9 +1007,9 @@ public class RestoreVehicleStateCallback extends DelayCallback {
           // Lights ON (internal game siren state is ON)
           this.vehComp.GetVehicleController().ToggleLights(true, vehicleELightType.Utility);
           this.vehComp.StartEffectEvent(vehicle, n"police_sign_combat", true);
-          this.vehComp.GetPS().SetSirenLightsState(true);
-          this.vehComp.GetPS().SetSirenState(true);
-          this.vehComp.GetPS().SetSirenSoundsState(false);
+          vehPS.SetSirenLightsState(true);
+          vehPS.SetSirenState(true);
+          vehPS.SetSirenSoundsState(false);
           vehicle.ToggleSiren(false);
           break;
 
@@ -1012,9 +1017,9 @@ public class RestoreVehicleStateCallback extends DelayCallback {
           // Siren ON (internal game siren state is ON)
           this.vehComp.GetVehicleController().ToggleLights(true, vehicleELightType.Utility);
           this.vehComp.StartEffectEvent(vehicle, n"police_sign_combat", true);
-          this.vehComp.GetPS().SetSirenLightsState(true);
-          this.vehComp.GetPS().SetSirenState(true);
-          this.vehComp.GetPS().SetSirenSoundsState(true);
+          vehPS.SetSirenLightsState(true);
+          vehPS.SetSirenState(true);
+          vehPS.SetSirenSoundsState(true);
 
           let shouldEnableSiren = MyModSettings.GetBool("police_lights.keepSirenOnWhileOutsidePlayerEnabled") || this.playerInsideVehicle;
           vehicle.ToggleSiren(shouldEnableSiren);
