@@ -768,7 +768,11 @@ public class EntityWatcher extends ScriptableSystem {
     if ArrayContains(player.GetPS().m_hgyi56_EVS_drivenVehiclesID, vehicle.GetEntityID()) {
 
       // Register the driven vehicle
-      player.m_hgyi56_EVS_drivenVehicles.Insert(entityHashId, vehComp);
+      let event: ref<PlayerRegisterDrivenVehicleEvent> = new PlayerRegisterDrivenVehicleEvent();
+      event.vehID = vehicle.GetEntityID();
+      event.vehComp = vehComp;
+
+      player.QueueEvent(event);
 
       // Restore vehicle state
       let playerInsideVehicle = Equals(vehicle, player.GetMountedVehicle());
@@ -865,22 +869,27 @@ public class EntityWatcher extends ScriptableSystem {
       return;
     }
 
-    for lightComp in vehicle.m_hgyi56_EVS_headlightsComponents {
-      if IsDefined(lightComp) {
+    for wref_lightComp in vehicle.m_hgyi56_EVS_headlightsComponents {
+      let lightComp: ref<vehicleLightComponent> = wref_lightComp;
+
+      if IsDefined(lightComp)
+      && IsDefined(vehicle.m_hgyi56_EVS_lightComponentsParameters) {
         let params: ref<LightComponentParameters> = vehicle.m_hgyi56_EVS_lightComponentsParameters.Get(TDBID.ToNumber(TDBID.Create(ToString(lightComp.name)))) as LightComponentParameters;
 
-        if MyModSettings.GetBool("npc_headlights.npcHeadlightsOverride") {
-          let radius_multiplier: Float = MyModSettings.GetFloat("npc_headlights.npcHeadlightsRadiusMultiplier");
-          let intensity_multiplier: Float = MyModSettings.GetFloat("npc_headlights.npcHeadlightsIntensityMultiplier");
+        if IsDefined(params) {
+          if MyModSettings.GetBool("npc_headlights.npcHeadlightsOverride") {
+            let radius_multiplier: Float = MyModSettings.GetFloat("npc_headlights.npcHeadlightsRadiusMultiplier");
+            let intensity_multiplier: Float = MyModSettings.GetFloat("npc_headlights.npcHeadlightsIntensityMultiplier");
 
-          lightComp.attenuation = IntEnum<rendLightAttenuation>(EnumValueFromName(n"rendLightAttenuation", StringToName(s"LA_\(MyModSettings.GetFloat("npc_headlights.npcHeadlightsAttenuation"))")));
-          lightComp.radius = params.radius * radius_multiplier;
-          lightComp.intensity = params.intensity * intensity_multiplier;
-        }
-        else {
-          lightComp.attenuation = params.attenuation;
-          lightComp.radius = params.radius;
-          lightComp.intensity = params.intensity;
+            lightComp.attenuation = IntEnum<rendLightAttenuation>(EnumValueFromName(n"rendLightAttenuation", StringToName(s"LA_\(MyModSettings.GetFloat("npc_headlights.npcHeadlightsAttenuation"))")));
+            lightComp.radius = params.radius * radius_multiplier;
+            lightComp.intensity = params.intensity * intensity_multiplier;
+          }
+          else {
+            lightComp.attenuation = params.attenuation;
+            lightComp.radius = params.radius;
+            lightComp.intensity = params.intensity;
+          }
         }
       }
     }
@@ -1398,6 +1407,15 @@ private let m_hgyi56_EVS_inputListener: ref<GlobalInputListener>;
 @addField(VehicleUIactivateEvent)
 public let m_hgyi56_EVS_entityID: EntityID;
 
+public class PlayerRegisterDrivenVehicleEvent extends Event {
+  let vehID: EntityID;
+  let vehComp: wref<VehicleComponent>;
+}
+
+public class PlayerUnregisterDrivenVehicleEvent extends Event {
+  let vehID: EntityID;
+}
+
 public class MultiTapLightsToggleEvent extends Event {
   let tapCount: Int32 = 0;
 }
@@ -1623,6 +1641,51 @@ protected cb func hgyi56_EVS_OnMultiTapLightsToggleEvent(evt: ref<MultiTapLights
     i += 1;
   }
   this.m_hgyi56_EVS_customLightsAreBeingToggled = false;
+
+  return true;
+}
+
+@addMethod(PlayerPuppet)
+protected cb func hgyi56_EVS_OnPlayerRegisterDrivenVehicleEvent(evt: ref<PlayerRegisterDrivenVehicleEvent>) -> Bool {
+  let ps = this.GetPS();
+  let id = evt.vehID;
+  let vehComp = evt.vehComp;
+
+  // Register this vehicle until it is unloaded
+  if !ArrayContains(ps.m_hgyi56_EVS_drivenVehiclesID, id) {
+    ArrayPush(ps.m_hgyi56_EVS_drivenVehiclesID, id);
+  }
+
+  if IsDefined(vehComp)
+  && IsDefined(this.m_hgyi56_EVS_drivenVehicles) {
+    let entityHashId: Uint64 = TDBID.ToNumber(TDBID.Create(ToString(id)));
+    this.m_hgyi56_EVS_drivenVehicles.Insert(entityHashId, vehComp);
+  }
+
+  return true;
+}
+
+@addMethod(PlayerPuppet)
+protected cb func hgyi56_EVS_OnPlayerUnregisterDrivenVehicleEvent(evt: ref<PlayerUnregisterDrivenVehicleEvent>) -> Bool {
+  let ps = this.GetPS();
+  let id = evt.vehID;
+
+  if IsDefined(this.m_hgyi56_EVS_drivenVehicles) {
+    let entityHashId: Uint64 = TDBID.ToNumber(TDBID.Create(ToString(id)));
+
+    if this.m_hgyi56_EVS_drivenVehicles.KeyExist(entityHashId) {
+      this.m_hgyi56_EVS_drivenVehicles.Remove(entityHashId);
+    }
+  }
+
+  // Reversed loop to prevent IndexOutOfBound
+  let i: Int32 = ArraySize(ps.m_hgyi56_EVS_drivenVehiclesID) - 1;
+  while i >= 0 {
+    if ps.m_hgyi56_EVS_drivenVehiclesID[i] == evt.vehID {
+      ArrayErase(ps.m_hgyi56_EVS_drivenVehiclesID, i);
+    }
+    i -= 1;
+  }
 
   return true;
 }
@@ -5605,9 +5668,12 @@ protected cb func OnMountingEvent(evt: ref<MountingEvent>) -> Bool {
     let entityHashId = TDBID.ToNumber(TDBID.Create(ToString(vehicle.GetEntityID())));
 
     // Register this vehicle until it is unloaded
-    if !ArrayContains(player.GetPS().m_hgyi56_EVS_drivenVehiclesID, vehicle.GetEntityID()) {
-      player.m_hgyi56_EVS_drivenVehicles.Insert(entityHashId, vehComp);
-      ArrayPush(player.GetPS().m_hgyi56_EVS_drivenVehiclesID, vehicle.GetEntityID());
+    if IsDefined(player) {
+      let event: ref<PlayerRegisterDrivenVehicleEvent> = new PlayerRegisterDrivenVehicleEvent();
+      event.vehID = vehicle.GetEntityID();
+      event.vehComp = vehComp;
+
+      player.QueueEvent(event);
     }
     
     this.GetPS().m_hgyi56_EVS_poweredOnAtLeastOnceSinceLastEnter = this.GetPS().m_hgyi56_EVS_powerState;
@@ -7762,9 +7828,10 @@ protected cb func OnDetach() -> Bool {
   }
 
   // Clean unused driven vehicles references
-  if ArrayContains(player.GetPS().m_hgyi56_EVS_drivenVehiclesID, this.GetEntityID()) {
-    ArrayRemove(player.GetPS().m_hgyi56_EVS_drivenVehiclesID, this.GetEntityID());
-  }
+  let event: ref<PlayerUnregisterDrivenVehicleEvent> = new PlayerUnregisterDrivenVehicleEvent();
+  event.vehID = this.GetEntityID();
+  
+  player.QueueEvent(event);
 
   this.m_hgyi56_EVS_lightComponentsParameters = null;
   
