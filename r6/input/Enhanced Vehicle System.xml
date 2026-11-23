@@ -164,7 +164,6 @@
     </mapping>
 
     <hold action="CycleLights"          timeout="5.0" /> <!-- Cancel by using a big timeout -->
-	<hold action="VehicleInsideWheel"	timeout="99.0" /> <!-- Cancel by using a big timeout -->
     <hold action="ModdedCycleLights"    timeout="0.25" />
     <hold action="ToggleCustomLights"   timeout="0.25" />
     <hold action="CycleEngineStep1"     timeout="0.25" />
